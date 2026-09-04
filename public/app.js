@@ -86,6 +86,11 @@ let recording = false;
 // --- story state ---
 let currentId = null;
 let reaskUsed = false; // per-question: only one re-ask before auto-reveal (design doc "third strike")
+// fox_reask/owl_reask loop back into the SAME question id, which used to
+// re-trigger the "reaskUsed = false" reset below on every re-render —
+// making the second consecutive re-ask (the auto-reveal trigger)
+// unreachable. Only reset when the question is genuinely a new one.
+let activeQuestionId = null;
 let storyEnded = false;
 
 function log(msg) {
@@ -143,7 +148,10 @@ function renderState(id) {
     recordBtn.style.display = "block";
     recordBtn.disabled = false;
     uploadRow.style.display = "block";
-    reaskUsed = false;
+    if (activeQuestionId !== id) {
+      reaskUsed = false;
+      activeQuestionId = id;
+    }
   } else {
     // "end"
     nextBtn.style.display = "none";
@@ -162,6 +170,7 @@ nextBtn.addEventListener("click", () => {
 
 resetBtn.addEventListener("click", () => {
   storyEnded = false;
+  activeQuestionId = null;
   renderState(START_STATE);
   log("── сброс сценария ──");
 });

@@ -193,21 +193,55 @@ const HERO_FOR_STATE = {
   parent_report: { character: "fox", pose: "idle" },
 };
 
-// Fox uses hand-illustrated full-body art per emotion (talk/happy/confused/
-// think) instead of the hand-coded SVG rig — swapped in per user request.
+// Fox uses a real modular part-based rig (hand-illustrated cut-paper
+// pieces: head/ears/body/arms/legs/tail, independently positioned) instead
+// of the hand-coded SVG rig — parts are laid out on a fixed 320x430
+// internal canvas, scaled to fit #heroStage via CSS (see index.html).
 // Owl has no matching art yet, so it still falls back to the SVG rig.
-const FOX_POSE_IMAGE = {
-  talk: "/images/fox-talk.png",
-  happy: "/images/fox-happy.png",
-  confused: "/images/fox-confused.png",
-  think: "/images/fox-think.png",
-  idle: "/images/fox-idle.png",
+const RIG = (part) => `/images/rig/rig_${part}.png`;
+
+// {x, y, w, h} positions tuned by eye against the 320x430 canvas.
+const FOX_RIG_LAYOUT = {
+  tail: { x: 185, y: 230, w: 90, h: 90 },
+  tail_tip: { x: 250, y: 250, w: 60, h: 62 },
+  body: { x: 95, y: 150, w: 130, h: 218 },
+  leg_front_l: { x: 65, y: 225, w: 48, h: 128 },
+  leg_front_r: { x: 197, y: 225, w: 51, h: 128 },
+  leg_back_l: { x: 88, y: 340, w: 49, h: 141 },
+  leg_back_r: { x: 165, y: 340, w: 55, h: 143 },
+  ear_l: { x: 78, y: 30, w: 62, h: 63 },
+  ear_r: { x: 180, y: 30, w: 62, h: 63 },
+  head: { x: 85, y: 70, w: 150, h: 94 },
+  mouth: { x: 120, y: 133, w: 65, h: 23 },
 };
+
+function rigPiece(part, src, extraStyle = "", extraClass = "") {
+  const { x, y, w, h } = FOX_RIG_LAYOUT[part];
+  return `<img src="${src}" class="rig-part ${extraClass}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;${extraStyle}">`;
+}
+
+function foxRigHTML(pose) {
+  const headSrc = pose === "think" ? RIG("head_closed") : RIG("head_open");
+  const armClass = pose === "happy" ? "rig-arm-up" : pose === "talk" ? "rig-arm-talk" : "";
+  const tiltStyle = pose === "confused" ? "transform:rotate(-6deg);transform-origin:50% 80%;" : "";
+  const mouthClass = pose === "talk" ? "hero-mouth-talk" : "";
+  return `<div class="rig-canvas" style="${tiltStyle}">
+    ${rigPiece("tail", RIG("tail"), "", "rig-tail")}
+    ${rigPiece("tail_tip", RIG("tail_tip"), "", "rig-tail")}
+    ${rigPiece("body", RIG("body"))}
+    ${rigPiece("leg_front_l", RIG("leg_front_l"), "transform-origin:top center;", `rig-arm-l ${armClass}`)}
+    ${rigPiece("leg_front_r", RIG("leg_front_r"), "transform-origin:top center;", `rig-arm-r ${armClass}`)}
+    ${rigPiece("leg_back_l", RIG("leg_back_l"))}
+    ${rigPiece("leg_back_r", RIG("leg_back_r"))}
+    ${rigPiece("ear_l", RIG("ear_l"), "transform:rotate(-8deg);", pose === "confused" ? "rig-ear-droop" : "")}
+    ${rigPiece("ear_r", RIG("ear_r"), "transform:rotate(8deg);")}
+    ${rigPiece("head", headSrc)}
+    ${rigPiece("mouth", RIG("mouth"), "", mouthClass)}
+  </div>`;
+}
 
 function renderHero(stateId) {
   const h = HERO_FOR_STATE[stateId] || { character: "fox", pose: "idle" };
   if (h.character === "owl") return owlSVG(h.pose);
-  const src = FOX_POSE_IMAGE[h.pose];
-  if (src) return `<img src="${src}" alt="түлкі" style="width:100%;height:100%;object-fit:contain;">`;
-  return foxSVG(h.pose); // fallback for poses without matching art (e.g. idle)
+  return foxRigHTML(h.pose);
 }

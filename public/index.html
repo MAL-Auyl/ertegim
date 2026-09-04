@@ -35,13 +35,33 @@
   #heroStage {
     position: absolute;
     left: 50%;
-    bottom: 4%;
-    width: 140px;
-    height: 140px;
+    bottom: 2%;
+    width: 200px;
+    height: 270px;
     filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25));
     animation: heroBreathe 3.2s ease-in-out infinite;
   }
-  #heroStage svg { display: block; }
+  #heroStage svg { display: block; width: 140px; height: 140px; margin: 65px auto 0; }
+
+  /* Fox modular rig: fixed 320x430 internal canvas, scaled down to fit
+     #heroStage's box exactly (320*0.625=200, 430*0.625=268.75≈270). */
+  .rig-canvas { position: relative; width: 320px; height: 430px; transform: scale(0.625); transform-origin: top left; }
+  .rig-part { position: absolute; display: block; }
+
+  .rig-arm-l, .rig-arm-r { animation: none; }
+  .rig-arm-talk.rig-arm-l { animation: armTalkL 0.5s ease-in-out infinite; }
+  .rig-arm-talk.rig-arm-r { animation: armTalkR 0.5s ease-in-out infinite; }
+  @keyframes armTalkL { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-8deg); } }
+  @keyframes armTalkR { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(8deg); } }
+  .rig-arm-up.rig-arm-l { animation: armUpL 0.5s ease-in-out infinite; }
+  .rig-arm-up.rig-arm-r { animation: armUpR 0.5s ease-in-out infinite; }
+  @keyframes armUpL { 0%, 100% { transform: rotate(-25deg); } 50% { transform: rotate(-45deg); } }
+  @keyframes armUpR { 0%, 100% { transform: rotate(25deg); } 50% { transform: rotate(45deg); } }
+
+  .rig-tail { animation: tailSway 2.6s ease-in-out infinite; transform-origin: 15% 20%; }
+  @keyframes tailSway { 0%, 100% { transform: rotate(8deg); } 50% { transform: rotate(16deg); } }
+
+  .rig-ear-droop { transform: rotate(-8deg) rotate(-18deg) !important; }
 
   /* Idle motion so the hero never reads as a dead static image, plus a
      slow Ken Burns drift on the background — cheap wins for a 3-7yo
