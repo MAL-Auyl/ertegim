@@ -48,18 +48,11 @@
   .rig-canvas { position: relative; width: 320px; height: 430px; transform: scale(0.625); transform-origin: top left; }
   .rig-part { position: absolute; display: block; }
 
-  .rig-arm-l, .rig-arm-r { animation: none; }
-  .rig-arm-talk.rig-arm-l { animation: armTalkL 0.5s ease-in-out infinite; }
-  .rig-arm-talk.rig-arm-r { animation: armTalkR 0.5s ease-in-out infinite; }
-  @keyframes armTalkL { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-8deg); } }
-  @keyframes armTalkR { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(8deg); } }
-  .rig-arm-up.rig-arm-l { animation: armUpL 0.5s ease-in-out infinite; }
-  .rig-arm-up.rig-arm-r { animation: armUpR 0.5s ease-in-out infinite; }
-  @keyframes armUpL { 0%, 100% { transform: rotate(-25deg); } 50% { transform: rotate(-45deg); } }
-  @keyframes armUpR { 0%, 100% { transform: rotate(25deg); } 50% { transform: rotate(45deg); } }
-
-  .rig-tail { animation: tailSway 2.6s ease-in-out infinite; transform-origin: 15% 20%; }
-  @keyframes tailSway { 0%, 100% { transform: rotate(8deg); } 50% { transform: rotate(16deg); } }
+  /* Arm/tail motion is now driven by GSAP (see characters.js:animateFoxRig)
+     for organic, desynchronized easing instead of identical CSS keyframes
+     ticking in lockstep — that lockstep sync was exactly what read as
+     "robotic". transform-origin stays here since GSAP reads it. */
+  .rig-tail { transform-origin: 15% 20%; }
 
   .rig-ear-droop { transform: rotate(-8deg) rotate(-18deg) !important; }
 
@@ -192,6 +185,23 @@
   #meta { margin-top: var(--space-2); }
   audio { width: 100%; margin-top: var(--space-3); height: 32px; }
 
+  .ai-verdict {
+    display: none;
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--card-solid) 60%, transparent);
+    font-size: 0.85rem;
+  }
+  .ai-verdict.show { display: block; }
+  .ai-verdict .label { font-weight: 700; }
+  .ai-verdict.correct { border-color: var(--ok, #2e7d32); }
+  .ai-verdict.incorrect,
+  .ai-verdict.unclear { border-color: var(--warn, #b26a00); }
+  .ai-verdict .reason { display: block; margin-top: 4px; color: var(--ink-soft); font-size: 0.8rem; }
+  .ai-verdict .countdown { display: block; margin-top: 6px; color: var(--ink-soft); font-size: 0.75rem; }
+
   .actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
   .actions .btn { flex: 1; padding: 13px 8px; font-size: 0.88rem; }
 
@@ -259,6 +269,7 @@
       <div id="transcript" class="body-text"></div>
       <div id="meta" class="mono"></div>
       <audio id="player" controls></audio>
+      <div id="aiVerdict" class="ai-verdict"></div>
       <div class="actions">
         <button id="btnCorrect" class="btn btn-ok">✅ Верно</button>
         <button id="btnReask" class="btn btn-warn">🔁 Переспросить</button>
@@ -298,6 +309,7 @@
   </div>
   <div id="resetRow"><button id="resetBtn" class="btn btn-muted">🔄 Сначала</button></div>
   <div id="log" class="mono"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="story.js"></script>
   <script src="characters.js"></script>
   <script src="app.js"></script>

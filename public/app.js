@@ -10,6 +10,7 @@ const blockedFlash = document.getElementById("blockedFlash");
 const resultEl = document.getElementById("result");
 const transcriptEl = document.getElementById("transcript");
 const metaEl = document.getElementById("meta");
+const aiVerdictEl = document.getElementById("aiVerdict");
 const player = document.getElementById("player");
 const logEl = document.getElementById("log");
 const resetBtn = document.getElementById("resetBtn");
@@ -103,6 +104,8 @@ function renderState(id) {
   currentId = id;
   const s = STORY[id];
 
+  cancelAiAutoAdvance();
+  aiVerdictEl.classList.remove("show");
   blockedFlash.classList.remove("show", "materialize-in");
   resultEl.classList.remove("show", "materialize-in");
   statusText.textContent = "";
@@ -137,6 +140,7 @@ function renderState(id) {
   storyKk.textContent = s.kk;
   storyRu.textContent = s.ru;
   heroStage.innerHTML = renderHero(id);
+  if (hero.character === "fox") animateFoxRig(heroStage, hero.pose);
   speakLine(s.kk, id);
 
   if (s.kind === "narration") {
@@ -208,6 +212,8 @@ async function startRecording() {
   statusText.textContent = "Идёт запись...";
   blockedFlash.classList.remove("show", "materialize-in");
   resultEl.classList.remove("show", "materialize-in");
+  cancelAiAutoAdvance();
+  aiVerdictEl.classList.remove("show");
 }
 
 function stopRecording() {
@@ -287,6 +293,7 @@ async function submitAudio(blob, filename) {
     } else {
       resultEl.classList.add("show", "materialize-in");
       log(`transcript: "${data.transcript}" (${data.ms}ms)`);
+      classifyAndSuggest(data.transcript);
     }
   } catch (err) {
     statusText.textContent = `Ошибка: ${err.message}`;
@@ -317,27 +324,88 @@ function advanceFromQuestion(nextId) {
   renderState(nextId);
 }
 
-document.getElementById("btnCorrect").addEventListener("click", () => {
+// AI classifier (Next Steps #5): on every answered question we ask
+// /api/classify for a verdict and auto-advance the story after a short
+// countdown — but any manual button press cancels the pending auto-advance
+// and takes over, so the operator keeps a hard kill-switch if the model
+// misjudges or the call fails/times out (fail-open, see server.js comment
+// above classifyAnswer()).
+let aiAutoAdvanceTimer = null;
+const AI_AUTO_ADVANCE_MS = 2500;
+
+function cancelAiAutoAdvance() {
+  if (aiAutoAdvanceTimer) {
+    clearTimeout(aiAutoAdvanceTimer);
+    aiAutoAdvanceTimer = null;
+  }
+}
+
+function markCorrect(source) {
+  cancelAiAutoAdvance();
   const s = STORY[currentId];
   if (s.kind !== "question") return;
-  log("оператор: ВЕРНО");
+  log(`${source}: ВЕРНО`);
   advanceFromQuestion(s.onCorrect);
-});
+}
 
-document.getElementById("btnReask").addEventListener("click", () => {
+function markReask(source) {
+  cancelAiAutoAdvance();
   const s = STORY[currentId];
   if (s.kind !== "question") return;
   if (!reaskUsed) {
     reaskUsed = true;
-    log("оператор: ПЕРЕСПРОСИТЬ (1-я попытка)");
+    log(`${source}: ПЕРЕСПРОСИТЬ (1-я попытка)`);
     advanceFromQuestion(s.onReask);
   } else {
-    log("оператор: ПЕРЕСПРОСИТЬ второй раз → авто-раскрытие (third strike)");
+    log(`${source}: ПЕРЕСПРОСИТЬ второй раз → авто-раскрытие (third strike)`);
     advanceFromQuestion(s.onReveal);
   }
-});
+}
+
+async function classifyAndSuggest(transcript) {
+  const s = STORY[currentId];
+  if (s.kind !== "question" || !s.criterion) return;
+  aiVerdictEl.className = "ai-verdict show";
+  aiVerdictEl.innerHTML = `<span class="label">🤖 ИИ думает…</span>`;
+
+  let data;
+  try {
+    const res = await fetch("/api/classify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcript, questionKk: s.kk, criterion: s.criterion }),
+    });
+    data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || res.statusText);
+  } catch (err) {
+    // Fail open: no verdict shown, operator uses the buttons as before.
+    aiVerdictEl.classList.remove("show");
+    log(`ИИ-классификатор недоступен (ручной режим): ${err.message}`);
+    return;
+  }
+
+  const labelText = { correct: "✅ ВЕРНО", incorrect: "❌ НЕВЕРНО", unclear: "🔁 НЕ ПОНЯЛ / ПЕРЕСПРОСИТЬ" }[data.label];
+  aiVerdictEl.className = `ai-verdict show ${data.label}`;
+  aiVerdictEl.innerHTML = `
+    <span class="label">🤖 ИИ: ${labelText}</span>
+    <span class="reason">${data.reason || ""} (${data.ms}ms)</span>
+    <span class="countdown">Авто-переход через ${(AI_AUTO_ADVANCE_MS / 1000).toFixed(1)}с — нажми кнопку, чтобы отменить</span>
+  `;
+  log(`ИИ: ${data.label} — "${data.reason}" (${data.ms}ms)`);
+
+  cancelAiAutoAdvance();
+  aiAutoAdvanceTimer = setTimeout(() => {
+    aiAutoAdvanceTimer = null;
+    if (data.label === "correct") markCorrect("ИИ (авто)");
+    else markReask("ИИ (авто)");
+  }, AI_AUTO_ADVANCE_MS);
+}
+
+document.getElementById("btnCorrect").addEventListener("click", () => markCorrect("оператор"));
+document.getElementById("btnReask").addEventListener("click", () => markReask("оператор"));
 
 document.getElementById("btnAdvance").addEventListener("click", () => {
+  cancelAiAutoAdvance();
   const s = STORY[currentId];
   if (s.kind !== "question") return;
   log("оператор: ADVANCE (форс, STT-килл-свитч) → как «верно»");

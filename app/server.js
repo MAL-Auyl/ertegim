@@ -73,6 +73,68 @@ async function transcribeGroq(audioBuf, ext) {
   }
 }
 
+// LLM answer classifier (Next Steps #5) — replaces the operator's manual
+// Correct/Re-ask judgement with a real model call. Same Groq account as STT,
+// but the chat-completions endpoint, not Whisper. Kept deliberately separate
+// from the blocklist: the blocklist is a hard-coded, network-free safety gate
+// that fails closed; this classifier only judges answer correctness and is
+// allowed to fail OPEN (falls back to the operator's own buttons) since a
+// wrong "неверно"/"верно" call here just means one extra re-ask, not a
+// safety incident. See IDEA.md "Как закрываем риски".
+// This Groq account has no llama-3.x chat access (checked via /v1/models) —
+// gpt-oss-20b is the fastest model it does have access to, plenty for a
+// 3-way classification call.
+const GROQ_CHAT_MODEL = "openai/gpt-oss-20b";
+const CLASSIFY_TIMEOUT_MS = 4000;
+
+async function classifyAnswer(transcript, questionKk, criterion) {
+  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CLASSIFY_TIMEOUT_MS);
+  try {
+    const t0 = performance.now();
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: GROQ_CHAT_MODEL,
+        temperature: 0,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "Ты оцениваешь ответ ребёнка 3-7 лет в детской интерактивной сказке. " +
+              "Тебе дают вопрос героя, критерий правильного ответа и то, что реально " +
+              "распознала речь-в-текст система (может быть неточным/обрезанным — " +
+              "суди по смыслу, а не по буквальному совпадению). Верни ТОЛЬКО JSON вида " +
+              '{"label": "correct" | "incorrect" | "unclear", "reason": "коротко, по-русски"}. ' +
+              '"unclear" — если ответ пустой, невнятный или не по теме вопроса (не значит ' +
+              "«неверно», значит «нужно переспросить»).",
+          },
+          {
+            role: "user",
+            content: `Вопрос героя: ${questionKk}\nКритерий: ${criterion}\nОтвет ребёнка (транскрипт): "${transcript}"`,
+          },
+        ],
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`groq chat http ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    const ms = Math.round(performance.now() - t0);
+    const content = data.choices?.[0]?.message?.content || "{}";
+    const parsed = JSON.parse(content);
+    const label = ["correct", "incorrect", "unclear"].includes(parsed.label) ? parsed.label : "unclear";
+    return { label, reason: String(parsed.reason || ""), ms };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function transcribe(audioBuf, ext) {
   try {
     return await transcribeGroq(audioBuf, ext);
@@ -217,6 +279,23 @@ Bun.serve({
         return Response.json({ transcript, blocked, blockDetails: results, ms, engine });
       } catch (err) {
         console.error(err);
+        return Response.json({ error: String(err) }, { status: 500 });
+      }
+    }
+
+    if (url.pathname === "/api/classify" && req.method === "POST") {
+      try {
+        const { transcript, questionKk, criterion } = await req.json();
+        if (typeof transcript !== "string" || typeof questionKk !== "string" || typeof criterion !== "string") {
+          return Response.json({ error: "missing transcript/questionKk/criterion field" }, { status: 400 });
+        }
+        const { label, reason, ms } = await classifyAnswer(transcript, questionKk, criterion);
+        return Response.json({ label, reason, ms });
+      } catch (err) {
+        console.error(`classify failed (falling back to operator): ${err}`);
+        // Fail OPEN: the frontend treats a non-200/error response as "AI
+        // unavailable" and silently leaves the manual Correct/Re-ask/Advance
+        // buttons as the only path — see comment above classifyAnswer().
         return Response.json({ error: String(err) }, { status: 500 });
       }
     }

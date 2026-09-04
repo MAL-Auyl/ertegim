@@ -222,22 +222,62 @@ function rigPiece(part, src, extraStyle = "", extraClass = "") {
 
 function foxRigHTML(pose) {
   const headSrc = pose === "think" ? RIG("head_closed") : RIG("head_open");
-  const armClass = pose === "happy" ? "rig-arm-up" : pose === "talk" ? "rig-arm-talk" : "";
-  const tiltStyle = pose === "confused" ? "transform:rotate(-6deg);transform-origin:50% 80%;" : "";
   const mouthClass = pose === "talk" ? "hero-mouth-talk" : "";
-  return `<div class="rig-canvas" style="${tiltStyle}">
+  return `<div class="rig-canvas">
     ${rigPiece("tail", RIG("tail"), "", "rig-tail")}
     ${rigPiece("tail_tip", RIG("tail_tip"), "", "rig-tail")}
-    ${rigPiece("body", RIG("body"))}
-    ${rigPiece("leg_front_l", RIG("leg_front_l"), "transform-origin:top center;", `rig-arm-l ${armClass}`)}
-    ${rigPiece("leg_front_r", RIG("leg_front_r"), "transform-origin:top center;", `rig-arm-r ${armClass}`)}
+    ${rigPiece("body", RIG("body"), "", "rig-body")}
+    ${rigPiece("leg_front_l", RIG("leg_front_l"), "transform-origin:top center;", "rig-arm-l")}
+    ${rigPiece("leg_front_r", RIG("leg_front_r"), "transform-origin:top center;", "rig-arm-r")}
     ${rigPiece("leg_back_l", RIG("leg_back_l"))}
     ${rigPiece("leg_back_r", RIG("leg_back_r"))}
-    ${rigPiece("ear_l", RIG("ear_l"), "transform:rotate(-8deg);", pose === "confused" ? "rig-ear-droop" : "")}
-    ${rigPiece("ear_r", RIG("ear_r"), "transform:rotate(8deg);")}
-    ${rigPiece("head", headSrc)}
+    ${rigPiece("ear_l", RIG("ear_l"), "", "rig-ear-l")}
+    ${rigPiece("ear_r", RIG("ear_r"), "", "rig-ear-r")}
+    ${rigPiece("head", headSrc, "", "rig-head")}
     ${rigPiece("mouth", RIG("mouth"), "", mouthClass)}
   </div>`;
+}
+
+// GSAP-driven motion: desynchronized durations/delays and spring-ish
+// easing per part, instead of identical CSS keyframes ticking in lockstep
+// (which is exactly what reads as robotic/"zombie"). Re-run after every
+// heroStage.innerHTML swap since the old animated nodes are discarded.
+function animateFoxRig(root, pose) {
+  if (typeof gsap === "undefined") return; // CDN blocked/offline — static rig still works fine
+  const body = root.querySelector(".rig-body");
+  const head = root.querySelector(".rig-head");
+  const armL = root.querySelector(".rig-arm-l");
+  const armR = root.querySelector(".rig-arm-r");
+  const earL = root.querySelector(".rig-ear-l");
+  const earR = root.querySelector(".rig-ear-r");
+  const tails = root.querySelectorAll(".rig-tail");
+
+  gsap.set(earL, { rotation: -8, transformOrigin: "80% 90%" });
+  gsap.set(earR, { rotation: 8, transformOrigin: "20% 90%" });
+  gsap.set(head, { transformOrigin: "50% 100%" });
+  gsap.set(tails, { transformOrigin: "15% 20%" });
+
+  // continuous idle life, always running underneath whatever the pose does
+  gsap.to(body, { y: -5, duration: 1.7, ease: "sine.inOut", yoyo: true, repeat: -1 });
+  gsap.to(head, { rotation: 2, duration: 2.1, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 0.15 });
+  gsap.to(tails, { rotation: "+=9", duration: 1.9, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 0.3 });
+  gsap.to(earR, { rotation: "+=6", duration: 2.6, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 0.2 });
+
+  if (pose === "talk") {
+    gsap.to(armL, { rotation: -10, duration: 0.28, ease: "power1.inOut", yoyo: true, repeat: -1 });
+    gsap.to(armR, { rotation: 10, duration: 0.28, ease: "power1.inOut", yoyo: true, repeat: -1, delay: 0.14 });
+    gsap.to(earL, { rotation: "-=5", duration: 2.4, ease: "sine.inOut", yoyo: true, repeat: -1 });
+  } else if (pose === "happy") {
+    gsap.to(armL, { rotation: -55, duration: 0.45, ease: "back.out(2.5)", yoyo: true, repeat: -1 });
+    gsap.to(armR, { rotation: 55, duration: 0.45, ease: "back.out(2.5)", yoyo: true, repeat: -1, delay: 0.1 });
+    gsap.to(earL, { rotation: "-=10", duration: 0.45, ease: "back.out(2)", yoyo: true, repeat: -1 });
+  } else if (pose === "confused") {
+    gsap.to(earL, { rotation: -30, duration: 1.5, ease: "sine.inOut", yoyo: true, repeat: -1 });
+    gsap.to(armL, { rotation: -12, duration: 1.8, ease: "sine.inOut", yoyo: true, repeat: -1 });
+  } else if (pose === "think") {
+    gsap.to(armR, { rotation: 40, y: -18, duration: 1.4, ease: "sine.inOut", yoyo: true, repeat: -1 });
+    gsap.to(earL, { rotation: "-=5", duration: 2.4, ease: "sine.inOut", yoyo: true, repeat: -1 });
+  }
 }
 
 function renderHero(stateId) {

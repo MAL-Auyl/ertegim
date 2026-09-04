@@ -4,6 +4,7 @@ spike/tools/
 app/tmp/*
 !app/tmp/.gitkeep
 app/server.log
+app/server_test.log
 .claude/
 
 .vercel
