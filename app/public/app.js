@@ -21,6 +21,7 @@ const heroVoice = document.getElementById("heroVoice");
 const reportPanel = document.getElementById("reportPanel");
 const reportDate = document.getElementById("reportDate");
 const sceneStage = document.getElementById("sceneStage");
+const berryOverlay = document.getElementById("berryOverlay");
 
 // One background per hero, per design doc's "character + background switch
 // independently" approach — not one image per story branch. Add an entry
@@ -29,6 +30,84 @@ const SCENE_BG = {
   fox: "/images/bg-fox.png",
   owl: "/images/bg-owl.jpg",
 };
+
+// Replay variety (no two sessions look identical, even with a scripted
+// story bank): the fox's berry count and the owl's target word are picked
+// at random per session instead of being hardcoded to "3" / "мысық". The
+// background art (bg-fox.png) has hand-painted berries baked in for the
+// original "3" case, so instead of swapping art per count we draw the
+// berries as a DOM overlay on top of it — same approach the design doc
+// already uses for "don't draw one asset per branch."
+const NUM_KK = ["", "бір", "екі", "үш", "төрт", "бес"];
+const NUM_RU = ["", "один", "два", "три", "четыре", "пять"];
+function ruBerryWord(n) {
+  if (n === 1) return "ягода";
+  if (n >= 2 && n <= 4) return "ягоды";
+  return "ягод";
+}
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Percentage positions roughly inside the bush area of bg-fox.png (upper-left
+// cluster of cream bush blobs). Values are approximate/artistic — precision
+// doesn't matter for a handful of small dots.
+const BERRY_SLOTS = [
+  { left: "33%", top: "39%" },
+  { left: "40%", top: "35%" },
+  { left: "45%", top: "42%" },
+  { left: "36%", top: "46%" },
+  { left: "42%", top: "49%" },
+];
+
+let berryCount = 3;
+function rerollBerries() {
+  berryCount = 2 + Math.floor(Math.random() * 4); // 2..5, still countable for a 3-7yo
+  const kkList = [];
+  const ruList = [];
+  for (let i = 1; i <= berryCount; i++) {
+    kkList.push(NUM_KK[i]);
+    ruList.push(NUM_RU[i]);
+  }
+  STORY.fox_reveal.kk = `Ештеңе етпейді! Бірге санайық: ${kkList.join(", ")}! ${capitalize(NUM_KK[berryCount])} жидек екен!`;
+  STORY.fox_reveal.ru = `Не страшно! Давай посчитаем вместе: ${ruList.join(", ")}! ${capitalize(NUM_RU[berryCount])} ${ruBerryWord(berryCount)}!`;
+  STORY.fox_question.criterion =
+    `Правильный ответ — число ${NUM_RU[berryCount]} (${berryCount}). Засчитывай верным любое произношение ` +
+    `этого числа на казахском («${NUM_KK[berryCount]}») или русском («${NUM_RU[berryCount]}», «${berryCount}», ` +
+    `«${berryCount} ${ruBerryWord(berryCount)}» и т.п.). Всё остальное (другое число, молчание не по теме, ` +
+    `посторонний ответ) — неверно.`;
+}
+
+function renderBerryOverlay(show) {
+  if (!show) {
+    berryOverlay.innerHTML = "";
+    berryOverlay.classList.remove("show");
+    return;
+  }
+  berryOverlay.innerHTML = BERRY_SLOTS.slice(0, berryCount)
+    .map((p) => `<span class="berry" style="left:${p.left};top:${p.top}"></span>`)
+    .join("");
+  berryOverlay.classList.add("show");
+}
+
+// Two source words for the owl's rhyme question — both real Kazakh words
+// ending in "-ық", the same rhyme family as the reveal example "қасық"
+// (ложка), so onReveal never needs to change no matter which is picked.
+const OWL_WORDS = [
+  { kk: "Мысық", kkLower: "мысық", ru: "кот" },
+  { kk: "Балық", kkLower: "балық", ru: "рыба" },
+];
+let rhymeWord = OWL_WORDS[0];
+function rerollRhymeWord() {
+  rhymeWord = OWL_WORDS[Math.floor(Math.random() * OWL_WORDS.length)];
+  STORY.owl_question.kk = `${rhymeWord.kk} — деп айттым. Осыған ұйқас сөз тап!`;
+  STORY.owl_question.ru = `Я сказал «${rhymeWord.kkLower}» (${rhymeWord.ru}). Найди слово, похожее по звучанию!`;
+  STORY.owl_question.criterion =
+    `Правильный ответ — любое существующее казахское или русское слово, фонетически похожее на ` +
+    `«${rhymeWord.kkLower}» (например, оканчивается на «-ық»/«-ик», как «қасық»). Не обязательно именно ` +
+    `«қасық» — любая настоящая рифма/созвучие засчитывается верной. Слово без всякого созвучия или ` +
+    `посторонний ответ — неверно.`;
+}
 
 async function playWithTimeout(ms) {
   const playTimeout = new Promise((_, reject) =>
@@ -102,6 +181,14 @@ function log(msg) {
 
 function renderState(id) {
   currentId = id;
+  // Reroll BEFORE reading `s` below — `s` is just a reference into STORY,
+  // so mutating STORY[id].kk/ru/criterion here still lands before anything
+  // reads them. Only reroll on a genuinely new question, not a re-ask
+  // loop-back (fox_reask/owl_reask return to the SAME question id) — the
+  // child should recount the same bush, not a bush that changed underneath
+  // them. Mirrors the activeQuestionId check below, evaluated early.
+  if (id === "fox_question" && activeQuestionId !== id) rerollBerries();
+  if (id === "owl_question" && activeQuestionId !== id) rerollRhymeWord();
   const s = STORY[id];
 
   cancelAiAutoAdvance();
@@ -135,6 +222,7 @@ function renderState(id) {
   const bg = SCENE_BG[hero.character];
   sceneStage.style.backgroundImage = bg ? `url(${bg})` : "none";
   heroStage.classList.toggle("pose-happy", hero.pose === "happy");
+  renderBerryOverlay(hero.character === "fox" && (id === "fox_question" || id === "fox_reask" || id === "fox_reveal"));
 
   storySpeaker.textContent = s.speaker;
   storyKk.textContent = s.kk;

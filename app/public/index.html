@@ -32,6 +32,23 @@
   }
   #sceneStage.hidden { display: none; }
 
+  #berryOverlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    pointer-events: none;
+  }
+  #berryOverlay.show { display: block; }
+  #berryOverlay .berry {
+    position: absolute;
+    width: 3.2%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #d94a4a, #7a1f1f 75%);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    transform: translate(-50%, -50%);
+  }
+
   #heroStage {
     position: absolute;
     left: 50%;
@@ -234,6 +251,7 @@
       <button id="startBtn" class="btn btn-primary" style="padding:20px 32px;font-size:1.1rem;">▶ Бастау</button>
     </div>
     <div id="sceneStage">
+      <div id="berryOverlay"></div>
       <div id="heroStage"></div>
     </div>
     <audio id="heroVoice" style="display:none"></audio>
