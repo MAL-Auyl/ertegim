@@ -207,15 +207,71 @@ const FOX_POSE_IMAGE = {
   think: "/images/fox-think.png",
 };
 
+// AI-generated (Pika) short loops, real per-frame motion instead of a
+// whole-image CSS wobble. Source clips render on pure black; browser
+// <video> has no alpha, and this ffmpeg build's VP9 alpha encode came out
+// broken (container tagged alpha_mode=1 but the stream was plain yuv420p
+// with no alpha plane) — so transparency is done in JS instead: draw each
+// frame to a canvas and zero the alpha on near-black pixels every frame.
+// Poses with no clip yet fall back to the static FOX_POSE_IMAGE.
+const FOX_POSE_VIDEO = {
+  idle: "/images/fox_idle_test.mp4",
+  talk: "/images/fox_clip2.webm",
+  confused: "/images/fox_confused.webm",
+  think: "/images/fox_think.webm",
+};
+
 function foxPoseHTML(pose) {
+  const videoSrc = FOX_POSE_VIDEO[pose];
+  if (videoSrc) {
+    return `<video class="fox-video" src="${videoSrc}" autoplay loop muted playsinline style="display:none"></video>
+      <canvas class="fox-pose"></canvas>`;
+  }
   const src = FOX_POSE_IMAGE[pose] || FOX_POSE_IMAGE.idle;
   return `<img src="${src}" class="fox-pose" alt="түлкі">`;
 }
 
+// One chromakey rAF loop can run at a time — cancel the previous pose's
+// loop before starting a new one, since heroStage.innerHTML already
+// discarded its video/canvas elements (letting the old loop keep running
+// against detached nodes would just waste CPU, not draw anything wrong,
+// but no reason to let it pile up).
+let foxChromaKeyRAF = null;
+
+function startFoxVideoChromakey(root) {
+  const video = root.querySelector(".fox-video");
+  const canvas = root.querySelector(".fox-pose");
+  if (!video || !canvas) return;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+  function draw() {
+    if (video.readyState >= 2 && video.videoWidth) {
+      if (canvas.width !== video.videoWidth) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = frame.data;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] < 28 && d[i + 1] < 28 && d[i + 2] < 28) d[i + 3] = 0;
+      }
+      ctx.putImageData(frame, 0, 0);
+    }
+    foxChromaKeyRAF = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
 // GSAP-driven whole-image motion: desynchronized idle bob/sway plus a
 // pose-specific flourish, so the hero never reads as a dead static photo
-// even without per-joint articulation.
+// even without per-joint articulation. Applies equally to the canvas
+// (video poses) or the img (poses without a clip yet) — same ".fox-pose"
+// class either way.
 function animateFoxPose(root, pose) {
+  if (foxChromaKeyRAF) cancelAnimationFrame(foxChromaKeyRAF);
+  if (FOX_POSE_VIDEO[pose]) startFoxVideoChromakey(root);
+
   if (typeof gsap === "undefined") return; // CDN blocked/offline — static image still works fine
   const img = root.querySelector(".fox-pose");
   if (!img) return;
