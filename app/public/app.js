@@ -140,7 +140,7 @@ function renderState(id) {
   storyKk.textContent = s.kk;
   storyRu.textContent = s.ru;
   heroStage.innerHTML = renderHero(id);
-  if (hero.character === "fox") animateFoxRig(heroStage, hero.pose);
+  if (hero.character === "fox") animateFoxPose(heroStage, hero.pose);
   speakLine(s.kk, id);
 
   if (s.kind === "narration") {

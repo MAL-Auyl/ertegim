@@ -193,95 +193,47 @@ const HERO_FOR_STATE = {
   parent_report: { character: "fox", pose: "idle" },
 };
 
-// Fox uses a real modular part-based rig (hand-illustrated cut-paper
-// pieces: head/ears/body/arms/legs/tail, independently positioned) instead
-// of the hand-coded SVG rig — parts are laid out on a fixed 320x430
-// internal canvas, scaled to fit #heroStage via CSS (see index.html).
-// Owl has no matching art yet, so it still falls back to the SVG rig.
-const RIG = (part) => `/images/rig/rig_${part}.png`;
-
-// {x, y, w, h} positions tuned by eye against the 320x430 canvas.
-const FOX_RIG_LAYOUT = {
-  tail: { x: 185, y: 230, w: 90, h: 90 },
-  tail_tip: { x: 250, y: 250, w: 60, h: 62 },
-  body: { x: 95, y: 150, w: 130, h: 218 },
-  leg_front_l: { x: 65, y: 225, w: 48, h: 128 },
-  leg_front_r: { x: 197, y: 225, w: 51, h: 128 },
-  leg_back_l: { x: 88, y: 340, w: 49, h: 141 },
-  leg_back_r: { x: 165, y: 340, w: 55, h: 143 },
-  ear_l: { x: 78, y: 30, w: 62, h: 63 },
-  ear_r: { x: 180, y: 30, w: 62, h: 63 },
-  head: { x: 85, y: 70, w: 150, h: 94 },
-  mouth: { x: 120, y: 133, w: 65, h: 23 },
+// Fox uses hand-illustrated full-body pose art — one coherent drawing per
+// emotion, proper proportions from a single generation — instead of a
+// hand-assembled part rig. Assembling separate cut-out pieces by eyeballed
+// coordinates never matches the polish of one illustration drawn as a
+// whole (confirmed: it looked visibly cruder). Motion is layered on top of
+// the whole image via GSAP instead of per-joint animation.
+const FOX_POSE_IMAGE = {
+  idle: "/images/fox-idle.png",
+  talk: "/images/fox-talk.png",
+  happy: "/images/fox-happy.png",
+  confused: "/images/fox-confused.png",
+  think: "/images/fox-think.png",
 };
 
-function rigPiece(part, src, extraStyle = "", extraClass = "") {
-  const { x, y, w, h } = FOX_RIG_LAYOUT[part];
-  return `<img src="${src}" class="rig-part ${extraClass}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;${extraStyle}">`;
+function foxPoseHTML(pose) {
+  const src = FOX_POSE_IMAGE[pose] || FOX_POSE_IMAGE.idle;
+  return `<img src="${src}" class="fox-pose" alt="түлкі">`;
 }
 
-function foxRigHTML(pose) {
-  const headSrc = pose === "think" ? RIG("head_closed") : RIG("head_open");
-  const mouthClass = pose === "talk" ? "hero-mouth-talk" : "";
-  return `<div class="rig-canvas">
-    ${rigPiece("tail", RIG("tail"), "", "rig-tail")}
-    ${rigPiece("tail_tip", RIG("tail_tip"), "", "rig-tail")}
-    ${rigPiece("body", RIG("body"), "", "rig-body")}
-    ${rigPiece("leg_front_l", RIG("leg_front_l"), "transform-origin:top center;", "rig-arm-l")}
-    ${rigPiece("leg_front_r", RIG("leg_front_r"), "transform-origin:top center;", "rig-arm-r")}
-    ${rigPiece("leg_back_l", RIG("leg_back_l"))}
-    ${rigPiece("leg_back_r", RIG("leg_back_r"))}
-    ${rigPiece("ear_l", RIG("ear_l"), "", "rig-ear-l")}
-    ${rigPiece("ear_r", RIG("ear_r"), "", "rig-ear-r")}
-    ${rigPiece("head", headSrc, "", "rig-head")}
-    ${rigPiece("mouth", RIG("mouth"), "", mouthClass)}
-  </div>`;
-}
+// GSAP-driven whole-image motion: desynchronized idle bob/sway plus a
+// pose-specific flourish, so the hero never reads as a dead static photo
+// even without per-joint articulation.
+function animateFoxPose(root, pose) {
+  if (typeof gsap === "undefined") return; // CDN blocked/offline — static image still works fine
+  const img = root.querySelector(".fox-pose");
+  if (!img) return;
+  gsap.set(img, { transformOrigin: "50% 100%" });
+  gsap.to(img, { y: -6, duration: 1.8, ease: "sine.inOut", yoyo: true, repeat: -1 });
+  gsap.to(img, { rotation: 1.5, duration: 2.3, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 0.2 });
 
-// GSAP-driven motion: desynchronized durations/delays and spring-ish
-// easing per part, instead of identical CSS keyframes ticking in lockstep
-// (which is exactly what reads as robotic/"zombie"). Re-run after every
-// heroStage.innerHTML swap since the old animated nodes are discarded.
-function animateFoxRig(root, pose) {
-  if (typeof gsap === "undefined") return; // CDN blocked/offline — static rig still works fine
-  const body = root.querySelector(".rig-body");
-  const head = root.querySelector(".rig-head");
-  const armL = root.querySelector(".rig-arm-l");
-  const armR = root.querySelector(".rig-arm-r");
-  const earL = root.querySelector(".rig-ear-l");
-  const earR = root.querySelector(".rig-ear-r");
-  const tails = root.querySelectorAll(".rig-tail");
-
-  gsap.set(earL, { rotation: -8, transformOrigin: "80% 90%" });
-  gsap.set(earR, { rotation: 8, transformOrigin: "20% 90%" });
-  gsap.set(head, { transformOrigin: "50% 100%" });
-  gsap.set(tails, { transformOrigin: "15% 20%" });
-
-  // continuous idle life, always running underneath whatever the pose does
-  gsap.to(body, { y: -5, duration: 1.7, ease: "sine.inOut", yoyo: true, repeat: -1 });
-  gsap.to(head, { rotation: 2, duration: 2.1, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 0.15 });
-  gsap.to(tails, { rotation: "+=9", duration: 1.9, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 0.3 });
-  gsap.to(earR, { rotation: "+=6", duration: 2.6, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 0.2 });
-
-  if (pose === "talk") {
-    gsap.to(armL, { rotation: -10, duration: 0.28, ease: "power1.inOut", yoyo: true, repeat: -1 });
-    gsap.to(armR, { rotation: 10, duration: 0.28, ease: "power1.inOut", yoyo: true, repeat: -1, delay: 0.14 });
-    gsap.to(earL, { rotation: "-=5", duration: 2.4, ease: "sine.inOut", yoyo: true, repeat: -1 });
-  } else if (pose === "happy") {
-    gsap.to(armL, { rotation: -55, duration: 0.45, ease: "back.out(2.5)", yoyo: true, repeat: -1 });
-    gsap.to(armR, { rotation: 55, duration: 0.45, ease: "back.out(2.5)", yoyo: true, repeat: -1, delay: 0.1 });
-    gsap.to(earL, { rotation: "-=10", duration: 0.45, ease: "back.out(2)", yoyo: true, repeat: -1 });
+  if (pose === "happy") {
+    gsap.to(img, { scale: 1.06, y: -14, duration: 0.4, ease: "back.out(2)", yoyo: true, repeat: -1 });
+  } else if (pose === "talk") {
+    gsap.to(img, { rotation: "+=2.5", duration: 0.3, ease: "power1.inOut", yoyo: true, repeat: -1 });
   } else if (pose === "confused") {
-    gsap.to(earL, { rotation: -30, duration: 1.5, ease: "sine.inOut", yoyo: true, repeat: -1 });
-    gsap.to(armL, { rotation: -12, duration: 1.8, ease: "sine.inOut", yoyo: true, repeat: -1 });
-  } else if (pose === "think") {
-    gsap.to(armR, { rotation: 40, y: -18, duration: 1.4, ease: "sine.inOut", yoyo: true, repeat: -1 });
-    gsap.to(earL, { rotation: "-=5", duration: 2.4, ease: "sine.inOut", yoyo: true, repeat: -1 });
+    gsap.to(img, { rotation: -5, duration: 1.4, ease: "sine.inOut", yoyo: true, repeat: -1 });
   }
 }
 
 function renderHero(stateId) {
   const h = HERO_FOR_STATE[stateId] || { character: "fox", pose: "idle" };
   if (h.character === "owl") return owlSVG(h.pose);
-  return foxRigHTML(h.pose);
+  return foxPoseHTML(h.pose);
 }

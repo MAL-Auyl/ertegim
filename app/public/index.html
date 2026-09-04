@@ -36,25 +36,13 @@
     position: absolute;
     left: 50%;
     bottom: 2%;
-    width: 200px;
-    height: 270px;
+    width: 155px;
+    height: 210px;
     filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25));
     animation: heroBreathe 3.2s ease-in-out infinite;
   }
-  #heroStage svg { display: block; width: 140px; height: 140px; margin: 65px auto 0; }
-
-  /* Fox modular rig: fixed 320x430 internal canvas, scaled down to fit
-     #heroStage's box exactly (320*0.625=200, 430*0.625=268.75≈270). */
-  .rig-canvas { position: relative; width: 320px; height: 430px; transform: scale(0.625); transform-origin: top left; }
-  .rig-part { position: absolute; display: block; }
-
-  /* Arm/tail motion is now driven by GSAP (see characters.js:animateFoxRig)
-     for organic, desynchronized easing instead of identical CSS keyframes
-     ticking in lockstep — that lockstep sync was exactly what read as
-     "robotic". transform-origin stays here since GSAP reads it. */
-  .rig-tail { transform-origin: 15% 20%; }
-
-  .rig-ear-droop { transform: rotate(-8deg) rotate(-18deg) !important; }
+  #heroStage svg { display: block; width: 140px; height: 140px; margin: 35px auto 0; }
+  .fox-pose { display: block; width: 100%; height: 100%; object-fit: contain; }
 
   /* Idle motion so the hero never reads as a dead static image, plus a
      slow Ken Burns drift on the background — cheap wins for a 3-7yo
