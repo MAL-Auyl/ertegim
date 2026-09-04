@@ -1,0 +1,7 @@
+.env
+spike/audio/
+spike/tools/
+app/tmp/*
+!app/tmp/.gitkeep
+app/server.log
+.claude/

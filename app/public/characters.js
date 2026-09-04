@@ -1,0 +1,199 @@
+// Hand-coded SVG character art — no external image-gen service, no cost.
+// Flat, rounded, friendly children's-book style. Each character has 5 poses:
+// idle, talk, happy, confused, think — matching the design doc's "rig states."
+// Built as plain functions so no build step / library is needed.
+
+const PALETTE = {
+  foxBody: "#FF7A47",
+  foxBodyDark: "#E85F2A",
+  foxCream: "#FFF3E6",
+  owlBody: "#8B5E3C",
+  owlBodyLight: "#B08968",
+  owlCream: "#F5EBDD",
+  ink: "#14181C",
+  white: "#FFFFFF",
+  blush: "#FFB4A0",
+};
+
+function svgWrap(inner) {
+  return `<svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">${inner}</svg>`;
+}
+
+// --- Fox cub ---------------------------------------------------------
+
+function foxEars(tilt = 0) {
+  return `
+    <g transform="rotate(${-15 + tilt} 60 70)">
+      <path d="M55 75 Q45 20 75 55 Z" fill="${PALETTE.foxBody}" stroke="${PALETTE.ink}" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M58 68 Q52 35 70 58 Z" fill="${PALETTE.foxBodyDark}"/>
+    </g>
+    <g transform="rotate(${15 - tilt} 160 70)">
+      <path d="M165 75 Q175 20 145 55 Z" fill="${PALETTE.foxBody}" stroke="${PALETTE.ink}" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M162 68 Q168 35 150 58 Z" fill="${PALETTE.foxBodyDark}"/>
+    </g>`;
+}
+
+function foxHead() {
+  return `<ellipse cx="110" cy="120" rx="70" ry="62" fill="${PALETTE.foxBody}" stroke="${PALETTE.ink}" stroke-width="5"/>
+    <path d="M70 145 Q110 175 150 145 Q145 105 110 100 Q75 105 70 145 Z" fill="${PALETTE.foxCream}" stroke="${PALETTE.ink}" stroke-width="4"/>`;
+}
+
+function foxNose() {
+  return `<path d="M110 128 L100 138 Q110 146 120 138 Z" fill="${PALETTE.ink}"/>`;
+}
+
+const foxEyes = {
+  idle: `<circle cx="85" cy="115" r="11" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="3"/><circle cx="85" cy="116" r="5" fill="${PALETTE.ink}"/>
+         <circle cx="135" cy="115" r="11" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="3"/><circle cx="135" cy="116" r="5" fill="${PALETTE.ink}"/>`,
+  talk: `<circle cx="85" cy="113" r="10" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="3"/><circle cx="86" cy="114" r="5" fill="${PALETTE.ink}"/>
+         <circle cx="135" cy="113" r="10" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="3"/><circle cx="134" cy="114" r="5" fill="${PALETTE.ink}"/>`,
+  happy: `<path d="M75 115 Q85 102 95 115" stroke="${PALETTE.ink}" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M125 115 Q135 102 145 115" stroke="${PALETTE.ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+  confused: `<circle cx="85" cy="118" r="10" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="3"/><circle cx="88" cy="118" r="5" fill="${PALETTE.ink}"/>
+             <circle cx="135" cy="112" r="10" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="3"/><circle cx="132" cy="112" r="5" fill="${PALETTE.ink}"/>
+             <path d="M118 92 Q128 86 140 90" stroke="${PALETTE.ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+  think: `<circle cx="85" cy="115" r="10" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="3"/><circle cx="85" cy="108" r="5" fill="${PALETTE.ink}"/>
+          <circle cx="135" cy="115" r="10" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="3"/><circle cx="135" cy="108" r="5" fill="${PALETTE.ink}"/>`,
+};
+
+const foxMouths = {
+  idle: `<path d="M100 152 Q110 158 120 152" stroke="${PALETTE.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+  talk: `<ellipse cx="110" cy="155" rx="13" ry="10" fill="${PALETTE.ink}"/><ellipse cx="110" cy="157" rx="7" ry="5" fill="#B4432E"/>`,
+  happy: `<path d="M92 148 Q110 172 128 148" stroke="${PALETTE.ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+  confused: `<path d="M100 156 Q110 150 122 154" stroke="${PALETTE.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+  think: `<ellipse cx="112" cy="154" rx="6" ry="7" fill="${PALETTE.ink}"/>`,
+};
+
+function foxExtras(pose) {
+  if (pose === "happy") {
+    // little raised paw + motion sparkle — animated via CSS (see index.html)
+    return `<g class="hero-paw-wave"><circle cx="185" cy="90" r="10" fill="${PALETTE.foxCream}" stroke="${PALETTE.ink}" stroke-width="3"/></g>
+            <path class="hero-sparkle" d="M195 65 L199 75 L209 77 L199 79 L195 89 L191 79 L181 77 L191 75 Z" fill="#FFD23F"/>`;
+  }
+  if (pose === "confused") {
+    return `<circle cx="45" cy="145" r="10" fill="${PALETTE.foxCream}" stroke="${PALETTE.ink}" stroke-width="3"/>
+            <path d="M45 138 v-8 M42 133 l3 -5 l3 5" stroke="${PALETTE.ink}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  }
+  if (pose === "think") {
+    return `<circle cx="165" cy="150" r="10" fill="${PALETTE.foxCream}" stroke="${PALETTE.ink}" stroke-width="3"/>
+            <circle class="hero-think-bubble hero-think-bubble-1" cx="175" cy="60" r="4" fill="${PALETTE.foxCream}" stroke="${PALETTE.ink}" stroke-width="2"/>
+            <circle class="hero-think-bubble hero-think-bubble-2" cx="185" cy="45" r="6" fill="${PALETTE.foxCream}" stroke="${PALETTE.ink}" stroke-width="2"/>`;
+  }
+  if (pose === "talk") {
+    return `<path d="M150 60 q6 -4 10 2 M156 70 q8 -3 13 4" stroke="${PALETTE.foxBody}" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.6"/>`;
+  }
+  return "";
+}
+
+function foxSVG(pose = "idle") {
+  const eyes = foxEyes[pose] || foxEyes.idle;
+  const mouth = foxMouths[pose] || foxMouths.idle;
+  const tilt = pose === "confused" ? 8 : 0;
+  // happy uses closed-arc eyes already — blinking those would look glitchy,
+  // so only round-eye poses get the blink loop. "talk" gets a mouth-flap
+  // loop so speech reads as motion, not a frozen frame (see index.html/CSS).
+  const eyesClass = pose === "happy" ? "" : "hero-eyes";
+  const mouthClass = pose === "talk" ? "hero-mouth-talk" : "";
+  return svgWrap(`
+    ${foxEars(tilt)}
+    ${foxHead()}
+    ${foxExtras(pose)}
+    <g class="${eyesClass}">${eyes}</g>
+    ${foxNose()}
+    <g class="${mouthClass}">${mouth}</g>
+  `);
+}
+
+// --- Owl ---------------------------------------------------------
+
+function owlWings(pose) {
+  const flap = pose === "happy" ? -18 : 0;
+  return `
+    <g transform="rotate(${18 + flap} 55 140)">
+      <ellipse cx="50" cy="140" rx="22" ry="34" fill="${PALETTE.owlBodyLight}" stroke="${PALETTE.ink}" stroke-width="4"/>
+    </g>
+    <g transform="rotate(${-18 - flap} 165 140)">
+      <ellipse cx="170" cy="140" rx="22" ry="34" fill="${PALETTE.owlBodyLight}" stroke="${PALETTE.ink}" stroke-width="4"/>
+    </g>`;
+}
+
+function owlTufts(tilt = 0) {
+  return `<g transform="rotate(${tilt} 110 110)">
+    <path d="M78 68 Q72 40 90 58 Z" fill="${PALETTE.owlBody}" stroke="${PALETTE.ink}" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M142 68 Q148 40 130 58 Z" fill="${PALETTE.owlBody}" stroke="${PALETTE.ink}" stroke-width="3.5" stroke-linejoin="round"/>
+  </g>`;
+}
+
+function owlBody() {
+  return `<ellipse cx="110" cy="125" rx="65" ry="68" fill="${PALETTE.owlBody}" stroke="${PALETTE.ink}" stroke-width="5"/>
+    <ellipse cx="110" cy="140" rx="38" ry="42" fill="${PALETTE.owlCream}"/>`;
+}
+
+function owlBeak(open) {
+  return open
+    ? `<path d="M100 132 Q110 150 120 132 Q110 140 100 132 Z" fill="#F2A93B" stroke="${PALETTE.ink}" stroke-width="3"/>`
+    : `<path d="M104 128 Q110 140 116 128 Z" fill="#F2A93B" stroke="${PALETTE.ink}" stroke-width="3"/>`;
+}
+
+const owlEyes = {
+  idle: `<circle cx="85" cy="108" r="20" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="4"/><circle cx="85" cy="109" r="8" fill="${PALETTE.ink}"/>
+         <circle cx="135" cy="108" r="20" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="4"/><circle cx="135" cy="109" r="8" fill="${PALETTE.ink}"/>`,
+  talk: `<circle cx="85" cy="108" r="19" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="4"/><circle cx="86" cy="109" r="8" fill="${PALETTE.ink}"/>
+         <circle cx="135" cy="108" r="19" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="4"/><circle cx="134" cy="109" r="8" fill="${PALETTE.ink}"/>`,
+  happy: `<circle cx="85" cy="108" r="20" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="4"/><circle cx="85" cy="109" r="9" fill="${PALETTE.ink}"/>
+          <circle cx="135" cy="108" r="20" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="4"/><circle cx="135" cy="109" r="9" fill="${PALETTE.ink}"/>
+          <path d="M65 95 Q85 85 100 93" stroke="${PALETTE.ink}" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>`,
+  confused: `<circle cx="85" cy="112" r="19" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="4"/><circle cx="90" cy="112" r="8" fill="${PALETTE.ink}"/>
+             <circle cx="135" cy="105" r="20" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="4"/><circle cx="130" cy="105" r="8" fill="${PALETTE.ink}"/>`,
+  think: `<circle cx="85" cy="108" r="20" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="4"/><circle cx="85" cy="100" r="8" fill="${PALETTE.ink}"/>
+          <circle cx="135" cy="108" r="20" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="4"/><circle cx="135" cy="100" r="8" fill="${PALETTE.ink}"/>`,
+};
+
+function owlExtras(pose) {
+  if (pose === "confused") {
+    return `<path d="M118 78 Q128 72 140 76" stroke="${PALETTE.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  }
+  if (pose === "think") {
+    return `<circle class="hero-think-bubble hero-think-bubble-1" cx="170" cy="55" r="4" fill="${PALETTE.owlCream}" stroke="${PALETTE.ink}" stroke-width="2"/>
+            <circle class="hero-think-bubble hero-think-bubble-2" cx="180" cy="40" r="6" fill="${PALETTE.owlCream}" stroke="${PALETTE.ink}" stroke-width="2"/>`;
+  }
+  return "";
+}
+
+function owlSVG(pose = "idle") {
+  const eyes = owlEyes[pose] || owlEyes.idle;
+  const tilt = pose === "confused" ? -6 : 0;
+  // owl has no closed-arc "happy" eyes (unlike fox) — safe to blink in
+  // every pose. Beak gets the talk-flap loop, same idea as fox's mouth.
+  const beakClass = pose === "talk" ? "hero-mouth-talk" : "";
+  return svgWrap(`
+    ${owlWings(pose)}
+    ${owlBody()}
+    ${owlTufts(tilt)}
+    <g class="hero-eyes">${eyes}</g>
+    <g class="${beakClass}">${owlBeak(pose === "talk")}</g>
+    ${owlExtras(pose)}
+  `);
+}
+
+// --- story-state -> {character, pose} mapping ---
+
+const HERO_FOR_STATE = {
+  fox_intro: { character: "fox", pose: "talk" },
+  fox_question: { character: "fox", pose: "talk" },
+  fox_correct: { character: "fox", pose: "happy" },
+  fox_reask: { character: "fox", pose: "confused" },
+  fox_reveal: { character: "fox", pose: "think" },
+  owl_intro: { character: "owl", pose: "talk" },
+  owl_question: { character: "owl", pose: "talk" },
+  owl_correct: { character: "owl", pose: "happy" },
+  owl_reask: { character: "owl", pose: "confused" },
+  owl_reveal: { character: "owl", pose: "think" },
+  ending: { character: "fox", pose: "happy" },
+  parent_report: { character: "fox", pose: "idle" },
+};
+
+function renderHero(stateId) {
+  const h = HERO_FOR_STATE[stateId] || { character: "fox", pose: "idle" };
+  return h.character === "owl" ? owlSVG(h.pose) : foxSVG(h.pose);
+}

@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ертегім — WoZ оператор</title>
+<link rel="stylesheet" href="design-system.css">
+<style>
+  /* Page-specific layout only — visual language lives in design-system.css */
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px;
+    min-height: 100vh;
+  }
+  h1 { margin: 0 0 22px; }
+
+  .panel { width: 100%; max-width: 560px; padding: var(--space-5); }
+
+  #sceneStage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: var(--space-4);
+    background-size: cover;
+    background-position: center;
+    background-color: var(--card-solid);
+    transition: background-image 200ms ease;
+  }
+  #sceneStage.hidden { display: none; }
+
+  #heroStage {
+    position: absolute;
+    left: 50%;
+    bottom: 4%;
+    width: 140px;
+    height: 140px;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25));
+    animation: heroBreathe 3.2s ease-in-out infinite;
+  }
+  #heroStage svg { display: block; }
+
+  /* Idle motion so the hero never reads as a dead static image, plus a
+     slow Ken Burns drift on the background — cheap wins for a 3-7yo
+     audience's attention span, no new art needed. */
+  @keyframes heroBreathe {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.035); }
+  }
+  .hero-eyes {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: heroBlink 4.5s ease-in-out infinite;
+  }
+  @keyframes heroBlink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.12); }
+  }
+  .hero-mouth-talk {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: heroTalkFlap 0.32s ease-in-out infinite;
+  }
+  @keyframes heroTalkFlap {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.55); }
+  }
+  #sceneStage {
+    animation: kenBurns 18s ease-in-out infinite alternate;
+  }
+  @keyframes kenBurns {
+    0% { background-position: 50% 50%; background-size: 105%; }
+    100% { background-position: 55% 45%; background-size: 118%; }
+  }
+
+  #heroStage.pose-happy { animation-name: heroBounce; }
+  @keyframes heroBounce {
+    0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+    30% { transform: translateX(-50%) translateY(-14px) scale(1.05); }
+    50% { transform: translateX(-50%) translateY(0) scale(0.98); }
+    70% { transform: translateX(-50%) translateY(-6px) scale(1.02); }
+  }
+  .hero-paw-wave {
+    transform-box: fill-box;
+    transform-origin: bottom center;
+    animation: pawWave 0.5s ease-in-out infinite;
+  }
+  @keyframes pawWave {
+    0%, 100% { transform: rotate(-12deg); }
+    50% { transform: rotate(12deg); }
+  }
+  .hero-sparkle {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: sparkleTwinkle 0.6s ease-in-out infinite;
+  }
+  @keyframes sparkleTwinkle {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.6); opacity: 0.5; }
+  }
+  .hero-think-bubble {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: bubbleFloat 2.4s ease-in-out infinite;
+  }
+  .hero-think-bubble-2 { animation-delay: 0.4s; }
+  @keyframes bubbleFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .dots { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
+  .dots span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+    animation: dotBounce 1s infinite ease-in-out;
+  }
+  .dots span:nth-child(2) { animation-delay: 0.15s; }
+  .dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes dotBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #heroStage, .hero-eyes, .hero-mouth-talk, #sceneStage, .dots span { animation: none !important; }
+  }
+
+  #storyLine { margin-bottom: var(--space-4); }
+  #storyLine .speaker { display: block; margin-bottom: var(--space-2); }
+  #storyLine .kk { font-size: 1.15rem; line-height: 1.4; }
+  #storyLine .ru { display: block; margin-top: var(--space-2); color: var(--ink-soft); font-style: italic; font-size: 0.9rem; }
+
+  #nextBtn { width: 100%; padding: 16px; font-size: 1rem; }
+
+  #recordBtn { width: 100%; padding: 20px; font-size: 1.05rem; letter-spacing: -0.01em; }
+  #recordBtn.recording { background: var(--danger); }
+
+  #uploadRow { text-align: center; margin-top: var(--space-2); }
+  #uploadLabel { font-size: 0.8rem; color: var(--ink-soft); cursor: pointer; text-decoration: underline; }
+  #uploadLabel:hover { color: var(--ink); }
+  #fileInput { display: none; }
+
+  #status { text-align: center; margin: var(--space-3) 0 0; color: var(--ink-soft); font-size: 0.85rem; min-height: 1.2em; }
+
+  #blockedFlash {
+    display: none;
+    background: var(--danger);
+    color: #fff;
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    padding: 26px;
+    border-radius: var(--radius-lg);
+    margin-top: var(--space-4);
+    box-shadow: 0 16px 40px -16px color-mix(in srgb, var(--danger) 70%, transparent);
+  }
+  #blockedFlash.show { display: block; }
+
+  #result { margin-top: var(--space-4); display: none; }
+  #result.show { display: block; }
+
+  #transcript {
+    background: color-mix(in srgb, var(--card-solid) 60%, transparent);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: var(--space-4);
+    min-height: 3em;
+  }
+  #meta { margin-top: var(--space-2); }
+  audio { width: 100%; margin-top: var(--space-3); height: 32px; }
+
+  .actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
+  .actions .btn { flex: 1; padding: 13px 8px; font-size: 0.88rem; }
+
+  #resetRow { width: 100%; max-width: 560px; display: flex; justify-content: flex-end; margin-top: var(--space-3); }
+  #resetBtn { padding: 8px 14px; font-size: 0.78rem; }
+
+  #log { margin-top: 20px; width: 100%; max-width: 560px; }
+  #log div { padding: 5px 0; border-top: 1px solid var(--line); }
+
+  #reportPanel { display: none; }
+  #reportPanel.show { display: block; }
+  .report-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-4); }
+  .report-date { font-size: 0.78rem; color: var(--ink-soft); }
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); margin-bottom: var(--space-5); }
+  .stat-card {
+    background: color-mix(in srgb, var(--card-solid) 60%, transparent);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: var(--space-4) var(--space-3);
+    text-align: center;
+  }
+  .stat-num { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 0.72rem; color: var(--ink-soft); margin-top: 6px; }
+  .mastery-title { font-size: 0.75rem; font-weight: 700; margin-bottom: var(--space-3); color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mastery-row { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
+  .mastery-name { flex: 0 0 148px; font-size: 0.85rem; }
+  .mastery-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .mastery-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+  .mastery-row.locked .mastery-name { opacity: 0.5; }
+  .mastery-row.locked .mastery-bar { opacity: 0.35; }
+  .mastery-soon { font-size: 0.68rem; color: var(--ink-soft); flex: 0 0 auto; }
+  #reportAgainBtn { display: block; text-align: center; text-decoration: none; margin-top: var(--space-5); }
+</style>
+</head>
+<body>
+  <div style="width:100%;max-width:560px;margin-bottom:10px;">
+    <a href="/library.html" style="font-size:0.8rem;color:var(--ink-soft);text-decoration:underline;">← Все истории</a>
+  </div>
+  <h1 class="eyebrow">Ертегім · WoZ-оператор</h1>
+  <div class="panel glass-panel">
+    <div id="sceneStage">
+      <div id="heroStage"></div>
+    </div>
+    <audio id="heroVoice" style="display:none"></audio>
+    <div id="storyLine">
+      <span id="storySpeaker" class="speaker eyebrow"></span>
+      <div id="storyKk" class="kk"></div>
+      <span id="storyRu" class="ru"></span>
+    </div>
+
+    <button id="nextBtn" class="btn btn-primary">▶ Далее</button>
+    <button id="recordBtn" class="btn btn-primary">🎙 Записать ответ</button>
+    <div id="uploadRow">
+      <label id="uploadLabel" for="fileInput">📁 или загрузить готовый аудиофайл (нет микрофона?)</label>
+      <input type="file" id="fileInput" accept="audio/*,video/*">
+    </div>
+    <div id="status"><span id="statusText"></span><span class="dots" id="thinkingDots" hidden><span></span><span></span><span></span></span></div>
+
+    <div id="blockedFlash">⛔ Заблокировано — вне темы</div>
+
+    <div id="result">
+      <div id="transcript" class="body-text"></div>
+      <div id="meta" class="mono"></div>
+      <audio id="player" controls></audio>
+      <div class="actions">
+        <button id="btnCorrect" class="btn btn-ok">✅ Верно</button>
+        <button id="btnReask" class="btn btn-warn">🔁 Переспросить</button>
+        <button id="btnAdvance" class="btn btn-muted">⏭ Advance</button>
+      </div>
+    </div>
+
+    <div id="reportPanel">
+      <div class="report-head">
+        <span class="eyebrow">Отчёт родителю</span>
+        <span class="report-date" id="reportDate"></span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num">2</div><div class="stat-label">героя пройдено</div></div>
+        <div class="stat-card"><div class="stat-num">6</div><div class="stat-label">новых слов</div></div>
+        <div class="stat-card"><div class="stat-num">1/2</div><div class="stat-label">верно с 1-й попытки</div></div>
+        <div class="stat-card"><div class="stat-num">0</div><div class="stat-label">блокировок по теме</div></div>
+      </div>
+      <div class="mastery">
+        <div class="mastery-title">Прогресс по героям</div>
+        <div class="mastery-row">
+          <span class="mastery-name">🦊 Түлкі · счёт</span>
+          <div class="mastery-bar"><div class="mastery-fill" style="width:100%"></div></div>
+        </div>
+        <div class="mastery-row">
+          <span class="mastery-name">🦉 Үкі · рифмы</span>
+          <div class="mastery-bar"><div class="mastery-fill" style="width:70%"></div></div>
+        </div>
+        <div class="mastery-row locked">
+          <span class="mastery-name">🐻 Аю · цвета</span>
+          <div class="mastery-bar"><div class="mastery-fill" style="width:0%"></div></div>
+          <span class="mastery-soon">скоро</span>
+        </div>
+      </div>
+      <a id="reportAgainBtn" class="btn btn-primary" href="/library.html">🔄 Ещё одна история</a>
+    </div>
+  </div>
+  <div id="resetRow"><button id="resetBtn" class="btn btn-muted">🔄 Сначала</button></div>
+  <div id="log" class="mono"></div>
+  <script src="story.js"></script>
+  <script src="characters.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
