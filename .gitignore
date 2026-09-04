@@ -5,3 +5,5 @@ app/tmp/*
 !app/tmp/.gitkeep
 app/server.log
 .claude/
+
+.vercel

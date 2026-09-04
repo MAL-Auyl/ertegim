@@ -1,0 +1,159 @@
+/*
+  Ертегім design system — shared across every screen (WoZ operator now;
+  the child-facing story screen and parent-report mock later).
+  Built from the emilkowalski/skills "apple-design" principles: instant
+  press feedback, translucent materials with real hierarchy, size-specific
+  type tracking, materialize-not-fade motion, reduced-motion/-transparency
+  respected at the token level so screens don't have to think about it.
+*/
+
+:root {
+  /* --- Color: light --- */
+  --ink: #14181c;
+  --ink-soft: #5c6b6f;
+  --paper: #f2f4f3;
+  --card: rgba(255, 255, 255, 0.72);
+  --card-solid: #ffffff;
+  --line: rgba(20, 24, 28, 0.1);
+  --line-highlight: rgba(255, 255, 255, 0.5);
+
+  --accent: #ff5a1f;
+  --ok: #0e7c74;
+  --warn: #b8860b;
+  --danger: #c81e3a;
+
+  /* --- Spacing scale (8px grid) --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+
+  /* --- Radius scale --- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  /* --- Motion: critically-damped by default (§4) --- */
+  --ease-response: cubic-bezier(0.2, 0, 0, 1);   /* press feedback */
+  --ease-materialize: cubic-bezier(0.16, 1, 0.3, 1); /* surfaces arriving */
+  --dur-press: 100ms;
+  --dur-settle: 260ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f0f2f1;
+    --ink-soft: #9aa6a9;
+    --paper: #14181a;
+    --card: rgba(30, 35, 38, 0.72);
+    --card-solid: #1e2326;
+    --line: rgba(255, 255, 255, 0.12);
+    --line-highlight: rgba(255, 255, 255, 0.14);
+
+    --accent: #ff7a47;
+    --ok: #4fc5b8;
+    --warn: #e0af3f;
+    --danger: #ff5470;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root { --card: var(--card-solid); }
+}
+
+/* --- Base reset --- */
+* { box-sizing: border-box; }
+html { color-scheme: light dark; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1rem/1.5 -apple-system, "SF Pro Text", system-ui, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Typography (§15: size-specific tracking, never one value for all sizes) --- */
+.eyebrow {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.display {
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.body-text {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+.mono {
+  font: 0.78rem/1.6 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Materials (§12: translucent layer, content-bearing) --- */
+.glass-panel {
+  background: var(--card);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--line);
+  border-top-color: var(--line-highlight);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.25);
+}
+
+/* --- Buttons (§1: feedback on press, not release) --- */
+.btn {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card-solid);
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-response), background 150ms ease;
+}
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.5; cursor: default; transform: none !important; animation: none !important; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+.btn-primary:active { transform: scale(0.97); }
+
+.btn-ok    { border-color: color-mix(in srgb, var(--ok) 50%, transparent);   color: var(--ok); }
+.btn-warn  { border-color: color-mix(in srgb, var(--warn) 50%, transparent); color: var(--warn); }
+.btn-muted { color: var(--ink-soft); }
+
+/* --- Motion primitives (§12, §14: materialize, not fade; reduced-motion aware) --- */
+@keyframes materialize {
+  from { opacity: 0; transform: scale(0.92); filter: blur(6px); }
+  to   { opacity: 1; transform: scale(1);    filter: blur(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); }
+  50%      { box-shadow: 0 0 0 10px color-mix(in srgb, var(--danger) 0%, transparent); }
+}
+
+.materialize-in { animation: materialize var(--dur-settle) var(--ease-materialize) both; }
+.pulse { animation: pulse-ring 1.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .materialize-in { animation: fade-in 160ms ease both; }
+  .pulse { animation: none; }
+}

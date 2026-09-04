@@ -1,0 +1,7 @@
+spike/tools
+spike/audio
+app/tmp
+.git
+.agents
+.claude
+sd-local

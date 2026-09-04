@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 // Fuzzy blocklist checker for Ертегім's automatic safety system.
 // Whisper's Kazakh output is noisy (e.g. "ойыншық" -> "ойынчық"), so exact
 // substring matching misses real triggers. This does word-level Levenshtein

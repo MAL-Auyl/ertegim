@@ -27,12 +27,26 @@ const FFMPEG_REL = findFfmpegRel(); // e.g. "ffmpeg-n8.1-latest-win64-gpl-8.1/bi
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_TIMEOUT_MS = 5000;
 
+// Whisper sometimes hallucinates into a completely different language on
+// short/unclear audio even with language=kk forced — a `prompt` hint
+// biasing the decoder toward expected story vocabulary measurably reduces
+// this (standard Whisper mitigation, not Kazakh-specific).
+const GROQ_PROMPT = "Сәлем, түлкі, үкі, жидек, санау, ұйқас, мысық, қасық, дұрыс, ойнайық";
+
+function isMostlyCyrillic(text) {
+  const letters = text.match(/\p{L}/gu) || [];
+  if (letters.length === 0) return true; // empty/no letters — nothing to reject
+  const cyrillic = text.match(/\p{Script=Cyrillic}/gu) || [];
+  return cyrillic.length / letters.length >= 0.6;
+}
+
 async function transcribeGroq(audioBuf, ext) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
   const form = new FormData();
   form.append("file", new Blob([audioBuf]), `clip.${ext}`);
   form.append("model", "whisper-large-v3-turbo");
   form.append("language", "kk");
+  form.append("prompt", GROQ_PROMPT);
   form.append("response_format", "json");
 
   const controller = new AbortController();
@@ -48,7 +62,12 @@ async function transcribeGroq(audioBuf, ext) {
     if (!res.ok) throw new Error(`groq http ${res.status}: ${await res.text()}`);
     const data = await res.json();
     const ms = Math.round(performance.now() - t0);
-    return { transcript: (data.text || "").trim(), ms, engine: "groq" };
+    const raw = (data.text || "").trim();
+    // Whisper occasionally hallucinates into a completely different
+    // language/script on poor audio despite language=kk — treat non-Cyrillic
+    // output as a failed recognition rather than showing garbage.
+    const transcript = isMostlyCyrillic(raw) ? raw : "";
+    return { transcript, ms, engine: "groq" };
   } finally {
     clearTimeout(timer);
   }
@@ -188,7 +207,12 @@ Bun.serve({
           return Response.json({ error: "missing audio field" }, { status: 400 });
         }
         const buf = new Uint8Array(await audio.arrayBuffer());
-        const { transcript, ms, engine } = await transcribe(buf, "webm");
+        // Client sends the real extension for whatever MediaRecorder format
+        // the browser actually supports (Safari records mp4/m4a, not webm —
+        // labeling it "webm" anyway corrupts decoding on both ends).
+        const clientExt = audio.name?.split(".").pop();
+        const ext = clientExt && /^[a-z0-9]{2,5}$/i.test(clientExt) ? clientExt : "webm";
+        const { transcript, ms, engine } = await transcribe(buf, ext);
         const { blocked, results } = checkBlocklist(transcript);
         return Response.json({ transcript, blocked, blockDetails: results, ms, engine });
       } catch (err) {
