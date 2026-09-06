@@ -31,7 +31,15 @@ const GROQ_TIMEOUT_MS = 5000;
 // short/unclear audio even with language=kk forced — a `prompt` hint
 // biasing the decoder toward expected story vocabulary measurably reduces
 // this (standard Whisper mitigation, not Kazakh-specific).
-const GROQ_PROMPT = "Сәлем, түлкі, үкі, жидек, санау, ұйқас, мысық, қасық, дұрыс, ойнайық";
+//
+// The actual child answers were under-covered here: fox_question's entire
+// answer space is the numbers 1-5 (kk and ru), and the owl's rhyme source
+// can be either OWL_WORDS entry (app.js) — neither "бір/екі/үш/төрт/бес"
+// nor "балық" were in the hint, so the decoder had zero bias toward the
+// exact words it most needs to get right. Added below.
+const GROQ_PROMPT =
+  "Сәлем, түлкі, үкі, жидек, санау, ұйқас, мысық, балық, қасық, дұрыс, ойнайық, " +
+  "бір, екі, үш, төрт, бес, один, два, три, четыре, пять";
 
 function isMostlyCyrillic(text) {
   const letters = text.match(/\p{L}/gu) || [];
@@ -40,10 +48,57 @@ function isMostlyCyrillic(text) {
   return cyrillic.length / letters.length >= 0.6;
 }
 
+// Loudness-normalize + downmix to 16kHz mono before STT — the local Whisper
+// path (transcribeLocal below) already did this via ffmpeg; the Groq path
+// was sending the raw browser MediaRecorder blob untouched. A quiet/muffled
+// child voice sits well below adult speaking level, and loudnorm (EBU R128)
+// brings it up to a consistent target instead of relying on Whisper to cope
+// with whatever gain the mic captured at. Same Cyrillic-safe relative-path
+// dance as everywhere else ffmpeg is spawned in this file (see comment on
+// transcribeLocal): cwd=TOOLS, only ASCII relative segments in argv.
+async function preprocessForSTT(audioBuf, ext) {
+  const id = crypto.randomUUID();
+  const rawAbs = `${TMP}/${id}.${ext}`;
+  const wavAbs = `${TMP}/${id}_norm.wav`;
+  const rawFromTools = `../../app/tmp/${id}.${ext}`;
+  const wavFromTools = `../../app/tmp/${id}_norm.wav`;
+
+  await Bun.write(rawAbs, audioBuf);
+  try {
+    const ff = Bun.spawnSync(
+      [
+        FFMPEG_REL, "-y", "-loglevel", "error", "-i", rawFromTools,
+        "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
+        "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le",
+        wavFromTools,
+      ],
+      { cwd: TOOLS },
+    );
+    if (ff.exitCode !== 0) throw new Error(`ffmpeg loudnorm failed: ${new TextDecoder().decode(ff.stderr)}`);
+    return await Bun.file(wavAbs).arrayBuffer();
+  } finally {
+    for (const p of [rawAbs, wavAbs]) {
+      if (await Bun.file(p).exists()) await Bun.file(p).delete?.().catch(() => {});
+    }
+  }
+}
+
 async function transcribeGroq(audioBuf, ext) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
+  // Preprocessing is a best-effort quality boost, not a correctness
+  // requirement — if ffmpeg/ext handling hiccups here, fall back to the
+  // original raw blob rather than failing the whole transcription.
+  let uploadBuf = audioBuf;
+  let uploadName = `clip.${ext}`;
+  try {
+    uploadBuf = await preprocessForSTT(audioBuf, ext);
+    uploadName = "clip.wav";
+  } catch (err) {
+    console.error(`STT preprocessing failed, sending raw audio: ${err}`);
+  }
+
   const form = new FormData();
-  form.append("file", new Blob([audioBuf]), `clip.${ext}`);
+  form.append("file", new Blob([uploadBuf]), uploadName);
   form.append("model", "whisper-large-v3-turbo");
   form.append("language", "kk");
   form.append("prompt", GROQ_PROMPT);
