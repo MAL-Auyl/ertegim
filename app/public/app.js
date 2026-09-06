@@ -15,6 +15,28 @@ const player = document.getElementById("player");
 const logEl = document.getElementById("log");
 const resetBtn = document.getElementById("resetBtn");
 const uploadRow = document.getElementById("uploadRow");
+const pipelineStageEls = {
+  mic: document.getElementById("stage-mic"),
+  stt: document.getElementById("stage-stt"),
+  safety: document.getElementById("stage-safety"),
+  classify: document.getElementById("stage-classify"),
+  tts: document.getElementById("stage-tts"),
+};
+// Dev-лог пайплайна: живой статус каждого шага на экране оператора
+// (IDEA.md "Что нужно закрыть", P2) — отдельно от текстового #log ниже,
+// чтобы на репетиции сразу было видно глазами, какой шаг завис/упал,
+// без чтения строк.
+function setStage(id, status, detail = "") {
+  const el = pipelineStageEls[id];
+  if (!el) return;
+  el.className = `stage ${status}`;
+  el.querySelector(".stage-detail").textContent = detail;
+}
+function resetTurnStages() {
+  setStage("stt", "idle", "");
+  setStage("safety", "idle", "");
+  setStage("classify", "idle", "");
+}
 const fileInput = document.getElementById("fileInput");
 const heroStage = document.getElementById("heroStage");
 const heroVoice = document.getElementById("heroVoice");
@@ -122,6 +144,7 @@ async function playWithTimeout(ms) {
 // failure or timeout we fall back to the static file for that state.
 async function speakLine(text, stateId) {
   if (!text) return;
+  setStage("tts", "running", "");
   try {
     const controller = new AbortController();
     const abortTimer = setTimeout(() => controller.abort(), 2500);
@@ -140,20 +163,24 @@ async function speakLine(text, stateId) {
     // automation contexts — never let audio playback stall the demo.
     await playWithTimeout(3000);
     log(`voice: "${text.slice(0, 40)}${text.length > 40 ? "…" : ""}" (${ms}ms synth)`);
+    setStage("tts", "ok", `${ms}ms live`);
   } catch (err) {
     if (stateId) {
       try {
         heroVoice.src = `/audio/${stateId}.wav`;
         await playWithTimeout(3000);
         log(`voice: fallback pre-rendered audio for "${stateId}" (live TTS: ${err.message})`);
+        setStage("tts", "skip", "fallback wav");
         return;
       } catch (fallbackErr) {
         log(`voice error, fallback also failed: ${fallbackErr.message}`);
+        setStage("tts", "err", "live + fallback failed");
         return;
       }
     }
     // Non-fatal — the WoZ operator still has the on-screen text either way.
     log(`voice error (text still shown): ${err.message}`);
+    setStage("tts", "err", err.message);
   }
 }
 
@@ -162,6 +189,149 @@ let currentMimeType = "";
 let recordingStartedAt = 0;
 let chunks = [];
 let recording = false;
+
+// --- Automatic voice turn-taking (VAD) --------------------------------
+// The child shouldn't need to press anything (design doc "Детский экран
+// без интерфейса" / "Никакой кнопки"): the mic is armed for the whole
+// duration a question is on screen, speech start/end is detected locally
+// from amplitude, and the clip auto-submits after a short silence. The
+// manual recordBtn stays wired up as an operator override/kill-switch —
+// same pattern as btnAdvance elsewhere in this file — for when a mic can't
+// trip the VAD threshold or Web Audio itself is unavailable.
+let vadStream = null;
+let vadAudioCtx = null;
+let vadAnalyser = null;
+let vadFloatBuf = null;
+let vadFrameId = null;
+let vadRecorder = null;
+let vadRecording = false;
+let vadArmed = false; // true only while the current question hasn't been answered yet
+let vadSpeechStartedAt = 0;
+let vadLastLoudAt = 0;
+
+const VAD_START_RMS = 0.02; // amplitude that counts as "speech began"
+const VAD_SILENCE_RMS = 0.012; // lower bar to still count as "mid-speech" (hysteresis, avoids chatter at the threshold)
+const VAD_SILENCE_MS = 1000; // pause this long after speech means "child is done" (doc's 0.8-1.2s window)
+const VAD_MIN_SPEECH_MS = 400; // ignore blips shorter than this (cough, mic bump)
+const VAD_MAX_RECORD_MS = 8000; // hard cap so a held-open mic can't stall the demo indefinitely
+
+async function ensureMicStream() {
+  if (vadStream) return vadStream;
+  vadStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  vadAudioCtx = new AudioCtx();
+  const source = vadAudioCtx.createMediaStreamSource(vadStream);
+  vadAnalyser = vadAudioCtx.createAnalyser();
+  vadAnalyser.fftSize = 1024;
+  vadFloatBuf = new Float32Array(vadAnalyser.fftSize);
+  source.connect(vadAnalyser);
+  return vadStream;
+}
+
+function currentRMS() {
+  vadAnalyser.getFloatTimeDomainData(vadFloatBuf);
+  let sum = 0;
+  for (let i = 0; i < vadFloatBuf.length; i++) sum += vadFloatBuf[i] * vadFloatBuf[i];
+  return Math.sqrt(sum / vadFloatBuf.length);
+}
+
+function setHeroPoseOverride(pose) {
+  const hero = HERO_FOR_STATE[currentId] || { character: "fox" };
+  heroStage.innerHTML = hero.character === "owl" ? owlSVG(pose) : foxPoseHTML(pose);
+  if (hero.character === "fox") animateFoxPose(heroStage, pose);
+}
+
+function updateHeroAmplitude(rms) {
+  if (!heroStage) return;
+  const listening = vadArmed || vadRecording;
+  heroStage.classList.toggle("hero-listening", listening);
+  if (!listening) return;
+  const level = Math.max(0, Math.min(1, rms / 0.08));
+  heroStage.style.setProperty("--amp", String(level));
+}
+
+function startVadRecorder() {
+  const mimeType = pickMimeType();
+  vadRecorder = mimeType ? new MediaRecorder(vadStream, { mimeType }) : new MediaRecorder(vadStream);
+  currentMimeType = vadRecorder.mimeType || mimeType || "audio/webm";
+  chunks = [];
+  vadRecorder.ondataavailable = (e) => chunks.push(e.data);
+  vadRecorder.onstop = onRecordingStop; // same submit path as the manual flow
+  vadRecorder.start();
+  recordingStartedAt = Date.now();
+  vadRecording = true;
+  recordBtn.classList.add("recording", "pulse");
+  statusText.textContent = "Слушаю...";
+  setStage("mic", "running", "запись");
+}
+
+function stopVadRecorder() {
+  vadRecorder?.stop(); // keeps vadStream's tracks alive for the next question
+  vadRecording = false;
+  recordBtn.classList.remove("recording", "pulse");
+}
+
+function finishVadTurn() {
+  vadArmed = false;
+  statusText.textContent = "";
+  setHeroPoseOverride("think");
+  setStage("mic", "ok", "получено");
+  resetTurnStages();
+  stopVadRecorder();
+}
+
+function armVadForQuestion() {
+  vadArmed = true;
+  vadRecording = false;
+  resetTurnStages();
+  setStage("mic", "running", "жду речь");
+  ensureMicStream().catch((err) => {
+    // No mic / permission denied to the persistent stream — VAD can never
+    // arm, so leave it disarmed and let the manual recordBtn path (its own
+    // independent getUserMedia call, see startRecording()) carry the demo.
+    vadArmed = false;
+    heroStage.classList.remove("hero-listening");
+    setStage("mic", "err", err.name || err.message);
+    log(`VAD недоступен, ручной режим: ${err.name || err.message}`);
+  });
+}
+
+function disarmVad() {
+  vadArmed = false;
+  heroStage.classList.remove("hero-listening");
+  setStage("mic", "idle", "");
+  if (vadRecording) stopVadRecorder();
+}
+
+function vadLoop() {
+  vadFrameId = requestAnimationFrame(vadLoop);
+  if (!vadAnalyser) return;
+  const rms = currentRMS();
+  updateHeroAmplitude(rms);
+
+  if (!vadArmed) return;
+  const now = performance.now();
+
+  if (!vadRecording) {
+    if (rms > VAD_START_RMS) {
+      vadSpeechStartedAt = now;
+      vadLastLoudAt = now;
+      startVadRecorder();
+    }
+    return;
+  }
+
+  if (rms > VAD_SILENCE_RMS) vadLastLoudAt = now;
+  const sinceStart = now - vadSpeechStartedAt;
+  const sinceLoud = now - vadLastLoudAt;
+
+  if (sinceStart > VAD_MAX_RECORD_MS) {
+    finishVadTurn();
+  } else if (sinceStart > VAD_MIN_SPEECH_MS && sinceLoud > VAD_SILENCE_MS) {
+    finishVadTurn();
+  }
+}
+vadFrameId = requestAnimationFrame(vadLoop);
 
 // --- story state ---
 let currentId = null;
@@ -192,6 +362,7 @@ function renderState(id) {
   const s = STORY[id];
 
   cancelAiAutoAdvance();
+  disarmVad();
   aiVerdictEl.classList.remove("show");
   blockedFlash.classList.remove("show", "materialize-in");
   resultEl.classList.remove("show", "materialize-in");
@@ -239,11 +410,14 @@ function renderState(id) {
     nextBtn.style.display = "none";
     recordBtn.style.display = "block";
     recordBtn.disabled = false;
+    recordBtn.textContent = "🎙 Слушаю… (нажми, если ребёнок уже ответил)";
+    recordBtn.classList.remove("recording", "pulse");
     uploadRow.style.display = "block";
     if (activeQuestionId !== id) {
       reaskUsed = false;
       activeQuestionId = id;
     }
+    armVadForQuestion();
   } else {
     // "end"
     nextBtn.style.display = "none";
@@ -361,6 +535,7 @@ async function submitAudio(blob, filename) {
 
   const form = new FormData();
   form.append("audio", blob, filename);
+  setStage("stt", "running", "");
 
   try {
     const res = await fetch("/api/transcribe", { method: "POST", body: form });
@@ -371,22 +546,36 @@ async function submitAudio(blob, filename) {
     thinkingDots.hidden = true;
     transcriptEl.textContent = data.transcript || "(тишина / не распознано)";
     metaEl.textContent = `${data.ms} ms · ${data.engine === "groq" ? "Groq" : "локальный Whisper (fallback)"}`;
+    setStage("stt", "ok", `${data.ms}ms ${data.engine === "groq" ? "groq" : "local"}`);
 
     if (data.blocked) {
+      setStage("safety", "err", "BLOCKED");
       blockedFlash.classList.add("show", "materialize-in");
       storyEnded = true;
       recordBtn.style.display = "none";
       uploadRow.style.display = "none";
       log(`BLOCKED (автоматически, без оператора): "${data.transcript}" — сценарий остановлен`);
     } else {
+      setStage("safety", "ok", "");
       resultEl.classList.add("show", "materialize-in");
       log(`transcript: "${data.transcript}" (${data.ms}ms)`);
       classifyAndSuggest(data.transcript);
     }
   } catch (err) {
-    statusText.textContent = `Ошибка: ${err.message}`;
+    // Total STT failure (Groq and local Whisper both down, or no network to
+    // the server at all) — the operator still needs a way to move the story
+    // forward. Show the manual Correct/Re-ask/Advance controls (normally
+    // gated behind a successful transcribe) so they can judge the answer by
+    // ear instead of getting stuck with no path out. See IDEA.md "Как
+    // закрываем риски" / network-fail fallback.
+    statusText.textContent = `Ошибка распознавания: ${err.message}`;
     thinkingDots.hidden = true;
-    log(`error: ${err.message}`);
+    transcriptEl.textContent = "(распознавание недоступно — оцени ответ на слух)";
+    metaEl.textContent = "";
+    aiVerdictEl.classList.remove("show");
+    resultEl.classList.add("show", "materialize-in");
+    setStage("stt", "err", err.message);
+    log(`STT недоступен, ручной режим: ${err.message}`);
   } finally {
     recordBtn.disabled = false;
     fileInput.disabled = false;
@@ -402,8 +591,23 @@ fileInput.addEventListener("change", async () => {
 });
 
 recordBtn.addEventListener("click", () => {
-  if (recording) stopRecording();
-  else startRecording();
+  if (vadRecording) {
+    // Operator override: end the current auto-captured turn right now
+    // instead of waiting out the silence timer.
+    finishVadTurn();
+  } else if (vadArmed) {
+    // VAD is armed but hasn't crossed the amplitude threshold yet — force
+    // a manual start (e.g. the child is speaking too quietly to trip it).
+    vadSpeechStartedAt = performance.now();
+    vadLastLoudAt = performance.now();
+    startVadRecorder();
+  } else if (recording) {
+    stopRecording();
+  } else {
+    // VAD never armed (mic/Web Audio unavailable) — fully independent
+    // manual fallback path, see startRecording().
+    startRecording();
+  }
 });
 
 function advanceFromQuestion(nextId) {
@@ -455,6 +659,7 @@ async function classifyAndSuggest(transcript) {
   if (s.kind !== "question" || !s.criterion) return;
   aiVerdictEl.className = "ai-verdict show";
   aiVerdictEl.innerHTML = `<span class="label">🤖 ИИ думает…</span>`;
+  setStage("classify", "running", "");
 
   let data;
   try {
@@ -468,6 +673,7 @@ async function classifyAndSuggest(transcript) {
   } catch (err) {
     // Fail open: no verdict shown, operator uses the buttons as before.
     aiVerdictEl.classList.remove("show");
+    setStage("classify", "skip", "fail-open, ручной режим");
     log(`ИИ-классификатор недоступен (ручной режим): ${err.message}`);
     return;
   }
@@ -480,6 +686,7 @@ async function classifyAndSuggest(transcript) {
     <span class="countdown">Авто-переход через ${(AI_AUTO_ADVANCE_MS / 1000).toFixed(1)}с — нажми кнопку, чтобы отменить</span>
   `;
   log(`ИИ: ${data.label} — "${data.reason}" (${data.ms}ms)`);
+  setStage("classify", "ok", `${data.label} ${data.ms}ms`);
 
   cancelAiAutoAdvance();
   aiAutoAdvanceTimer = setTimeout(() => {
@@ -505,8 +712,15 @@ document.getElementById("btnAdvance").addEventListener("click", () => {
 // permission dialog, just a rejected play() promise). Every other
 // renderState() call in the app already runs inside a click handler;
 // this "Бастау" gate makes the first one no exception.
+Object.keys(pipelineStageEls).forEach((id) => setStage(id, "idle", ""));
+
 const startOverlay = document.getElementById("startOverlay");
 document.getElementById("startBtn").addEventListener("click", () => {
   startOverlay.style.display = "none";
+  // Ask for the mic up front, inside this same tap, so the permission
+  // prompt (and its latency) is out of the way before the first question
+  // ever arrives — not fatal if it fails, armVadForQuestion() re-attempts
+  // ensureMicStream() per-question and falls back to the manual button.
+  ensureMicStream().catch((err) => log(`mic prefetch failed: ${err.name || err.message}`));
   renderState(START_STATE);
 });
