@@ -131,17 +131,26 @@ function rerollRhymeWord() {
     `посторонний ответ — неверно.`;
 }
 
+// Holds a canceller for whichever playWithTimeout() wait is currently
+// pending, so a newer speakLine() call (e.g. the operator pressing "next"
+// while a line is still playing, which reassigns heroVoice.src) can settle
+// the old wait immediately instead of leaving it to hang for the full `ms`
+// timeout and then play a now-stale fallback line over the new screen.
+let cancelPendingVoiceWait = null;
+
 async function playWithTimeout(ms) {
   // heroVoice.play() resolves once playback STARTS, not once it ends — a
   // caller awaiting it (speakLine -> renderState's speakDone) was moving on
   // (arming the mic) while the line was still coming out of the speaker.
   // Wait for the actual "ended" event instead; `ms` is now just a stuck-
   // playback safety net, not the normal-case signal.
+  if (cancelPendingVoiceWait) cancelPendingVoiceWait();
   await new Promise((resolve, reject) => {
     const cleanup = () => {
       heroVoice.removeEventListener("ended", onEnded);
       heroVoice.removeEventListener("error", onError);
       clearTimeout(timer);
+      if (cancelPendingVoiceWait === cancelThis) cancelPendingVoiceWait = null;
     };
     const onEnded = () => {
       cleanup();
@@ -155,6 +164,13 @@ async function playWithTimeout(ms) {
       cleanup();
       reject(new Error(`play() timed out after ${ms}ms`));
     }, ms);
+    const cancelThis = () => {
+      cleanup();
+      const err = new Error("superseded by a newer voice line");
+      err.superseded = true;
+      reject(err);
+    };
+    cancelPendingVoiceWait = cancelThis;
     heroVoice.addEventListener("ended", onEnded, { once: true });
     heroVoice.addEventListener("error", onError, { once: true });
     heroVoice.play().catch((err) => {
@@ -191,6 +207,7 @@ async function speakLine(text, stateId) {
     log(`voice: "${text.slice(0, 40)}${text.length > 40 ? "…" : ""}" (${ms}ms synth)`);
     setStage("tts", "ok", `${ms}ms live`);
   } catch (err) {
+    if (err.superseded) return; // a newer speakLine() call already took over heroVoice — don't play a stale fallback over it
     if (stateId) {
       try {
         heroVoice.src = `/audio/${stateId}.wav`;
@@ -199,6 +216,7 @@ async function speakLine(text, stateId) {
         setStage("tts", "skip", "fallback wav");
         return;
       } catch (fallbackErr) {
+        if (fallbackErr.superseded) return; // same as above, a newer line took over
         log(`voice error, fallback also failed: ${fallbackErr.message}`);
         setStage("tts", "err", "live + fallback failed");
         return;
