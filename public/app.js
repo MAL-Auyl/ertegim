@@ -457,7 +457,12 @@ function renderState(id) {
       reaskUsed = false;
       activeQuestionId = id;
     }
-    armVadForQuestion();
+    // Wait for the hero's own voice line to finish before arming the mic —
+    // otherwise VAD hears the phone's own speaker output (heroVoice) as
+    // "the child speaking" and records/classifies that instead.
+    speakDone.then(() => {
+      if (currentId === id) armVadForQuestion();
+    });
   } else {
     // "end"
     nextBtn.style.display = "none";
