@@ -15,12 +15,35 @@ const player = document.getElementById("player");
 const logEl = document.getElementById("log");
 const resetBtn = document.getElementById("resetBtn");
 const uploadRow = document.getElementById("uploadRow");
+const pipelineStageEls = {
+  mic: document.getElementById("stage-mic"),
+  stt: document.getElementById("stage-stt"),
+  safety: document.getElementById("stage-safety"),
+  classify: document.getElementById("stage-classify"),
+  tts: document.getElementById("stage-tts"),
+};
+// Dev-лог пайплайна: живой статус каждого шага на экране оператора
+// (IDEA.md "Что нужно закрыть", P2) — отдельно от текстового #log ниже,
+// чтобы на репетиции сразу было видно глазами, какой шаг завис/упал,
+// без чтения строк.
+function setStage(id, status, detail = "") {
+  const el = pipelineStageEls[id];
+  if (!el) return;
+  el.className = `stage ${status}`;
+  el.querySelector(".stage-detail").textContent = detail;
+}
+function resetTurnStages() {
+  setStage("stt", "idle", "");
+  setStage("safety", "idle", "");
+  setStage("classify", "idle", "");
+}
 const fileInput = document.getElementById("fileInput");
 const heroStage = document.getElementById("heroStage");
 const heroVoice = document.getElementById("heroVoice");
 const reportPanel = document.getElementById("reportPanel");
 const reportDate = document.getElementById("reportDate");
 const sceneStage = document.getElementById("sceneStage");
+const berryOverlay = document.getElementById("berryOverlay");
 
 // One background per hero, per design doc's "character + background switch
 // independently" approach — not one image per story branch. Add an entry
@@ -29,6 +52,84 @@ const SCENE_BG = {
   fox: "/images/bg-fox.png",
   owl: "/images/bg-owl.jpg",
 };
+
+// Replay variety (no two sessions look identical, even with a scripted
+// story bank): the fox's berry count and the owl's target word are picked
+// at random per session instead of being hardcoded to "3" / "мысық". The
+// background art (bg-fox.png) has hand-painted berries baked in for the
+// original "3" case, so instead of swapping art per count we draw the
+// berries as a DOM overlay on top of it — same approach the design doc
+// already uses for "don't draw one asset per branch."
+const NUM_KK = ["", "бір", "екі", "үш", "төрт", "бес"];
+const NUM_RU = ["", "один", "два", "три", "четыре", "пять"];
+function ruBerryWord(n) {
+  if (n === 1) return "ягода";
+  if (n >= 2 && n <= 4) return "ягоды";
+  return "ягод";
+}
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Percentage positions roughly inside the bush area of bg-fox.png (upper-left
+// cluster of cream bush blobs). Values are approximate/artistic — precision
+// doesn't matter for a handful of small dots.
+const BERRY_SLOTS = [
+  { left: "33%", top: "39%" },
+  { left: "40%", top: "35%" },
+  { left: "45%", top: "42%" },
+  { left: "36%", top: "46%" },
+  { left: "42%", top: "49%" },
+];
+
+let berryCount = 3;
+function rerollBerries() {
+  berryCount = 2 + Math.floor(Math.random() * 4); // 2..5, still countable for a 3-7yo
+  const kkList = [];
+  const ruList = [];
+  for (let i = 1; i <= berryCount; i++) {
+    kkList.push(NUM_KK[i]);
+    ruList.push(NUM_RU[i]);
+  }
+  STORY.fox_reveal.kk = `Ештеңе етпейді! Бірге санайық: ${kkList.join(", ")}! ${capitalize(NUM_KK[berryCount])} жидек екен!`;
+  STORY.fox_reveal.ru = `Не страшно! Давай посчитаем вместе: ${ruList.join(", ")}! ${capitalize(NUM_RU[berryCount])} ${ruBerryWord(berryCount)}!`;
+  STORY.fox_question.criterion =
+    `Правильный ответ — число ${NUM_RU[berryCount]} (${berryCount}). Засчитывай верным любое произношение ` +
+    `этого числа на казахском («${NUM_KK[berryCount]}») или русском («${NUM_RU[berryCount]}», «${berryCount}», ` +
+    `«${berryCount} ${ruBerryWord(berryCount)}» и т.п.). Всё остальное (другое число, молчание не по теме, ` +
+    `посторонний ответ) — неверно.`;
+}
+
+function renderBerryOverlay(show) {
+  if (!show) {
+    berryOverlay.innerHTML = "";
+    berryOverlay.classList.remove("show");
+    return;
+  }
+  berryOverlay.innerHTML = BERRY_SLOTS.slice(0, berryCount)
+    .map((p) => `<span class="berry" style="left:${p.left};top:${p.top}"></span>`)
+    .join("");
+  berryOverlay.classList.add("show");
+}
+
+// Two source words for the owl's rhyme question — both real Kazakh words
+// ending in "-ық", the same rhyme family as the reveal example "қасық"
+// (ложка), so onReveal never needs to change no matter which is picked.
+const OWL_WORDS = [
+  { kk: "Мысық", kkLower: "мысық", ru: "кот" },
+  { kk: "Балық", kkLower: "балық", ru: "рыба" },
+];
+let rhymeWord = OWL_WORDS[0];
+function rerollRhymeWord() {
+  rhymeWord = OWL_WORDS[Math.floor(Math.random() * OWL_WORDS.length)];
+  STORY.owl_question.kk = `${rhymeWord.kk} — деп айттым. Осыған ұйқас сөз тап!`;
+  STORY.owl_question.ru = `Я сказал «${rhymeWord.kkLower}» (${rhymeWord.ru}). Найди слово, похожее по звучанию!`;
+  STORY.owl_question.criterion =
+    `Правильный ответ — любое существующее казахское или русское слово, фонетически похожее на ` +
+    `«${rhymeWord.kkLower}» (например, оканчивается на «-ық»/«-ик», как «қасық»). Не обязательно именно ` +
+    `«қасық» — любая настоящая рифма/созвучие засчитывается верной. Слово без всякого созвучия или ` +
+    `посторонний ответ — неверно.`;
+}
 
 async function playWithTimeout(ms) {
   const playTimeout = new Promise((_, reject) =>
@@ -43,6 +144,7 @@ async function playWithTimeout(ms) {
 // failure or timeout we fall back to the static file for that state.
 async function speakLine(text, stateId) {
   if (!text) return;
+  setStage("tts", "running", "");
   try {
     const controller = new AbortController();
     const abortTimer = setTimeout(() => controller.abort(), 2500);
@@ -61,20 +163,24 @@ async function speakLine(text, stateId) {
     // automation contexts — never let audio playback stall the demo.
     await playWithTimeout(3000);
     log(`voice: "${text.slice(0, 40)}${text.length > 40 ? "…" : ""}" (${ms}ms synth)`);
+    setStage("tts", "ok", `${ms}ms live`);
   } catch (err) {
     if (stateId) {
       try {
         heroVoice.src = `/audio/${stateId}.wav`;
         await playWithTimeout(3000);
         log(`voice: fallback pre-rendered audio for "${stateId}" (live TTS: ${err.message})`);
+        setStage("tts", "skip", "fallback wav");
         return;
       } catch (fallbackErr) {
         log(`voice error, fallback also failed: ${fallbackErr.message}`);
+        setStage("tts", "err", "live + fallback failed");
         return;
       }
     }
     // Non-fatal — the WoZ operator still has the on-screen text either way.
     log(`voice error (text still shown): ${err.message}`);
+    setStage("tts", "err", err.message);
   }
 }
 
@@ -83,6 +189,149 @@ let currentMimeType = "";
 let recordingStartedAt = 0;
 let chunks = [];
 let recording = false;
+
+// --- Automatic voice turn-taking (VAD) --------------------------------
+// The child shouldn't need to press anything (design doc "Детский экран
+// без интерфейса" / "Никакой кнопки"): the mic is armed for the whole
+// duration a question is on screen, speech start/end is detected locally
+// from amplitude, and the clip auto-submits after a short silence. The
+// manual recordBtn stays wired up as an operator override/kill-switch —
+// same pattern as btnAdvance elsewhere in this file — for when a mic can't
+// trip the VAD threshold or Web Audio itself is unavailable.
+let vadStream = null;
+let vadAudioCtx = null;
+let vadAnalyser = null;
+let vadFloatBuf = null;
+let vadFrameId = null;
+let vadRecorder = null;
+let vadRecording = false;
+let vadArmed = false; // true only while the current question hasn't been answered yet
+let vadSpeechStartedAt = 0;
+let vadLastLoudAt = 0;
+
+const VAD_START_RMS = 0.02; // amplitude that counts as "speech began"
+const VAD_SILENCE_RMS = 0.012; // lower bar to still count as "mid-speech" (hysteresis, avoids chatter at the threshold)
+const VAD_SILENCE_MS = 1000; // pause this long after speech means "child is done" (doc's 0.8-1.2s window)
+const VAD_MIN_SPEECH_MS = 400; // ignore blips shorter than this (cough, mic bump)
+const VAD_MAX_RECORD_MS = 8000; // hard cap so a held-open mic can't stall the demo indefinitely
+
+async function ensureMicStream() {
+  if (vadStream) return vadStream;
+  vadStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  vadAudioCtx = new AudioCtx();
+  const source = vadAudioCtx.createMediaStreamSource(vadStream);
+  vadAnalyser = vadAudioCtx.createAnalyser();
+  vadAnalyser.fftSize = 1024;
+  vadFloatBuf = new Float32Array(vadAnalyser.fftSize);
+  source.connect(vadAnalyser);
+  return vadStream;
+}
+
+function currentRMS() {
+  vadAnalyser.getFloatTimeDomainData(vadFloatBuf);
+  let sum = 0;
+  for (let i = 0; i < vadFloatBuf.length; i++) sum += vadFloatBuf[i] * vadFloatBuf[i];
+  return Math.sqrt(sum / vadFloatBuf.length);
+}
+
+function setHeroPoseOverride(pose) {
+  const hero = HERO_FOR_STATE[currentId] || { character: "fox" };
+  heroStage.innerHTML = hero.character === "owl" ? owlSVG(pose) : foxPoseHTML(pose);
+  if (hero.character === "fox") animateFoxPose(heroStage, pose);
+}
+
+function updateHeroAmplitude(rms) {
+  if (!heroStage) return;
+  const listening = vadArmed || vadRecording;
+  heroStage.classList.toggle("hero-listening", listening);
+  if (!listening) return;
+  const level = Math.max(0, Math.min(1, rms / 0.08));
+  heroStage.style.setProperty("--amp", String(level));
+}
+
+function startVadRecorder() {
+  const mimeType = pickMimeType();
+  vadRecorder = mimeType ? new MediaRecorder(vadStream, { mimeType }) : new MediaRecorder(vadStream);
+  currentMimeType = vadRecorder.mimeType || mimeType || "audio/webm";
+  chunks = [];
+  vadRecorder.ondataavailable = (e) => chunks.push(e.data);
+  vadRecorder.onstop = onRecordingStop; // same submit path as the manual flow
+  vadRecorder.start();
+  recordingStartedAt = Date.now();
+  vadRecording = true;
+  recordBtn.classList.add("recording", "pulse");
+  statusText.textContent = "Слушаю...";
+  setStage("mic", "running", "запись");
+}
+
+function stopVadRecorder() {
+  vadRecorder?.stop(); // keeps vadStream's tracks alive for the next question
+  vadRecording = false;
+  recordBtn.classList.remove("recording", "pulse");
+}
+
+function finishVadTurn() {
+  vadArmed = false;
+  statusText.textContent = "";
+  setHeroPoseOverride("think");
+  setStage("mic", "ok", "получено");
+  resetTurnStages();
+  stopVadRecorder();
+}
+
+function armVadForQuestion() {
+  vadArmed = true;
+  vadRecording = false;
+  resetTurnStages();
+  setStage("mic", "running", "жду речь");
+  ensureMicStream().catch((err) => {
+    // No mic / permission denied to the persistent stream — VAD can never
+    // arm, so leave it disarmed and let the manual recordBtn path (its own
+    // independent getUserMedia call, see startRecording()) carry the demo.
+    vadArmed = false;
+    heroStage.classList.remove("hero-listening");
+    setStage("mic", "err", err.name || err.message);
+    log(`VAD недоступен, ручной режим: ${err.name || err.message}`);
+  });
+}
+
+function disarmVad() {
+  vadArmed = false;
+  heroStage.classList.remove("hero-listening");
+  setStage("mic", "idle", "");
+  if (vadRecording) stopVadRecorder();
+}
+
+function vadLoop() {
+  vadFrameId = requestAnimationFrame(vadLoop);
+  if (!vadAnalyser) return;
+  const rms = currentRMS();
+  updateHeroAmplitude(rms);
+
+  if (!vadArmed) return;
+  const now = performance.now();
+
+  if (!vadRecording) {
+    if (rms > VAD_START_RMS) {
+      vadSpeechStartedAt = now;
+      vadLastLoudAt = now;
+      startVadRecorder();
+    }
+    return;
+  }
+
+  if (rms > VAD_SILENCE_RMS) vadLastLoudAt = now;
+  const sinceStart = now - vadSpeechStartedAt;
+  const sinceLoud = now - vadLastLoudAt;
+
+  if (sinceStart > VAD_MAX_RECORD_MS) {
+    finishVadTurn();
+  } else if (sinceStart > VAD_MIN_SPEECH_MS && sinceLoud > VAD_SILENCE_MS) {
+    finishVadTurn();
+  }
+}
+vadFrameId = requestAnimationFrame(vadLoop);
 
 // --- story state ---
 let currentId = null;
@@ -102,9 +351,19 @@ function log(msg) {
 
 function renderState(id) {
   currentId = id;
+  // Reroll BEFORE reading `s` below — `s` is just a reference into STORY,
+  // so mutating STORY[id].kk/ru/criterion here still lands before anything
+  // reads them. Only reroll on a genuinely new question, not a re-ask
+  // loop-back (fox_reask/owl_reask return to the SAME question id) — the
+  // child should recount the same bush, not a bush that changed underneath
+  // them. Mirrors the activeQuestionId check below, evaluated early.
+  if (id === "fox_question" && activeQuestionId !== id) rerollBerries();
+  if (id === "owl_question" && activeQuestionId !== id) rerollRhymeWord();
   const s = STORY[id];
 
   cancelAiAutoAdvance();
+  cancelNarrationAutoAdvance();
+  disarmVad();
   aiVerdictEl.classList.remove("show");
   blockedFlash.classList.remove("show", "materialize-in");
   resultEl.classList.remove("show", "materialize-in");
@@ -135,27 +394,43 @@ function renderState(id) {
   const bg = SCENE_BG[hero.character];
   sceneStage.style.backgroundImage = bg ? `url(${bg})` : "none";
   heroStage.classList.toggle("pose-happy", hero.pose === "happy");
+  renderBerryOverlay(hero.character === "fox" && (id === "fox_question" || id === "fox_reask" || id === "fox_reveal"));
 
   storySpeaker.textContent = s.speaker;
   storyKk.textContent = s.kk;
   storyRu.textContent = s.ru;
   heroStage.innerHTML = renderHero(id);
   if (hero.character === "fox") animateFoxPose(heroStage, hero.pose);
-  speakLine(s.kk, id);
+  const speakDone = speakLine(s.kk, id);
 
   if (s.kind === "narration") {
     nextBtn.style.display = "block";
     recordBtn.style.display = "none";
     uploadRow.style.display = "none";
+    // Child screen has no buttons by design (IDEA.md "Детский экран без
+    // интерфейса") — nextBtn stays only as an operator override/killswitch.
+    // Normal flow advances itself once the line has finished playing
+    // (live TTS, fallback audio, or even a silent text-only failure —
+    // speakLine() never rejects, so this always eventually fires).
+    speakDone.then(() => {
+      if (currentId !== id || !s.next) return;
+      narrationAutoAdvanceTimer = setTimeout(() => {
+        narrationAutoAdvanceTimer = null;
+        if (currentId === id) renderState(s.next);
+      }, NARRATION_AUTO_ADVANCE_MS);
+    });
   } else if (s.kind === "question") {
     nextBtn.style.display = "none";
     recordBtn.style.display = "block";
     recordBtn.disabled = false;
+    recordBtn.textContent = "🎙 Слушаю… (нажми, если ребёнок уже ответил)";
+    recordBtn.classList.remove("recording", "pulse");
     uploadRow.style.display = "block";
     if (activeQuestionId !== id) {
       reaskUsed = false;
       activeQuestionId = id;
     }
+    armVadForQuestion();
   } else {
     // "end"
     nextBtn.style.display = "none";
@@ -168,6 +443,7 @@ function renderState(id) {
 }
 
 nextBtn.addEventListener("click", () => {
+  cancelNarrationAutoAdvance();
   const s = STORY[currentId];
   if (s.next) renderState(s.next);
 });
@@ -273,6 +549,7 @@ async function submitAudio(blob, filename) {
 
   const form = new FormData();
   form.append("audio", blob, filename);
+  setStage("stt", "running", "");
 
   try {
     const res = await fetch("/api/transcribe", { method: "POST", body: form });
@@ -283,22 +560,36 @@ async function submitAudio(blob, filename) {
     thinkingDots.hidden = true;
     transcriptEl.textContent = data.transcript || "(тишина / не распознано)";
     metaEl.textContent = `${data.ms} ms · ${data.engine === "groq" ? "Groq" : "локальный Whisper (fallback)"}`;
+    setStage("stt", "ok", `${data.ms}ms ${data.engine === "groq" ? "groq" : "local"}`);
 
     if (data.blocked) {
+      setStage("safety", "err", "BLOCKED");
       blockedFlash.classList.add("show", "materialize-in");
       storyEnded = true;
       recordBtn.style.display = "none";
       uploadRow.style.display = "none";
       log(`BLOCKED (автоматически, без оператора): "${data.transcript}" — сценарий остановлен`);
     } else {
+      setStage("safety", "ok", "");
       resultEl.classList.add("show", "materialize-in");
       log(`transcript: "${data.transcript}" (${data.ms}ms)`);
       classifyAndSuggest(data.transcript);
     }
   } catch (err) {
-    statusText.textContent = `Ошибка: ${err.message}`;
+    // Total STT failure (Groq and local Whisper both down, or no network to
+    // the server at all) — the operator still needs a way to move the story
+    // forward. Show the manual Correct/Re-ask/Advance controls (normally
+    // gated behind a successful transcribe) so they can judge the answer by
+    // ear instead of getting stuck with no path out. See IDEA.md "Как
+    // закрываем риски" / network-fail fallback.
+    statusText.textContent = `Ошибка распознавания: ${err.message}`;
     thinkingDots.hidden = true;
-    log(`error: ${err.message}`);
+    transcriptEl.textContent = "(распознавание недоступно — оцени ответ на слух)";
+    metaEl.textContent = "";
+    aiVerdictEl.classList.remove("show");
+    resultEl.classList.add("show", "materialize-in");
+    setStage("stt", "err", err.message);
+    log(`STT недоступен, ручной режим: ${err.message}`);
   } finally {
     recordBtn.disabled = false;
     fileInput.disabled = false;
@@ -314,8 +605,23 @@ fileInput.addEventListener("change", async () => {
 });
 
 recordBtn.addEventListener("click", () => {
-  if (recording) stopRecording();
-  else startRecording();
+  if (vadRecording) {
+    // Operator override: end the current auto-captured turn right now
+    // instead of waiting out the silence timer.
+    finishVadTurn();
+  } else if (vadArmed) {
+    // VAD is armed but hasn't crossed the amplitude threshold yet — force
+    // a manual start (e.g. the child is speaking too quietly to trip it).
+    vadSpeechStartedAt = performance.now();
+    vadLastLoudAt = performance.now();
+    startVadRecorder();
+  } else if (recording) {
+    stopRecording();
+  } else {
+    // VAD never armed (mic/Web Audio unavailable) — fully independent
+    // manual fallback path, see startRecording().
+    startRecording();
+  }
 });
 
 function advanceFromQuestion(nextId) {
@@ -332,6 +638,16 @@ function advanceFromQuestion(nextId) {
 // above classifyAnswer()).
 let aiAutoAdvanceTimer = null;
 const AI_AUTO_ADVANCE_MS = 2500;
+
+let narrationAutoAdvanceTimer = null;
+const NARRATION_AUTO_ADVANCE_MS = 500;
+
+function cancelNarrationAutoAdvance() {
+  if (narrationAutoAdvanceTimer) {
+    clearTimeout(narrationAutoAdvanceTimer);
+    narrationAutoAdvanceTimer = null;
+  }
+}
 
 function cancelAiAutoAdvance() {
   if (aiAutoAdvanceTimer) {
@@ -362,11 +678,93 @@ function markReask(source) {
   }
 }
 
+// Local, network-free answer check — used only when /api/classify is
+// unreachable, so the system still confirms itself instead of stalling on
+// the operator's buttons. Reuses the same word-level fuzzy-match approach
+// as spike/blocklist.js (Levenshtein tolerance scaled to word length),
+// against the actual accepted-answer set for the current question (not a
+// prose description — the real words currentId's criterion was built
+// from, see rerollBerries()/rerollRhymeWord() above).
+function localLevenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+function localTolerance(len) {
+  if (len <= 3) return 1;
+  if (len <= 6) return 1;
+  return Math.max(2, Math.floor(len * 0.3));
+}
+function localWordsOf(transcript) {
+  return transcript
+    .toLowerCase()
+    .replace(/[.,!?;:()"'«»]/g, "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+function localFuzzyIncludes(words, target) {
+  const t = target.toLowerCase();
+  return words.some((w) => localLevenshtein(w, t) <= localTolerance(t.length));
+}
+
+function localClassify(stateId, transcript) {
+  const words = localWordsOf(transcript);
+  if (words.length === 0) return { label: "unclear", reason: "пусто (локально)" };
+
+  if (stateId === "fox_question") {
+    const accepted = [NUM_KK[berryCount], NUM_RU[berryCount], String(berryCount)];
+    const hit = accepted.some((form) => localFuzzyIncludes(words, form));
+    return hit
+      ? { label: "correct", reason: "число совпало (локально)" }
+      : { label: "unclear", reason: "число не совпало (локально)" };
+  }
+
+  if (stateId === "owl_question") {
+    // Criterion is genuinely open-ended (any real word rhyming with the
+    // source word) — a fixed word list would wrongly reject valid answers.
+    // Approximate with the shared suffix instead of an exact word match.
+    const rhymes = words.some((w) => /(ық|ик)$/.test(w));
+    return rhymes
+      ? { label: "correct", reason: "рифма «-ық/-ик» (локально)" }
+      : { label: "unclear", reason: "рифма не найдена (локально)" };
+  }
+
+  return { label: "unclear", reason: "неизвестный вопрос (локально)" };
+}
+
+function showVerdictAndAutoAdvance(data, source) {
+  const labelText = { correct: "✅ ВЕРНО", incorrect: "❌ НЕВЕРНО", unclear: "🔁 НЕ ПОНЯЛ / ПЕРЕСПРОСИТЬ" }[data.label];
+  aiVerdictEl.className = `ai-verdict show ${data.label}`;
+  aiVerdictEl.innerHTML = `
+    <span class="label">${source}: ${labelText}</span>
+    <span class="reason">${data.reason || ""}${data.ms ? ` (${data.ms}ms)` : ""}</span>
+    <span class="countdown">Авто-переход через ${(AI_AUTO_ADVANCE_MS / 1000).toFixed(1)}с — нажми кнопку, чтобы отменить</span>
+  `;
+  log(`${source}: ${data.label} — "${data.reason}"${data.ms ? ` (${data.ms}ms)` : ""}`);
+
+  cancelAiAutoAdvance();
+  aiAutoAdvanceTimer = setTimeout(() => {
+    aiAutoAdvanceTimer = null;
+    if (data.label === "correct") markCorrect(`${source} (авто)`);
+    else markReask(`${source} (авто)`);
+  }, AI_AUTO_ADVANCE_MS);
+}
+
 async function classifyAndSuggest(transcript) {
   const s = STORY[currentId];
   if (s.kind !== "question" || !s.criterion) return;
   aiVerdictEl.className = "ai-verdict show";
   aiVerdictEl.innerHTML = `<span class="label">🤖 ИИ думает…</span>`;
+  setStage("classify", "running", "");
 
   let data;
   try {
@@ -378,27 +776,18 @@ async function classifyAndSuggest(transcript) {
     data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || res.statusText);
   } catch (err) {
-    // Fail open: no verdict shown, operator uses the buttons as before.
-    aiVerdictEl.classList.remove("show");
-    log(`ИИ-классификатор недоступен (ручной режим): ${err.message}`);
+    // The system still confirms itself here — it just switches from the
+    // network LLM to a local, deterministic answer check instead of
+    // parking on the operator's buttons until someone clicks.
+    setStage("classify", "skip", "локальный фолбэк, без сети");
+    log(`ИИ-классификатор недоступен, локальный фолбэк: ${err.message}`);
+    const local = localClassify(currentId, transcript);
+    showVerdictAndAutoAdvance(local, "🧮 Локально");
     return;
   }
 
-  const labelText = { correct: "✅ ВЕРНО", incorrect: "❌ НЕВЕРНО", unclear: "🔁 НЕ ПОНЯЛ / ПЕРЕСПРОСИТЬ" }[data.label];
-  aiVerdictEl.className = `ai-verdict show ${data.label}`;
-  aiVerdictEl.innerHTML = `
-    <span class="label">🤖 ИИ: ${labelText}</span>
-    <span class="reason">${data.reason || ""} (${data.ms}ms)</span>
-    <span class="countdown">Авто-переход через ${(AI_AUTO_ADVANCE_MS / 1000).toFixed(1)}с — нажми кнопку, чтобы отменить</span>
-  `;
-  log(`ИИ: ${data.label} — "${data.reason}" (${data.ms}ms)`);
-
-  cancelAiAutoAdvance();
-  aiAutoAdvanceTimer = setTimeout(() => {
-    aiAutoAdvanceTimer = null;
-    if (data.label === "correct") markCorrect("ИИ (авто)");
-    else markReask("ИИ (авто)");
-  }, AI_AUTO_ADVANCE_MS);
+  setStage("classify", "ok", `${data.label} ${data.ms}ms`);
+  showVerdictAndAutoAdvance(data, "🤖 ИИ");
 }
 
 document.getElementById("btnCorrect").addEventListener("click", () => markCorrect("оператор"));
@@ -417,8 +806,15 @@ document.getElementById("btnAdvance").addEventListener("click", () => {
 // permission dialog, just a rejected play() promise). Every other
 // renderState() call in the app already runs inside a click handler;
 // this "Бастау" gate makes the first one no exception.
+Object.keys(pipelineStageEls).forEach((id) => setStage(id, "idle", ""));
+
 const startOverlay = document.getElementById("startOverlay");
 document.getElementById("startBtn").addEventListener("click", () => {
   startOverlay.style.display = "none";
+  // Ask for the mic up front, inside this same tap, so the permission
+  // prompt (and its latency) is out of the way before the first question
+  // ever arrives — not fatal if it fails, armVadForQuestion() re-attempts
+  // ensureMicStream() per-question and falls back to the manual button.
+  ensureMicStream().catch((err) => log(`mic prefetch failed: ${err.name || err.message}`));
   renderState(START_STATE);
 });
