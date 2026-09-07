@@ -132,10 +132,36 @@ function rerollRhymeWord() {
 }
 
 async function playWithTimeout(ms) {
-  const playTimeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error(`play() timed out after ${ms}ms`)), ms),
-  );
-  await Promise.race([heroVoice.play(), playTimeout]);
+  // heroVoice.play() resolves once playback STARTS, not once it ends — a
+  // caller awaiting it (speakLine -> renderState's speakDone) was moving on
+  // (arming the mic) while the line was still coming out of the speaker.
+  // Wait for the actual "ended" event instead; `ms` is now just a stuck-
+  // playback safety net, not the normal-case signal.
+  await new Promise((resolve, reject) => {
+    const cleanup = () => {
+      heroVoice.removeEventListener("ended", onEnded);
+      heroVoice.removeEventListener("error", onError);
+      clearTimeout(timer);
+    };
+    const onEnded = () => {
+      cleanup();
+      resolve();
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error("playback error"));
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error(`play() timed out after ${ms}ms`));
+    }, ms);
+    heroVoice.addEventListener("ended", onEnded, { once: true });
+    heroVoice.addEventListener("error", onError, { once: true });
+    heroVoice.play().catch((err) => {
+      cleanup();
+      reject(err);
+    });
+  });
 }
 
 // Next Steps #7: pre-rendered fallback audio (spike/prerender.js output,
@@ -161,14 +187,14 @@ async function speakLine(text, stateId) {
     heroVoice.src = URL.createObjectURL(blob);
     // play() can hang indefinitely instead of rejecting in some browser/
     // automation contexts — never let audio playback stall the demo.
-    await playWithTimeout(3000);
+    await playWithTimeout(12000);
     log(`voice: "${text.slice(0, 40)}${text.length > 40 ? "…" : ""}" (${ms}ms synth)`);
     setStage("tts", "ok", `${ms}ms live`);
   } catch (err) {
     if (stateId) {
       try {
         heroVoice.src = `/audio/${stateId}.wav`;
-        await playWithTimeout(3000);
+        await playWithTimeout(12000);
         log(`voice: fallback pre-rendered audio for "${stateId}" (live TTS: ${err.message})`);
         setStage("tts", "skip", "fallback wav");
         return;
