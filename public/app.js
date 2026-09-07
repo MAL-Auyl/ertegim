@@ -671,6 +671,10 @@ async function submitAudio(blob, filename) {
     return;
   }
 
+  // Captured so a slow /api/transcribe response can't paint its result (or
+  // trigger classify/auto-advance) onto whatever question the operator has
+  // since moved on to — see the matching guard in classifyAndSuggest().
+  const askedId = currentId;
   player.src = URL.createObjectURL(blob);
 
   recordBtn.disabled = true;
@@ -686,6 +690,11 @@ async function submitAudio(blob, filename) {
     const res = await fetch("/api/transcribe", { method: "POST", body: form });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
+
+    if (currentId !== askedId) {
+      log(`transcribe: ответ на "${askedId}" пришёл поздно, оператор уже на "${currentId}" — игнорирую`);
+      return;
+    }
 
     statusText.textContent = "";
     thinkingDots.hidden = true;
@@ -707,6 +716,10 @@ async function submitAudio(blob, filename) {
       classifyAndSuggest(data.transcript);
     }
   } catch (err) {
+    if (currentId !== askedId) {
+      log(`transcribe: ошибка для "${askedId}" пришла поздно, оператор уже на "${currentId}" — игнорирую`);
+      return;
+    }
     // Total STT failure (Groq and local Whisper both down, or no network to
     // the server at all) — the operator still needs a way to move the story
     // forward. Show the manual Correct/Re-ask/Advance controls (normally
@@ -891,7 +904,11 @@ function showVerdictAndAutoAdvance(data, source) {
 }
 
 async function classifyAndSuggest(transcript) {
-  const s = STORY[currentId];
+  // Captured up front — a slow /api/classify response must not paint a
+  // verdict or start an auto-advance countdown for a question the operator
+  // has since left (see the matching guard in submitAudio()).
+  const askedId = currentId;
+  const s = STORY[askedId];
   if (s.kind !== "question" || !s.criterion) return;
   aiVerdictEl.className = "ai-verdict show";
   aiVerdictEl.innerHTML = `<span class="label">🤖 ИИ думает…</span>`;
@@ -907,16 +924,18 @@ async function classifyAndSuggest(transcript) {
     data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || res.statusText);
   } catch (err) {
+    if (currentId !== askedId) return; // operator already moved on while this was in flight
     // The system still confirms itself here — it just switches from the
     // network LLM to a local, deterministic answer check instead of
     // parking on the operator's buttons until someone clicks.
     setStage("classify", "skip", "локальный фолбэк, без сети");
     log(`ИИ-классификатор недоступен, локальный фолбэк: ${err.message}`);
-    const local = localClassify(currentId, transcript);
+    const local = localClassify(askedId, transcript);
     showVerdictAndAutoAdvance(local, "🧮 Локально");
     return;
   }
 
+  if (currentId !== askedId) return; // same guard for the success path
   setStage("classify", "ok", `${data.label} ${data.ms}ms`);
   showVerdictAndAutoAdvance(data, "🤖 ИИ");
 }
