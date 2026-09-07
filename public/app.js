@@ -204,6 +204,7 @@ let vadAnalyser = null;
 let vadFloatBuf = null;
 let vadFrameId = null;
 let vadRecorder = null;
+let vadRecordStream = null; // separate getUserMedia stream, dedicated to MediaRecorder only
 let vadRecording = false;
 let vadArmed = false; // true only while the current question hasn't been answered yet
 let vadSpeechStartedAt = 0;
@@ -251,22 +252,48 @@ function updateHeroAmplitude(rms) {
 }
 
 function startVadRecorder() {
-  const mimeType = pickMimeType();
-  vadRecorder = mimeType ? new MediaRecorder(vadStream, { mimeType }) : new MediaRecorder(vadStream);
-  currentMimeType = vadRecorder.mimeType || mimeType || "audio/webm";
-  chunks = [];
-  vadRecorder.ondataavailable = (e) => chunks.push(e.data);
-  vadRecorder.onstop = onRecordingStop; // same submit path as the manual flow
-  vadRecorder.start();
-  recordingStartedAt = Date.now();
-  vadRecording = true;
+  // iOS/WebKit: a MediaStreamTrack read by a Web Audio AnalyserNode (vadStream,
+  // used for RMS speech detection) AND recorded by a MediaRecorder at the same
+  // time can silently produce zero-byte output on Safari. So recording gets
+  // its own dedicated getUserMedia stream instead of reusing vadStream — same
+  // pattern as the manual startRecording() path, which was verified working
+  // on a real iPhone earlier.
+  vadRecording = true; // set synchronously so vadLoop() doesn't re-enter while the stream request is in flight
   recordBtn.classList.add("recording", "pulse");
   statusText.textContent = "Слушаю...";
   setStage("mic", "running", "запись");
+  navigator.mediaDevices
+    .getUserMedia({ audio: true })
+    .then((stream) => {
+      if (!vadArmed) {
+        // question was answered/left while permission was pending
+        stream.getTracks().forEach((t) => t.stop());
+        vadRecording = false;
+        return;
+      }
+      vadRecordStream = stream;
+      const mimeType = pickMimeType();
+      vadRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      currentMimeType = vadRecorder.mimeType || mimeType || "audio/webm";
+      chunks = [];
+      vadRecorder.ondataavailable = (e) => chunks.push(e.data);
+      vadRecorder.onstop = onRecordingStop; // same submit path as the manual flow
+      vadRecorder.start();
+      recordingStartedAt = Date.now();
+    })
+    .catch((err) => {
+      vadRecording = false;
+      recordBtn.classList.remove("recording", "pulse");
+      setStage("mic", "err", err.name || err.message);
+      log(`VAD запись недоступна: ${err.name || err.message}`);
+    });
 }
 
 function stopVadRecorder() {
-  vadRecorder?.stop(); // keeps vadStream's tracks alive for the next question
+  // stop tracks before .stop(), matching the manual stopRecording() order
+  vadRecordStream?.getTracks().forEach((t) => t.stop());
+  vadRecorder?.stop();
+  vadRecordStream = null;
   vadRecording = false;
   recordBtn.classList.remove("recording", "pulse");
 }

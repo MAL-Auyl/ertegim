@@ -215,10 +215,12 @@ const FOX_POSE_IMAGE = {
 // frame to a canvas and zero the alpha on near-black pixels every frame.
 // Poses with no clip yet fall back to the static FOX_POSE_IMAGE.
 const FOX_POSE_VIDEO = {
+  // .mp4/H.264 only — iOS Safari can't play WebM at all, so these were
+  // re-encoded from the original .webm clips (same source, same frames).
   idle: "/images/fox_idle_test.mp4",
-  talk: "/images/fox_clip2.webm",
-  confused: "/images/fox_confused.webm",
-  think: "/images/fox_think.webm",
+  talk: "/images/fox_clip2.mp4",
+  confused: "/images/fox_confused.mp4",
+  think: "/images/fox_think.mp4",
 };
 
 function foxPoseHTML(pose) {
