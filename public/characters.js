@@ -290,8 +290,87 @@ function animateFoxPose(root, pose) {
   }
 }
 
-function renderHero(stateId) {
-  const h = HERO_FOR_STATE[stateId] || { character: "fox", pose: "idle" };
-  if (h.character === "owl") return owlSVG(h.pose);
-  return foxPoseHTML(h.pose);
+// --- Rive-driven fox ---------------------------------------------------
+// Replaces the video-chromakey/GSAP pose art above once public/rive/fox.riv
+// exists (see docs/rive-fox-rig-spec.md for the rig contract). State
+// machine "HeroSM" has two Number inputs: `pose` (0 idle/1 talk/2 happy/
+// 3 confused/4 think) for discrete pose switching, and `talkLevel` (0-1)
+// fed every frame from the hero's own TTS audio RMS (app.js) to drive the
+// mouth-open amount continuously instead of a fixed-rate flap loop.
+//
+// mountFoxRive silently calls onFail — same "CDN blocked/offline" spirit
+// as animateFoxPose's gsap check above — whenever window.rive isn't
+// loaded, the .riv file 404s, or it loads but doesn't expose the expected
+// state machine/inputs (e.g. a typo during export). Callers fall back to
+// foxPoseHTML()/animateFoxPose() in that case.
+const FOX_RIVE_SRC = "/rive/fox.riv";
+const FOX_RIVE_STATE_MACHINE = "HeroSM";
+const FOX_RIVE_POSE_INDEX = { idle: 0, talk: 1, happy: 2, confused: 3, think: 4 };
+
+let foxRive = null;
+let foxRiveInputs = null; // { pose, talkLevel } once loaded, else null
+let foxRivePendingPose = "idle"; // applied once inputs become available
+
+function mountFoxRive(canvas, initialPose, onFail) {
+  unmountFoxRive();
+  foxRivePendingPose = initialPose;
+  if (typeof rive === "undefined") {
+    onFail();
+    return;
+  }
+  // `instance` is captured by the closures below instead of reading the
+  // module-level `foxRive` at call time — if setHero() mounts/unmounts fox
+  // again before this instance's onLoad/onLoadError fires (fast pose
+  // flicker, e.g. fox -> owl -> fox), `foxRive` will already point at a
+  // *different* instance by then. The `foxRive !== instance` check makes
+  // that late callback a no-op instead of it clobbering the newer mount's
+  // state or calling .stateMachineInputs() on an instance already
+  // .cleanup()-ed by the intervening unmountFoxRive().
+  let instance;
+  try {
+    instance = new rive.Rive({
+      src: FOX_RIVE_SRC,
+      canvas,
+      autoplay: true,
+      stateMachines: FOX_RIVE_STATE_MACHINE,
+      onLoad: () => {
+        if (foxRive !== instance) return;
+        const inputs = instance.stateMachineInputs(FOX_RIVE_STATE_MACHINE);
+        const pose = inputs.find((i) => i.name === "pose");
+        const talkLevel = inputs.find((i) => i.name === "talkLevel");
+        if (!pose) {
+          onFail(); // .riv doesn't match the expected contract (docs/rive-fox-rig-spec.md)
+          return;
+        }
+        foxRiveInputs = { pose, talkLevel };
+        instance.resizeDrawingSurfaceToCanvas();
+        foxRiveInputs.pose.value = FOX_RIVE_POSE_INDEX[foxRivePendingPose] ?? 0;
+      },
+      onLoadError: () => {
+        if (foxRive === instance) onFail();
+      },
+    });
+    foxRive = instance;
+  } catch {
+    onFail();
+  }
+}
+
+function unmountFoxRive() {
+  if (foxRive) foxRive.cleanup();
+  foxRive = null;
+  foxRiveInputs = null;
+}
+
+function isFoxRiveActive() {
+  return !!foxRiveInputs;
+}
+
+function setFoxRivePose(pose) {
+  foxRivePendingPose = pose;
+  if (foxRiveInputs) foxRiveInputs.pose.value = FOX_RIVE_POSE_INDEX[pose] ?? 0;
+}
+
+function setFoxTalkLevel(level) {
+  if (foxRiveInputs && foxRiveInputs.talkLevel) foxRiveInputs.talkLevel.value = level;
 }

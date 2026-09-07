@@ -236,10 +236,110 @@ function currentRMS() {
   return Math.sqrt(sum / vadFloatBuf.length);
 }
 
+// --- Hero rendering: Rive-first for the fox, DOM-rebuild fallback otherwise ---
+// Rive drives the fox off one persistent canvas + state machine ("HeroSM":
+// pose 0-4, talkLevel 0-1, see docs/rive-fox-rig-spec.md) so a pose change
+// is just an input update, not a teardown/rebuild — that's what keeps the
+// idle breathing/blink loop running continuously across story beats instead
+// of restarting every line. Falls back to the pre-Rive video/GSAP pose art
+// (foxPoseHTML/animateFoxPose) whenever the CDN, WASM runtime, or
+// public/rive/fox.riv itself isn't there yet — mountFoxRive's onFail below.
+// The owl (still hand-coded SVG, no rig built for it) always takes the
+// rebuild path, same as before this change.
+let heroCharacter = null;
+
+function setHero(character, pose) {
+  if (character !== heroCharacter) {
+    unmountFoxRive();
+    heroCharacter = character;
+    if (character === "fox") {
+      heroStage.innerHTML = '<canvas class="fox-pose fox-rive"></canvas>';
+      const canvas = heroStage.querySelector(".fox-rive");
+      mountFoxRive(canvas, pose, () => {
+        // .riv missing/blocked/mismatched contract — drop back to the
+        // pre-Rive renderer for as long as this hero stays "fox".
+        if (heroCharacter === "fox" && !isFoxRiveActive()) {
+          heroStage.innerHTML = foxPoseHTML(pose);
+          animateFoxPose(heroStage, pose);
+        }
+      });
+    } else if (character === "owl") {
+      heroStage.innerHTML = owlSVG(pose);
+    } else {
+      heroStage.innerHTML = "";
+    }
+    return;
+  }
+  if (character === "fox") {
+    if (isFoxRiveActive()) {
+      setFoxRivePose(pose);
+    } else {
+      // Rive never activated for this mount (still loading, or already
+      // fell back) — pendingPose covers the "still loading" case once it
+      // resolves; the fallback-art case needs its own re-render here since
+      // there's no state machine listening for pose changes.
+      setFoxRivePose(pose);
+      heroStage.innerHTML = foxPoseHTML(pose);
+      animateFoxPose(heroStage, pose);
+    }
+  } else if (character === "owl") {
+    heroStage.innerHTML = owlSVG(pose);
+  }
+}
+
+// TTS-driven mouth amplitude for the Rive fox's talkLevel input — mirrors
+// the VAD mic analyser above, but reads the hero's own voice (heroVoice)
+// instead of the mic, so the state machine's mouth-open blend tracks the
+// actual audio rather than a fixed-rate flap loop.
+let ttsAudioCtx = null;
+let ttsAnalyser = null;
+let ttsFloatBuf = null;
+let ttsLevelRAF = null;
+
+function ensureTTSAnalyser() {
+  if (ttsAnalyser) return ttsAnalyser;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  ttsAudioCtx = new AudioCtx();
+  // createMediaElementSource can only ever be called once per <audio>
+  // element for the lifetime of the page — caching ttsAnalyser above makes
+  // this function idempotent, which is what keeps that a non-issue.
+  const source = ttsAudioCtx.createMediaElementSource(heroVoice);
+  ttsAnalyser = ttsAudioCtx.createAnalyser();
+  ttsAnalyser.fftSize = 512;
+  ttsFloatBuf = new Float32Array(ttsAnalyser.fftSize);
+  source.connect(ttsAnalyser);
+  source.connect(ttsAudioCtx.destination); // keep audible — analyser alone is a silent tap
+  return ttsAnalyser;
+}
+
+function startTalkLevelLoop() {
+  if (!isFoxRiveActive()) return; // nothing to drive without the state machine input
+  try {
+    ensureTTSAnalyser();
+  } catch (err) {
+    log(`rive talkLevel: analyser unavailable (${err.message})`);
+    return;
+  }
+  cancelAnimationFrame(ttsLevelRAF);
+  function tick() {
+    ttsAnalyser.getFloatTimeDomainData(ttsFloatBuf);
+    let sum = 0;
+    for (let i = 0; i < ttsFloatBuf.length; i++) sum += ttsFloatBuf[i] * ttsFloatBuf[i];
+    const rms = Math.sqrt(sum / ttsFloatBuf.length);
+    setFoxTalkLevel(Math.max(0, Math.min(1, rms * 6))); // rough gain so quiet Piper output still opens the mouth
+    if (!heroVoice.paused && !heroVoice.ended) {
+      ttsLevelRAF = requestAnimationFrame(tick);
+    } else {
+      setFoxTalkLevel(0);
+    }
+  }
+  tick();
+}
+heroVoice.addEventListener("play", startTalkLevelLoop);
+
 function setHeroPoseOverride(pose) {
   const hero = HERO_FOR_STATE[currentId] || { character: "fox" };
-  heroStage.innerHTML = hero.character === "owl" ? owlSVG(pose) : foxPoseHTML(pose);
-  if (hero.character === "fox") animateFoxPose(heroStage, pose);
+  setHero(hero.character, pose);
 }
 
 function updateHeroAmplitude(rms) {
@@ -401,7 +501,7 @@ function renderState(id) {
     storySpeaker.textContent = "";
     storyKk.textContent = "";
     storyRu.textContent = "";
-    heroStage.innerHTML = "";
+    setHero(null, null);
     sceneStage.classList.add("hidden");
     nextBtn.style.display = "none";
     recordBtn.style.display = "none";
@@ -426,8 +526,7 @@ function renderState(id) {
   storySpeaker.textContent = s.speaker;
   storyKk.textContent = s.kk;
   storyRu.textContent = s.ru;
-  heroStage.innerHTML = renderHero(id);
-  if (hero.character === "fox") animateFoxPose(heroStage, hero.pose);
+  setHero(hero.character, hero.pose);
   const speakDone = speakLine(s.kk, id);
 
   if (s.kind === "narration") {

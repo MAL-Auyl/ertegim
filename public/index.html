@@ -372,6 +372,10 @@
   <div id="resetRow"><button id="resetBtn" class="btn btn-muted">🔄 Сначала</button></div>
   <div id="log" class="mono"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <!-- Rive fox rig (docs/rive-fox-rig-spec.md). characters.js checks
+       `typeof rive` and falls back to the GSAP pose art above if this is
+       blocked/offline, same as it already does for gsap. -->
+  <script src="https://cdn.jsdelivr.net/npm/@rive-app/canvas@2.21.2/rive.js"></script>
   <script src="story.js"></script>
   <script src="characters.js"></script>
   <script src="app.js"></script>
