@@ -58,6 +58,17 @@
     filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25));
     animation: heroBreathe 3.2s ease-in-out infinite;
   }
+  /* Local, network-free reaction to mic amplitude while the VAD turn-taking
+     loop is armed/listening (see app.js). --amp is written every animation
+     frame straight from the analyser, so this must stay off the `transform`
+     property (heroBreathe already owns that) — a second `filter` layer on
+     top of the static drop-shadow avoids fighting it. */
+  #heroStage.hero-listening {
+    --amp: 0;
+    filter:
+      drop-shadow(0 8px 16px rgba(0,0,0,0.25))
+      drop-shadow(0 0 calc(6px + var(--amp, 0) * 22px) color-mix(in srgb, var(--accent) 70%, transparent));
+  }
   #heroStage svg { display: block; width: 140px; height: 140px; margin: 35px auto 0; }
   .fox-pose { display: block; width: 100%; height: 100%; object-fit: contain; }
 
@@ -143,6 +154,26 @@
   }
   @media (prefers-reduced-motion: reduce) {
     #heroStage, .hero-eyes, .hero-mouth-talk, #sceneStage, .dots span { animation: none !important; }
+    .stat-card, .mastery-row, #reportAgainBtn { animation: none !important; opacity: 1 !important; transform: none !important; }
+  }
+
+  /* Report screen is a rare, once-per-session moment (end of story) — the
+     one place in this app where a little delight earns its keep (see
+     emil-design-eng: "rare/first-time -> can add delight"). Cards cascade
+     in instead of appearing as one flat block. */
+  #reportPanel .stat-card,
+  #reportPanel .mastery-row,
+  #reportPanel #reportAgainBtn {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  #reportPanel.show .stat-card,
+  #reportPanel.show .mastery-row,
+  #reportPanel.show #reportAgainBtn {
+    animation: reportItemIn 340ms var(--ease-materialize) both;
+  }
+  @keyframes reportItemIn {
+    to { opacity: 1; transform: translateY(0); }
   }
 
   #storyLine { margin-bottom: var(--space-4); }
@@ -216,6 +247,24 @@
   #log { margin-top: 20px; width: 100%; max-width: 560px; }
   #log div { padding: 5px 0; border-top: 1px solid var(--line); }
 
+  /* Dev-лог пайплайна (IDEA.md P2): каждый шаг STT→safety→LLM→TTS видно как
+     живой статус на экране оператора, а не только текстом в общем логе
+     ниже — на репетиции сразу видно, на каком шаге застряло. */
+  #pipelinePanel { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; max-width: 560px; margin-bottom: 10px; }
+  #pipelinePanel .stage {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--card-solid) 60%, transparent);
+    font-size: 0.72rem;
+  }
+  #pipelinePanel .stage-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-soft); flex: 0 0 auto; }
+  #pipelinePanel .stage-detail { color: var(--ink-soft); min-width: 1ch; }
+  #pipelinePanel .stage.running .stage-dot { background: #f2c14e; animation: dotBounce 0.8s infinite ease-in-out; }
+  #pipelinePanel .stage.ok .stage-dot { background: #3fae5c; }
+  #pipelinePanel .stage.err .stage-dot { background: var(--danger); }
+  #pipelinePanel .stage.skip .stage-dot { background: var(--ink-soft); }
+
   #reportPanel { display: none; }
   #reportPanel.show { display: block; }
   .report-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-4); }
@@ -246,6 +295,13 @@
     <a href="/library.html" style="font-size:0.8rem;color:var(--ink-soft);text-decoration:underline;">← Все истории</a>
   </div>
   <h1 class="eyebrow">Ертегім · WoZ-оператор</h1>
+  <div id="pipelinePanel" class="mono">
+    <div class="stage" id="stage-mic"><span class="stage-dot"></span><span>MIC</span><span class="stage-detail"></span></div>
+    <div class="stage" id="stage-stt"><span class="stage-dot"></span><span>STT</span><span class="stage-detail"></span></div>
+    <div class="stage" id="stage-safety"><span class="stage-dot"></span><span>SAFETY</span><span class="stage-detail"></span></div>
+    <div class="stage" id="stage-classify"><span class="stage-dot"></span><span>LLM</span><span class="stage-detail"></span></div>
+    <div class="stage" id="stage-tts"><span class="stage-dot"></span><span>TTS</span><span class="stage-detail"></span></div>
+  </div>
   <div class="panel glass-panel" style="position:relative;">
     <div id="startOverlay" style="position:absolute;inset:0;z-index:5;background:var(--card-solid);border-radius:inherit;display:flex;align-items:center;justify-content:center;">
       <button id="startBtn" class="btn btn-primary" style="padding:20px 32px;font-size:1.1rem;">▶ Бастау</button>
@@ -289,28 +345,28 @@
         <span class="report-date" id="reportDate"></span>
       </div>
       <div class="stat-grid">
-        <div class="stat-card"><div class="stat-num">2</div><div class="stat-label">героя пройдено</div></div>
-        <div class="stat-card"><div class="stat-num">6</div><div class="stat-label">новых слов</div></div>
-        <div class="stat-card"><div class="stat-num">1/2</div><div class="stat-label">верно с 1-й попытки</div></div>
-        <div class="stat-card"><div class="stat-num">0</div><div class="stat-label">блокировок по теме</div></div>
+        <div class="stat-card" style="animation-delay:40ms"><div class="stat-num">2</div><div class="stat-label">героя пройдено</div></div>
+        <div class="stat-card" style="animation-delay:80ms"><div class="stat-num">6</div><div class="stat-label">новых слов</div></div>
+        <div class="stat-card" style="animation-delay:120ms"><div class="stat-num">1/2</div><div class="stat-label">верно с 1-й попытки</div></div>
+        <div class="stat-card" style="animation-delay:160ms"><div class="stat-num">0</div><div class="stat-label">блокировок по теме</div></div>
       </div>
       <div class="mastery">
         <div class="mastery-title">Прогресс по героям</div>
-        <div class="mastery-row">
+        <div class="mastery-row" style="animation-delay:220ms">
           <span class="mastery-name">🦊 Түлкі · счёт</span>
           <div class="mastery-bar"><div class="mastery-fill" style="width:100%"></div></div>
         </div>
-        <div class="mastery-row">
+        <div class="mastery-row" style="animation-delay:260ms">
           <span class="mastery-name">🦉 Үкі · рифмы</span>
           <div class="mastery-bar"><div class="mastery-fill" style="width:70%"></div></div>
         </div>
-        <div class="mastery-row locked">
+        <div class="mastery-row locked" style="animation-delay:300ms">
           <span class="mastery-name">🐻 Аю · цвета</span>
           <div class="mastery-bar"><div class="mastery-fill" style="width:0%"></div></div>
           <span class="mastery-soon">скоро</span>
         </div>
       </div>
-      <a id="reportAgainBtn" class="btn btn-primary" href="/library.html">🔄 Ещё одна история</a>
+      <a id="reportAgainBtn" class="btn btn-primary" href="/library.html" style="animation-delay:360ms">🔄 Ещё одна история</a>
     </div>
   </div>
   <div id="resetRow"><button id="resetBtn" class="btn btn-muted">🔄 Сначала</button></div>

@@ -36,8 +36,18 @@
     color: var(--ink);
     transition: transform 150ms var(--ease-response);
     display: block;
+    opacity: 0;
+    animation: cardIn 340ms var(--ease-materialize) both;
   }
-  .card:hover { transform: translateY(-2px); }
+  @keyframes cardIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover { transform: translateY(-2px); }
+  }
+  .card:active { transform: scale(0.98); }
+  .card.disabled:active { transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .card { animation: none; opacity: 1; }
+  }
 
   .thumb {
     height: 180px;
@@ -77,7 +87,7 @@
   </div>
 
   <div class="grid">
-    <a class="card" href="/index.html">
+    <a class="card" href="/index.html" style="animation-delay:40ms">
       <div class="thumb"><img class="fullbody" src="/images/cover-fox-fullbody.png" alt="Түлкі"><div class="badge">Играть</div></div>
       <div class="card-body">
         <div class="card-title">Түлкі мен үкі: жидектер</div>
@@ -85,7 +95,7 @@
       </div>
     </a>
 
-    <a class="card disabled" href="#">
+    <a class="card disabled" href="#" style="animation-delay:80ms">
       <div class="thumb"><img class="fullbody" src="/images/cover-bear-fullbody.png" alt="Аю"><div class="badge soon">Скоро</div></div>
       <div class="card-body">
         <div class="card-title">Аю мен түстер</div>
@@ -93,7 +103,7 @@
       </div>
     </a>
 
-    <a class="card disabled" href="#">
+    <a class="card disabled" href="#" style="animation-delay:120ms">
       <div class="thumb"><img src="/images/cover-owl.png" alt="Үкі"><div class="badge soon">Скоро</div></div>
       <div class="card-body">
         <div class="card-title">Қоян мен әріптер</div>
@@ -101,7 +111,7 @@
       </div>
     </a>
 
-    <a class="card disabled" href="#">
+    <a class="card disabled" href="#" style="animation-delay:160ms">
       <div class="thumb"><span id="thumbFox2"></span><div class="badge soon">Скоро</div></div>
       <div class="card-body">
         <div class="card-title">Ата-анаға есеп</div>
