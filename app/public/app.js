@@ -362,6 +362,7 @@ function renderState(id) {
   const s = STORY[id];
 
   cancelAiAutoAdvance();
+  cancelNarrationAutoAdvance();
   disarmVad();
   aiVerdictEl.classList.remove("show");
   blockedFlash.classList.remove("show", "materialize-in");
@@ -400,12 +401,24 @@ function renderState(id) {
   storyRu.textContent = s.ru;
   heroStage.innerHTML = renderHero(id);
   if (hero.character === "fox") animateFoxPose(heroStage, hero.pose);
-  speakLine(s.kk, id);
+  const speakDone = speakLine(s.kk, id);
 
   if (s.kind === "narration") {
     nextBtn.style.display = "block";
     recordBtn.style.display = "none";
     uploadRow.style.display = "none";
+    // Child screen has no buttons by design (IDEA.md "Детский экран без
+    // интерфейса") — nextBtn stays only as an operator override/killswitch.
+    // Normal flow advances itself once the line has finished playing
+    // (live TTS, fallback audio, or even a silent text-only failure —
+    // speakLine() never rejects, so this always eventually fires).
+    speakDone.then(() => {
+      if (currentId !== id || !s.next) return;
+      narrationAutoAdvanceTimer = setTimeout(() => {
+        narrationAutoAdvanceTimer = null;
+        if (currentId === id) renderState(s.next);
+      }, NARRATION_AUTO_ADVANCE_MS);
+    });
   } else if (s.kind === "question") {
     nextBtn.style.display = "none";
     recordBtn.style.display = "block";
@@ -430,6 +443,7 @@ function renderState(id) {
 }
 
 nextBtn.addEventListener("click", () => {
+  cancelNarrationAutoAdvance();
   const s = STORY[currentId];
   if (s.next) renderState(s.next);
 });
@@ -624,6 +638,16 @@ function advanceFromQuestion(nextId) {
 // above classifyAnswer()).
 let aiAutoAdvanceTimer = null;
 const AI_AUTO_ADVANCE_MS = 2500;
+
+let narrationAutoAdvanceTimer = null;
+const NARRATION_AUTO_ADVANCE_MS = 500;
+
+function cancelNarrationAutoAdvance() {
+  if (narrationAutoAdvanceTimer) {
+    clearTimeout(narrationAutoAdvanceTimer);
+    narrationAutoAdvanceTimer = null;
+  }
+}
 
 function cancelAiAutoAdvance() {
   if (aiAutoAdvanceTimer) {
