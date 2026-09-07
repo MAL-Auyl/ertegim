@@ -95,7 +95,14 @@ a slideshow of poses — worth spending polish time on `happy` and
 `idle` specifically, since those are seen the most (idle is the
 default/rest state, happy is the reward moment).
 
-## 4. State machine — `HeroSM`
+## 4. State machine — `State Machine 1`
+
+Named "State Machine 1" (Rive's own default) rather than a custom
+name like `HeroSM` — the editor's rename gesture doesn't stick for
+state machines, so the code targets whatever name is actually in the
+file. If you ever do get a rename to hold, update
+`FOX_RIVE_STATE_MACHINE` in `public/characters.js` (and
+`app/public/characters.js`) to match.
 
 Two inputs, both **Number** (Rive has no enum input type):
 
@@ -104,22 +111,29 @@ Two inputs, both **Number** (Rive has no enum input type):
 | `pose` | `0`=idle, `1`=talk, `2`=happy, `3`=confused, `4`=think | discrete pose selection — driven from `HERO_FOR_STATE` in `characters.js` on every story-state change |
 | `talkLevel` | `0.0`–`1.0` | continuous, fed every animation frame from the hero's own TTS audio RMS while it's playing (see `app.js`'s talk-level loop) — **not** tied to the `talk` pose only; it's always being written, just near-zero outside of speech |
 
-**States**, one per pose value, connected by transitions gated on
-`pose` (e.g. `pose == 1` → Talk state), default entry = Idle:
+**States and transitions (built, current status):** all 5 states
+exist (Idle, Talk, Happy, Confused, Think) with a direct edge from
+Rive's built-in **Any State** node to each one, gated on the matching
+`pose` value (150ms blend on every edge) — this is simpler than a
+pairwise Idle↔X graph and gives the same result: any state can jump
+straight to any other on a `pose` change, no forced pass through
+Idle. `Entry → Idle` is the unconditional default on load.
 
 ```
-        pose==1              pose==2
-Idle ───────────► Talk    Idle ───────────► Happy
-  ▲                 │        ▲                 │
-  └── pose==0 ───────┘        └── pose==0 ──────┘
-        (same pattern for pose==3 → Confused, pose==4 → Think)
+Any State ──pose==0──► Idle
+Any State ──pose==1──► Talk
+Any State ──pose==2──► Happy
+Any State ──pose==3──► Confused
+Any State ──pose==4──► Think
+Entry ────────────────► Idle   (unconditional, default state)
 ```
 
-Any state can transition directly to any other on the matching
-`pose` value (not forced through Idle) — set transition duration to
-150-250ms with an ease so pose swaps blend instead of snapping,
-except Idle→Happy which can be quicker/punchier (100ms) since that's
-a reaction, not a drift.
+**Not yet done:** only `Idle` has a Timeline assigned (the default
+one Rive creates with the state machine). `Talk`/`Happy`/`Confused`/
+`Think` are wired into the graph but have no animation content yet —
+each needs its own Timeline (per §3's per-pose motion notes) created
+and assigned via that state's `Timeline` dropdown before it'll show
+anything other than a static/last pose.
 
 **Mouth drive:** inside every state (or as a global layer that
 applies on top — check whichever your Rive version makes easier),
@@ -136,11 +150,12 @@ phonemes, just amplitude-driven open/close, which is enough for a
 - Artboard name: `Fox` (any size — `characters.js` doesn't read
   artboard dimensions, canvas sizing is CSS-driven).
 - File: `public/rive/fox.riv`.
-- State machine name must be exactly `HeroSM`, input names exactly
-  `pose` and `talkLevel` — `mountFoxRive` in `characters.js` looks
-  these up by name and silently falls back to the pre-Rive renderer
-  if they're missing, so a typo here just means Rive quietly never
-  activates rather than an error you'd see.
+- State machine name must be exactly `State Machine 1` (Rive's
+  default — see §4), input names exactly `pose` and `talkLevel` —
+  `mountFoxRive` in `characters.js` looks these up by name and
+  silently falls back to the pre-Rive renderer if they're missing,
+  so a typo here just means Rive quietly never activates rather than
+  an error you'd see.
 
 ## 6. What's out of scope for this pass
 

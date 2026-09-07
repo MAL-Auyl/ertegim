@@ -244,6 +244,14 @@ function startFoxVideoChromakey(root) {
   const video = root.querySelector(".fox-video");
   const canvas = root.querySelector(".fox-pose");
   if (!video || !canvas) return;
+  // The `autoplay` attribute alone doesn't reliably kick off playback when
+  // the <video> is inserted via innerHTML from an async callback (e.g. the
+  // Rive-load-failed fallback, which fires outside the original click's
+  // synchronous stack) — video sits fully loaded (readyState 4) but
+  // paused, so the chromakey loop below just redraws the same frame
+  // forever. Kicking play() explicitly fixes that; muted+playsinline means
+  // no autoplay-policy rejection to worry about, but .catch() just in case.
+  video.play().catch(() => {});
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
   function draw() {
@@ -293,10 +301,13 @@ function animateFoxPose(root, pose) {
 // --- Rive-driven fox ---------------------------------------------------
 // Replaces the video-chromakey/GSAP pose art above once public/rive/fox.riv
 // exists (see docs/rive-fox-rig-spec.md for the rig contract). State
-// machine "HeroSM" has two Number inputs: `pose` (0 idle/1 talk/2 happy/
-// 3 confused/4 think) for discrete pose switching, and `talkLevel` (0-1)
-// fed every frame from the hero's own TTS audio RMS (app.js) to drive the
-// mouth-open amount continuously instead of a fixed-rate flap loop.
+// machine "State Machine 1" has two Number inputs: `pose` (0 idle/1 talk/
+// 2 happy/3 confused/4 think) for discrete pose switching, and `talkLevel`
+// (0-1) fed every frame from the hero's own TTS audio RMS (app.js) to
+// drive the mouth-open amount continuously instead of a fixed-rate flap
+// loop. Named "State Machine 1" (Rive's default) rather than a custom
+// name — the editor's rename-on-canvas gesture didn't stick for state
+// machines, so this is the name that's actually in the .riv file.
 //
 // mountFoxRive silently calls onFail — same "CDN blocked/offline" spirit
 // as animateFoxPose's gsap check above — whenever window.rive isn't
@@ -304,7 +315,7 @@ function animateFoxPose(root, pose) {
 // state machine/inputs (e.g. a typo during export). Callers fall back to
 // foxPoseHTML()/animateFoxPose() in that case.
 const FOX_RIVE_SRC = "/rive/fox.riv";
-const FOX_RIVE_STATE_MACHINE = "HeroSM";
+const FOX_RIVE_STATE_MACHINE = "State Machine 1";
 const FOX_RIVE_POSE_INDEX = { idle: 0, talk: 1, happy: 2, confused: 3, think: 4 };
 
 let foxRive = null;
