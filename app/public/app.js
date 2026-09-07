@@ -654,6 +654,87 @@ function markReask(source) {
   }
 }
 
+// Local, network-free answer check — used only when /api/classify is
+// unreachable, so the system still confirms itself instead of stalling on
+// the operator's buttons. Reuses the same word-level fuzzy-match approach
+// as spike/blocklist.js (Levenshtein tolerance scaled to word length),
+// against the actual accepted-answer set for the current question (not a
+// prose description — the real words currentId's criterion was built
+// from, see rerollBerries()/rerollRhymeWord() above).
+function localLevenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+function localTolerance(len) {
+  if (len <= 3) return 1;
+  if (len <= 6) return 1;
+  return Math.max(2, Math.floor(len * 0.3));
+}
+function localWordsOf(transcript) {
+  return transcript
+    .toLowerCase()
+    .replace(/[.,!?;:()"'«»]/g, "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+function localFuzzyIncludes(words, target) {
+  const t = target.toLowerCase();
+  return words.some((w) => localLevenshtein(w, t) <= localTolerance(t.length));
+}
+
+function localClassify(stateId, transcript) {
+  const words = localWordsOf(transcript);
+  if (words.length === 0) return { label: "unclear", reason: "пусто (локально)" };
+
+  if (stateId === "fox_question") {
+    const accepted = [NUM_KK[berryCount], NUM_RU[berryCount], String(berryCount)];
+    const hit = accepted.some((form) => localFuzzyIncludes(words, form));
+    return hit
+      ? { label: "correct", reason: "число совпало (локально)" }
+      : { label: "unclear", reason: "число не совпало (локально)" };
+  }
+
+  if (stateId === "owl_question") {
+    // Criterion is genuinely open-ended (any real word rhyming with the
+    // source word) — a fixed word list would wrongly reject valid answers.
+    // Approximate with the shared suffix instead of an exact word match.
+    const rhymes = words.some((w) => /(ық|ик)$/.test(w));
+    return rhymes
+      ? { label: "correct", reason: "рифма «-ық/-ик» (локально)" }
+      : { label: "unclear", reason: "рифма не найдена (локально)" };
+  }
+
+  return { label: "unclear", reason: "неизвестный вопрос (локально)" };
+}
+
+function showVerdictAndAutoAdvance(data, source) {
+  const labelText = { correct: "✅ ВЕРНО", incorrect: "❌ НЕВЕРНО", unclear: "🔁 НЕ ПОНЯЛ / ПЕРЕСПРОСИТЬ" }[data.label];
+  aiVerdictEl.className = `ai-verdict show ${data.label}`;
+  aiVerdictEl.innerHTML = `
+    <span class="label">${source}: ${labelText}</span>
+    <span class="reason">${data.reason || ""}${data.ms ? ` (${data.ms}ms)` : ""}</span>
+    <span class="countdown">Авто-переход через ${(AI_AUTO_ADVANCE_MS / 1000).toFixed(1)}с — нажми кнопку, чтобы отменить</span>
+  `;
+  log(`${source}: ${data.label} — "${data.reason}"${data.ms ? ` (${data.ms}ms)` : ""}`);
+
+  cancelAiAutoAdvance();
+  aiAutoAdvanceTimer = setTimeout(() => {
+    aiAutoAdvanceTimer = null;
+    if (data.label === "correct") markCorrect(`${source} (авто)`);
+    else markReask(`${source} (авто)`);
+  }, AI_AUTO_ADVANCE_MS);
+}
+
 async function classifyAndSuggest(transcript) {
   const s = STORY[currentId];
   if (s.kind !== "question" || !s.criterion) return;
@@ -671,29 +752,18 @@ async function classifyAndSuggest(transcript) {
     data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || res.statusText);
   } catch (err) {
-    // Fail open: no verdict shown, operator uses the buttons as before.
-    aiVerdictEl.classList.remove("show");
-    setStage("classify", "skip", "fail-open, ручной режим");
-    log(`ИИ-классификатор недоступен (ручной режим): ${err.message}`);
+    // The system still confirms itself here — it just switches from the
+    // network LLM to a local, deterministic answer check instead of
+    // parking on the operator's buttons until someone clicks.
+    setStage("classify", "skip", "локальный фолбэк, без сети");
+    log(`ИИ-классификатор недоступен, локальный фолбэк: ${err.message}`);
+    const local = localClassify(currentId, transcript);
+    showVerdictAndAutoAdvance(local, "🧮 Локально");
     return;
   }
 
-  const labelText = { correct: "✅ ВЕРНО", incorrect: "❌ НЕВЕРНО", unclear: "🔁 НЕ ПОНЯЛ / ПЕРЕСПРОСИТЬ" }[data.label];
-  aiVerdictEl.className = `ai-verdict show ${data.label}`;
-  aiVerdictEl.innerHTML = `
-    <span class="label">🤖 ИИ: ${labelText}</span>
-    <span class="reason">${data.reason || ""} (${data.ms}ms)</span>
-    <span class="countdown">Авто-переход через ${(AI_AUTO_ADVANCE_MS / 1000).toFixed(1)}с — нажми кнопку, чтобы отменить</span>
-  `;
-  log(`ИИ: ${data.label} — "${data.reason}" (${data.ms}ms)`);
   setStage("classify", "ok", `${data.label} ${data.ms}ms`);
-
-  cancelAiAutoAdvance();
-  aiAutoAdvanceTimer = setTimeout(() => {
-    aiAutoAdvanceTimer = null;
-    if (data.label === "correct") markCorrect("ИИ (авто)");
-    else markReask("ИИ (авто)");
-  }, AI_AUTO_ADVANCE_MS);
+  showVerdictAndAutoAdvance(data, "🤖 ИИ");
 }
 
 document.getElementById("btnCorrect").addEventListener("click", () => markCorrect("оператор"));
