@@ -1,3 +1,8 @@
+// Default screen is the child/jury view — the WoZ debug surface (pipeline
+// dots, raw log, manual Correct/Re-ask/Advance, file-upload fallback) only
+// shows with ?operator=1 in the URL (see the matching CSS in index.html).
+document.body.classList.toggle("operator-mode", new URLSearchParams(location.search).get("operator") === "1");
+
 const storySpeaker = document.getElementById("storySpeaker");
 const storyKk = document.getElementById("storyKk");
 const storyRu = document.getElementById("storyRu");
@@ -260,6 +265,24 @@ const VAD_SILENCE_MS = 1700; // pause this long after speech means "child is don
 const VAD_MIN_SPEECH_MS = 400; // ignore blips shorter than this (cough, mic bump)
 const VAD_MAX_RECORD_MS = 10000; // hard cap so a held-open mic can't stall the demo indefinitely (raised from 8000ms to match the longer silence tolerance)
 
+// If the child never speaks at all, rms never crosses VAD_START_RMS, so
+// recording never starts and VAD_MAX_RECORD_MS (which only bounds an
+// already-started recording) never applies — the mic could stay armed
+// forever with zero feedback. This timer covers exactly that "total
+// silence" case by routing into the same markReask() ladder a wrong/
+// unclear spoken answer already uses (1st timeout -> hint state, 2nd
+// timeout on the same question -> auto-reveal), so it needs no new
+// story.js content.
+let vadSilenceTimer = null;
+const VAD_SILENCE_TIMEOUT_MS = 8000;
+
+function cancelVadSilenceTimer() {
+  if (vadSilenceTimer) {
+    clearTimeout(vadSilenceTimer);
+    vadSilenceTimer = null;
+  }
+}
+
 async function ensureMicStream() {
   if (vadStream) return vadStream;
   vadStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -396,6 +419,7 @@ function updateHeroAmplitude(rms) {
 }
 
 function startVadRecorder() {
+  cancelVadSilenceTimer(); // speech was detected — the "total silence" timeout no longer applies to this turn
   // iOS/WebKit: a MediaStreamTrack read by a Web Audio AnalyserNode (vadStream,
   // used for RMS speech detection) AND recorded by a MediaRecorder at the same
   // time can silently produce zero-byte output on Safari. So recording gets
@@ -456,6 +480,13 @@ function armVadForQuestion() {
   vadRecording = false;
   resetTurnStages();
   setStage("mic", "running", "жду речь");
+  cancelVadSilenceTimer();
+  vadSilenceTimer = setTimeout(() => {
+    vadSilenceTimer = null;
+    if (!vadArmed || vadRecording) return; // question already left, or speech already started
+    log("VAD: 8с полной тишины — переспрашиваю автоматически (без ручного клика)");
+    markReask("тишина (авто)");
+  }, VAD_SILENCE_TIMEOUT_MS);
   ensureMicStream().catch((err) => {
     // No mic / permission denied to the persistent stream — VAD can never
     // arm, so leave it disarmed and let the manual recordBtn path (its own
@@ -468,6 +499,7 @@ function armVadForQuestion() {
 }
 
 function disarmVad() {
+  cancelVadSilenceTimer();
   vadArmed = false;
   heroStage.classList.remove("hero-listening");
   setStage("mic", "idle", "");

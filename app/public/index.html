@@ -288,13 +288,26 @@
   .mastery-row.locked .mastery-bar { opacity: 0.35; }
   .mastery-soon { font-size: 0.68rem; color: var(--ink-soft); flex: 0 0 auto; }
   #reportAgainBtn { display: block; text-align: center; text-decoration: none; margin-top: var(--space-5); }
+
+  /* Child/jury screen by default — the WoZ debug surface (pipeline dots,
+     raw log, manual Correct/Re-ask/Advance, file-upload fallback) is only
+     for the person running the demo. Add ?operator=1 to the URL to see it
+     (toggled in app.js). These rules are placed after the elements' own
+     display rules above so they win the tie on source order. */
+  #wozTitle, #pipelinePanel, #uploadRow, .actions, #log, #resetRow { display: none; }
+  body.operator-mode #wozTitle { display: block; }
+  body.operator-mode #pipelinePanel { display: flex; }
+  body.operator-mode #uploadRow { display: block; }
+  body.operator-mode .actions { display: flex; }
+  body.operator-mode #log { display: block; }
+  body.operator-mode #resetRow { display: flex; }
 </style>
 </head>
 <body>
   <div style="width:100%;max-width:560px;margin-bottom:10px;">
     <a href="/library.html" style="font-size:0.8rem;color:var(--ink-soft);text-decoration:underline;">← Все истории</a>
   </div>
-  <h1 class="eyebrow">Ертегім · WoZ-оператор</h1>
+  <h1 class="eyebrow" id="wozTitle">Ертегім · WoZ-оператор</h1>
   <div id="pipelinePanel" class="mono">
     <div class="stage" id="stage-mic"><span class="stage-dot"></span><span>MIC</span><span class="stage-detail"></span></div>
     <div class="stage" id="stage-stt"><span class="stage-dot"></span><span>STT</span><span class="stage-detail"></span></div>
