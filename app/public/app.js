@@ -210,11 +210,11 @@ let vadArmed = false; // true only while the current question hasn't been answer
 let vadSpeechStartedAt = 0;
 let vadLastLoudAt = 0;
 
-const VAD_START_RMS = 0.02; // amplitude that counts as "speech began"
-const VAD_SILENCE_RMS = 0.012; // lower bar to still count as "mid-speech" (hysteresis, avoids chatter at the threshold)
-const VAD_SILENCE_MS = 1000; // pause this long after speech means "child is done" (doc's 0.8-1.2s window)
+const VAD_START_RMS = 0.035; // amplitude that counts as "speech began" (raised from 0.02 — phone mic AGC was tripping this on ambient noise, self-triggering empty/garbage turns)
+const VAD_SILENCE_RMS = 0.02; // lower bar to still count as "mid-speech" (hysteresis, avoids chatter at the threshold)
+const VAD_SILENCE_MS = 1700; // pause this long after speech means "child is done" (raised from 1000ms — was cutting answers off mid-count, e.g. between "бір... екі...")
 const VAD_MIN_SPEECH_MS = 400; // ignore blips shorter than this (cough, mic bump)
-const VAD_MAX_RECORD_MS = 8000; // hard cap so a held-open mic can't stall the demo indefinitely
+const VAD_MAX_RECORD_MS = 10000; // hard cap so a held-open mic can't stall the demo indefinitely (raised from 8000ms to match the longer silence tolerance)
 
 async function ensureMicStream() {
   if (vadStream) return vadStream;
