@@ -43,7 +43,11 @@ const heroVoice = document.getElementById("heroVoice");
 const reportPanel = document.getElementById("reportPanel");
 const reportDate = document.getElementById("reportDate");
 const sceneStage = document.getElementById("sceneStage");
+const sceneStageWrap = document.getElementById("sceneStageWrap");
 const berryOverlay = document.getElementById("berryOverlay");
+const pinGate = document.getElementById("pinGate");
+const pinInput = document.getElementById("pinInput");
+const pinSubmitBtn = document.getElementById("pinSubmitBtn");
 
 // One background per hero, per design doc's "character + background switch
 // independently" approach — not one image per story branch. Add an entry
@@ -260,7 +264,7 @@ function startVadRecorder() {
   vadRecorder.start();
   recordingStartedAt = Date.now();
   vadRecording = true;
-  recordBtn.classList.add("recording", "pulse");
+  recordBtn.classList.add("recording");
   statusText.textContent = "Слушаю...";
   setStage("mic", "running", "запись");
 }
@@ -268,7 +272,7 @@ function startVadRecorder() {
 function stopVadRecorder() {
   vadRecorder?.stop(); // keeps vadStream's tracks alive for the next question
   vadRecording = false;
-  recordBtn.classList.remove("recording", "pulse");
+  recordBtn.classList.remove("recording");
 }
 
 function finishVadTurn() {
@@ -375,20 +379,19 @@ function renderState(id) {
     storyKk.textContent = "";
     storyRu.textContent = "";
     heroStage.innerHTML = "";
-    sceneStage.classList.add("hidden");
+    sceneStageWrap.classList.add("hidden");
     nextBtn.style.display = "none";
     recordBtn.style.display = "none";
     uploadRow.style.display = "none";
-    reportDate.textContent = new Date().toLocaleDateString("ru-RU", {
-      day: "numeric",
-      month: "long",
-    });
-    reportPanel.classList.add("show", "materialize-in");
-    log(`→ ${id}: мок-отчёт родителю (статичные цифры, Next Steps #6)`);
+    reportPanel.classList.remove("show", "materialize-in");
+    pinInput.value = "";
+    pinGate.classList.add("show", "materialize-in");
+    log(`→ ${id}: PIN-гейт перед отчётом родителю`);
     return;
   }
+  pinGate.classList.remove("show", "materialize-in");
   reportPanel.classList.remove("show", "materialize-in");
-  sceneStage.classList.remove("hidden");
+  sceneStageWrap.classList.remove("hidden");
 
   const hero = HERO_FOR_STATE[id] || { character: "fox" };
   const bg = SCENE_BG[hero.character];
@@ -421,10 +424,12 @@ function renderState(id) {
     });
   } else if (s.kind === "question") {
     nextBtn.style.display = "none";
-    recordBtn.style.display = "block";
+    recordBtn.style.display = "flex";
     recordBtn.disabled = false;
-    recordBtn.textContent = "🎙 Слушаю… (нажми, если ребёнок уже ответил)";
-    recordBtn.classList.remove("recording", "pulse");
+    recordBtn.textContent = "🎙";
+    recordBtn.title = "Слушаю… (нажми, если ребёнок уже ответил)";
+    recordBtn.setAttribute("aria-label", recordBtn.title);
+    recordBtn.classList.remove("recording");
     uploadRow.style.display = "block";
     if (activeQuestionId !== id) {
       reaskUsed = false;
@@ -446,6 +451,23 @@ nextBtn.addEventListener("click", () => {
   cancelNarrationAutoAdvance();
   const s = STORY[currentId];
   if (s.next) renderState(s.next);
+});
+
+// PIN gate is a cosmetic step (Next Steps #6 report is mocked data, no real
+// auth backend) — any PIN unlocks it, it just adds the "this is the parent's
+// private area" beat before showing numbers.
+function unlockReport() {
+  pinGate.classList.remove("show", "materialize-in");
+  reportDate.textContent = new Date().toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+  });
+  reportPanel.classList.add("show", "materialize-in");
+  log("→ parent_report: PIN принят, мок-отчёт родителю (статичные цифры, Next Steps #6)");
+}
+pinSubmitBtn.addEventListener("click", unlockReport);
+pinInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") unlockReport();
 });
 
 resetBtn.addEventListener("click", () => {
@@ -483,8 +505,10 @@ async function startRecording() {
   mediaRecorder.start();
   recordingStartedAt = Date.now();
   recording = true;
-  recordBtn.textContent = "⏹ Стоп";
-  recordBtn.classList.add("recording", "pulse");
+  recordBtn.textContent = "⏹";
+  recordBtn.title = "Стоп";
+  recordBtn.setAttribute("aria-label", recordBtn.title);
+  recordBtn.classList.add("recording");
   statusText.textContent = "Идёт запись...";
   blockedFlash.classList.remove("show", "materialize-in");
   resultEl.classList.remove("show", "materialize-in");
@@ -496,8 +520,10 @@ function stopRecording() {
   mediaRecorder?.stream.getTracks().forEach((t) => t.stop());
   mediaRecorder?.stop();
   recording = false;
-  recordBtn.textContent = "🎙 Записать ответ";
-  recordBtn.classList.remove("recording", "pulse");
+  recordBtn.textContent = "🎙";
+  recordBtn.title = "Записать ответ";
+  recordBtn.setAttribute("aria-label", recordBtn.title);
+  recordBtn.classList.remove("recording");
 }
 
 const MIME_CANDIDATES = ["audio/webm", "audio/mp4", "audio/aac", "audio/wav"];

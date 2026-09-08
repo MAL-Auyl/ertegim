@@ -14,23 +14,27 @@
     padding: 40px 16px;
     min-height: 100vh;
   }
-  h1 { margin: 0 0 22px; }
+  h1 { margin: 0; font: inherit; }
 
   .panel { width: 100%; max-width: 560px; padding: var(--space-5); }
 
-  #sceneStage {
+  #sceneStageWrap {
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
+    margin-bottom: var(--space-4);
+  }
+  #sceneStage {
+    position: absolute;
+    inset: 0;
     border-radius: var(--radius-lg);
     overflow: hidden;
-    margin-bottom: var(--space-4);
     background-size: cover;
     background-position: center;
     background-color: var(--card-solid);
     transition: background-image 200ms ease;
   }
-  #sceneStage.hidden { display: none; }
+  #sceneStageWrap.hidden { display: none; }
 
   #berryOverlay {
     position: absolute;
@@ -154,21 +158,25 @@
   }
   @media (prefers-reduced-motion: reduce) {
     #heroStage, .hero-eyes, .hero-mouth-talk, #sceneStage, .dots span { animation: none !important; }
-    .stat-card, .mastery-row, #reportAgainBtn { animation: none !important; opacity: 1 !important; transform: none !important; }
+    .chip, .info-card, .mastery-row, .privacy-note, #reportAgainBtn { animation: none !important; opacity: 1 !important; transform: none !important; }
   }
 
   /* Report screen is a rare, once-per-session moment (end of story) — the
      one place in this app where a little delight earns its keep (see
      emil-design-eng: "rare/first-time -> can add delight"). Cards cascade
      in instead of appearing as one flat block. */
-  #reportPanel .stat-card,
+  #reportPanel .chip,
+  #reportPanel .info-card,
   #reportPanel .mastery-row,
+  #reportPanel .privacy-note,
   #reportPanel #reportAgainBtn {
     opacity: 0;
     transform: translateY(8px);
   }
-  #reportPanel.show .stat-card,
+  #reportPanel.show .chip,
+  #reportPanel.show .info-card,
   #reportPanel.show .mastery-row,
+  #reportPanel.show .privacy-note,
   #reportPanel.show #reportAgainBtn {
     animation: reportItemIn 340ms var(--ease-materialize) both;
   }
@@ -176,15 +184,21 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  #storyLine { margin-bottom: var(--space-4); }
+  #micOverlay {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    z-index: 3;
+  }
+  #recordBtn:disabled { opacity: 0.5; cursor: default; animation: none !important; }
+
+  #storyLine { margin-bottom: var(--space-4); margin-top: calc(-1 * var(--space-4)); position: relative; z-index: 2; }
   #storyLine .speaker { display: block; margin-bottom: var(--space-2); }
-  #storyLine .kk { font-size: 1.15rem; line-height: 1.4; }
-  #storyLine .ru { display: block; margin-top: var(--space-2); color: var(--ink-soft); font-style: italic; font-size: 0.9rem; }
+  #storyLine .kk { font-size: 1.55rem; font-weight: 700; line-height: 1.35; }
+  #storyLine .ru { display: block; margin-top: var(--space-3); color: var(--ink-soft); font-style: italic; font-size: 1rem; }
 
-  #nextBtn { width: 100%; padding: 16px; font-size: 1rem; }
-
-  #recordBtn { width: 100%; padding: 20px; font-size: 1.05rem; letter-spacing: -0.01em; }
-  #recordBtn.recording { background: var(--danger); }
+  #nextBtn { width: 100%; padding: 16px; font-size: 1rem; margin-bottom: var(--space-3); }
 
   #uploadRow { text-align: center; margin-top: var(--space-2); }
   #uploadLabel { font-size: 0.8rem; color: var(--ink-soft); cursor: pointer; text-decoration: underline; }
@@ -265,20 +279,14 @@
   #pipelinePanel .stage.err .stage-dot { background: var(--danger); }
   #pipelinePanel .stage.skip .stage-dot { background: var(--ink-soft); }
 
+  #pinGate { display: none; max-width: 320px; margin: var(--space-2) auto; }
+  #pinGate.show { display: flex; }
+
   #reportPanel { display: none; }
   #reportPanel.show { display: block; }
   .report-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-4); }
   .report-date { font-size: 0.78rem; color: var(--ink-soft); }
-  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); margin-bottom: var(--space-5); }
-  .stat-card {
-    background: color-mix(in srgb, var(--card-solid) 60%, transparent);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    padding: var(--space-4) var(--space-3);
-    text-align: center;
-  }
-  .stat-num { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; color: var(--accent); line-height: 1; }
-  .stat-label { font-size: 0.72rem; color: var(--ink-soft); margin-top: 6px; }
+  .mastery { margin-top: var(--space-5); }
   .mastery-title { font-size: 0.75rem; font-weight: 700; margin-bottom: var(--space-3); color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
   .mastery-row { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
   .mastery-name { flex: 0 0 148px; font-size: 0.85rem; }
@@ -291,10 +299,13 @@
 </style>
 </head>
 <body>
-  <div style="width:100%;max-width:560px;margin-bottom:10px;">
-    <a href="/library.html" style="font-size:0.8rem;color:var(--ink-soft);text-decoration:underline;">← Все истории</a>
+  <div class="topbar" style="max-width:560px;">
+    <div class="topbar-left">
+      <a class="topbar-back" href="/library.html" aria-label="Все истории">←</a>
+      <h1 class="topbar-logo">🦊 Ертегім</h1>
+    </div>
+    <span class="topbar-icon" title="WoZ-оператор">⚙</span>
   </div>
-  <h1 class="eyebrow">Ертегім · WoZ-оператор</h1>
   <div id="pipelinePanel" class="mono">
     <div class="stage" id="stage-mic"><span class="stage-dot"></span><span>MIC</span><span class="stage-detail"></span></div>
     <div class="stage" id="stage-stt"><span class="stage-dot"></span><span>STT</span><span class="stage-detail"></span></div>
@@ -306,19 +317,23 @@
     <div id="startOverlay" style="position:absolute;inset:0;z-index:5;background:var(--card-solid);border-radius:inherit;display:flex;align-items:center;justify-content:center;">
       <button id="startBtn" class="btn btn-primary" style="padding:20px 32px;font-size:1.1rem;">▶ Бастау</button>
     </div>
-    <div id="sceneStage">
-      <div id="berryOverlay"></div>
-      <div id="heroStage"></div>
+    <div id="sceneStageWrap">
+      <div id="sceneStage">
+        <div id="berryOverlay"></div>
+        <div id="heroStage"></div>
+      </div>
+      <div id="micOverlay">
+        <button id="recordBtn" class="mic-btn" title="Записать ответ">🎙</button>
+      </div>
     </div>
     <audio id="heroVoice" style="display:none"></audio>
-    <div id="storyLine">
+    <div id="storyLine" class="speech-bubble">
       <span id="storySpeaker" class="speaker eyebrow"></span>
       <div id="storyKk" class="kk"></div>
       <span id="storyRu" class="ru"></span>
     </div>
 
     <button id="nextBtn" class="btn btn-primary">▶ Далее</button>
-    <button id="recordBtn" class="btn btn-primary">🎙 Записать ответ</button>
     <div id="uploadRow">
       <label id="uploadLabel" for="fileInput">📁 или загрузить готовый аудиофайл (нет микрофона?)</label>
       <input type="file" id="fileInput" accept="audio/*,video/*">
@@ -339,34 +354,61 @@
       </div>
     </div>
 
+    <div id="pinGate" class="pin-gate">
+      <div class="pin-avatar">🦊</div>
+      <div class="display" style="font-size:1.25rem;">Ата-ана профилі</div>
+      <div class="body-text" style="color:var(--ink-soft);font-size:0.88rem;margin-top:4px;">
+        Баланың дамуы туралы ақпаратты көріңіз
+      </div>
+      <input id="pinInput" class="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="•  •  •  •  PIN-код енгізіңіз">
+      <button id="pinSubmitBtn" class="btn btn-primary" style="width:100%;">Кіру</button>
+    </div>
+
     <div id="reportPanel">
       <div class="report-head">
-        <span class="eyebrow">Отчёт родителю</span>
+        <span class="eyebrow">🔒 Балаңыздың есебі</span>
         <span class="report-date" id="reportDate"></span>
       </div>
-      <div class="stat-grid">
-        <div class="stat-card" style="animation-delay:40ms"><div class="stat-num">2</div><div class="stat-label">героя пройдено</div></div>
-        <div class="stat-card" style="animation-delay:80ms"><div class="stat-num">6</div><div class="stat-label">новых слов</div></div>
-        <div class="stat-card" style="animation-delay:120ms"><div class="stat-num">1/2</div><div class="stat-label">верно с 1-й попытки</div></div>
-        <div class="stat-card" style="animation-delay:160ms"><div class="stat-num">0</div><div class="stat-label">блокировок по теме</div></div>
+      <div class="chip-grid">
+        <div class="chip chip-blue" style="animation-delay:40ms"><div class="chip-icon">💬</div><div class="chip-num">28</div><div class="chip-label">сөз қолданды</div></div>
+        <div class="chip chip-orange" style="animation-delay:80ms"><div class="chip-icon">⚡</div><div class="chip-num">4.8с</div><div class="chip-label">орташа жауап</div></div>
+        <div class="chip chip-green" style="animation-delay:120ms"><div class="chip-icon">🎯</div><div class="chip-num">3/5</div><div class="chip-label">дәл жауаптар</div></div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card" style="animation-delay:160ms">
+          <div class="info-title">Қолданған сөздер</div>
+          <div class="word-tags">
+            <span class="word-tag">қоян</span><span class="word-tag">жол</span><span class="word-tag">жидек</span>
+            <span class="word-tag">үй</span><span class="word-tag">жақсы</span><span class="word-tag">рахмет</span>
+          </div>
+        </div>
+        <div class="info-card" style="animation-delay:200ms">
+          <div class="info-title">Маңызды сәттер</div>
+          <div class="timeline">
+            <div class="timeline-item"><span class="timeline-time">02:14</span><span>Кейіпкерден көмек сұрады</span></div>
+            <div class="timeline-item"><span class="timeline-time">04:32</span><span>Жидектерді дұрыс санады</span></div>
+            <div class="timeline-item"><span class="timeline-time">07:18</span><span>Рифманы тапты</span></div>
+          </div>
+        </div>
       </div>
       <div class="mastery">
-        <div class="mastery-title">Прогресс по героям</div>
-        <div class="mastery-row" style="animation-delay:220ms">
-          <span class="mastery-name">🦊 Түлкі · счёт</span>
+        <div class="mastery-title">Кейіпкерлер бойынша прогресс</div>
+        <div class="mastery-row" style="animation-delay:240ms">
+          <span class="mastery-name">🦊 Түлкі · санау</span>
           <div class="mastery-bar"><div class="mastery-fill" style="width:100%"></div></div>
         </div>
-        <div class="mastery-row" style="animation-delay:260ms">
-          <span class="mastery-name">🦉 Үкі · рифмы</span>
+        <div class="mastery-row" style="animation-delay:280ms">
+          <span class="mastery-name">🦉 Үкі · рифма</span>
           <div class="mastery-bar"><div class="mastery-fill" style="width:70%"></div></div>
         </div>
-        <div class="mastery-row locked" style="animation-delay:300ms">
-          <span class="mastery-name">🐻 Аю · цвета</span>
+        <div class="mastery-row locked" style="animation-delay:320ms">
+          <span class="mastery-name">🐻 Аю · түстер</span>
           <div class="mastery-bar"><div class="mastery-fill" style="width:0%"></div></div>
-          <span class="mastery-soon">скоро</span>
+          <span class="mastery-soon">жақында</span>
         </div>
       </div>
-      <a id="reportAgainBtn" class="btn btn-primary" href="/library.html" style="animation-delay:360ms">🔄 Ещё одна история</a>
+      <div class="privacy-note" style="animation-delay:340ms">🔒 <span><b>Бұл ақпарат құпия түрде сақталады.</b> Сіздің балаңыздың дауысы жазылмайды. Тек даму көрсеткіштері беріледі.</span></div>
+      <a id="reportAgainBtn" class="btn btn-primary" href="/library.html" style="animation-delay:360ms">🔄 Тағы бір ертегі</a>
     </div>
   </div>
   <div id="resetRow"><button id="resetBtn" class="btn btn-muted">🔄 Сначала</button></div>

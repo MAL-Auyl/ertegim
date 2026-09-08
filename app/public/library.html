@@ -6,13 +6,13 @@
 <title>Ертегім</title>
 <link rel="stylesheet" href="design-system.css">
 <style>
-  body { display: flex; flex-direction: column; align-items: center; padding: 48px 20px 60px; }
+  body { display: flex; flex-direction: column; align-items: center; padding: 32px 20px 60px; }
   header {
     width: 100%; max-width: 960px;
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 40px;
+    margin-bottom: 36px;
   }
-  .logo { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; }
+  .logo { margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
   .lang-note { font-size: 0.8rem; color: var(--ink-soft); }
 
   .hero-line {
@@ -30,18 +30,19 @@
   .card {
     border-radius: var(--radius-lg);
     overflow: hidden;
-    border: 1px solid var(--line);
+    border: 2.5px solid var(--line);
     background: var(--card-solid);
     text-decoration: none;
     color: var(--ink);
-    transition: transform 150ms var(--ease-response);
+    box-shadow: 0 3px 0 0 var(--line);
+    transition: transform 150ms var(--ease-response), box-shadow 150ms var(--ease-response);
     display: block;
     opacity: 0;
     animation: cardIn 340ms var(--ease-materialize) both;
   }
   @keyframes cardIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
   @media (hover: hover) and (pointer: fine) {
-    .card:hover { transform: translateY(-2px); }
+    .card:hover { transform: translateY(-3px); }
   }
   .card:active { transform: scale(0.98); }
   .card.disabled:active { transform: none; }
@@ -51,33 +52,34 @@
 
   .thumb {
     height: 180px;
-    background: linear-gradient(160deg, #1c2226, #14181a);
+    background: linear-gradient(160deg, #ffd9a8, #ffb27a);
     display: flex; align-items: center; justify-content: center;
     position: relative;
   }
-  .thumb svg { width: 110px; height: 110px; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.35)); }
+  .thumb svg { width: 110px; height: 110px; filter: drop-shadow(0 6px 12px rgba(46,32,19,0.25)); }
   .thumb img { width: 100%; height: 100%; object-fit: cover; }
   .thumb img.fullbody { object-fit: contain; padding: 10px; box-sizing: border-box; }
   .badge {
     position: absolute; top: 12px; right: 12px;
-    font-size: 0.72rem; font-weight: 600;
-    padding: 3px 9px; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 800;
+    padding: 4px 10px; border-radius: 20px;
     background: var(--accent); color: #fff;
   }
-  .badge.soon { background: rgba(255,255,255,0.15); color: #fff; }
+  .badge.soon { background: rgba(46,32,19,0.5); color: #fff; }
 
   .card-body { padding: 16px 18px 20px; }
-  .card-title { font-weight: 700; font-size: 1.02rem; margin-bottom: 6px; letter-spacing: -0.005em; }
+  .card-title { font-weight: 800; font-size: 1.02rem; margin-bottom: 6px; letter-spacing: -0.005em; }
   .card-desc { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.5; }
 
-  .card.disabled { pointer-events: none; opacity: 0.55; }
+  .card.disabled { pointer-events: none; opacity: 0.6; box-shadow: none; }
+  .card.disabled .thumb { background: linear-gradient(160deg, #e4dccb, #d6cbb2); }
   .card.disabled .thumb svg,
-  .card.disabled .thumb img { filter: grayscale(1) opacity(0.6); }
+  .card.disabled .thumb img { filter: grayscale(1) opacity(0.65); }
 </style>
 </head>
 <body>
   <header>
-    <div class="logo">🦊 Ертегім</div>
+    <h1 class="logo">🦊 Ертегім</h1>
     <div class="lang-note">қазақша · интерактивті сказка</div>
   </header>
 

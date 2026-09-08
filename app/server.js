@@ -17,6 +17,12 @@ function findFfmpegRel() {
 
 const FFMPEG_REL = findFfmpegRel(); // e.g. "ffmpeg-n8.1-latest-win64-gpl-8.1/bin/ffmpeg.exe"
 
+// Bun.serve handles every request on one JS thread, so a hung child process
+// (malformed audio, a stuck ffmpeg/whisper-cli invocation) would otherwise
+// block ALL in-flight requests indefinitely — every spawnSync call below
+// gets a timeout for the same reason every network call in this file does.
+const SPAWN_TIMEOUT_MS = 20000;
+
 // Groq (whisper-large-v3-turbo, cloud) — noticeably more accurate and ~4x
 // faster than local Whisper-small on real Kazakh speech in side-by-side
 // testing (2026-09-04), and far more robust to noisy audio (local Whisper
@@ -72,7 +78,7 @@ async function preprocessForSTT(audioBuf, ext) {
         "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le",
         wavFromTools,
       ],
-      { cwd: TOOLS },
+      { cwd: TOOLS, timeout: SPAWN_TIMEOUT_MS },
     );
     if (ff.exitCode !== 0) throw new Error(`ffmpeg loudnorm failed: ${new TextDecoder().decode(ff.stderr)}`);
     return await Bun.file(wavAbs).arrayBuffer();
@@ -85,6 +91,9 @@ async function preprocessForSTT(audioBuf, ext) {
 
 async function transcribeGroq(audioBuf, ext) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
+  // t0 starts here (not after preprocessing) so the reported `ms` is
+  // comparable to transcribeLocal's, which times its own ffmpeg step too.
+  const t0 = performance.now();
   // Preprocessing is a best-effort quality boost, not a correctness
   // requirement — if ffmpeg/ext handling hiccups here, fall back to the
   // original raw blob rather than failing the whole transcription.
@@ -107,7 +116,6 @@ async function transcribeGroq(audioBuf, ext) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
   try {
-    const t0 = performance.now();
     const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
       method: "POST",
       headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
@@ -224,13 +232,13 @@ async function transcribeLocal(audioBuf, ext) {
 
   const ff = Bun.spawnSync(
     [FFMPEG_REL, "-y", "-loglevel", "error", "-i", rawFromTools, "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", wavFromTools],
-    { cwd: TOOLS },
+    { cwd: TOOLS, timeout: SPAWN_TIMEOUT_MS },
   );
   if (ff.exitCode !== 0) throw new Error(`ffmpeg failed: ${new TextDecoder().decode(ff.stderr)}`);
 
   const wh = Bun.spawnSync(
     ["whisper-bin/Release/whisper-cli.exe", "-m", "ggml-small.bin", "-l", "kk", "-f", wavFromTools, "-otxt", "-of", outBaseFromTools, "-nt"],
-    { cwd: TOOLS },
+    { cwd: TOOLS, timeout: SPAWN_TIMEOUT_MS },
   );
   if (wh.exitCode !== 0) throw new Error(`whisper-cli failed: ${new TextDecoder().decode(wh.stderr)}`);
 
@@ -250,8 +258,8 @@ async function transcribeLocal(audioBuf, ext) {
 // breaks on Cyrillic ("Рабочий стол") regardless of cwd/argv tricks — the
 // only fix that actually worked was moving the binary itself off the
 // Cyrillic path. Output files can still live back under the project path.
-const PIPER_EXE = "C:/Users/zoomy/piper-tts/piper.exe";
-const PIPER_VOICE_KK = "C:/Users/zoomy/piper-tts/voices/kk_KZ-issai-high.onnx";
+const PIPER_EXE = process.env.PIPER_EXE || "C:/Users/zoomy/piper-tts/piper.exe";
+const PIPER_VOICE_KK = process.env.PIPER_VOICE_KK || "C:/Users/zoomy/piper-tts/voices/kk_KZ-issai-high.onnx";
 
 // kk_KZ-issai-high is a 6-speaker model; ids 2,3,4,5 are labeled female
 // (F3, Raya/F1, F1, F2) but sound near-identical to each other in practice —
@@ -274,7 +282,7 @@ async function speak(text, speakerId = HERO_SPEAKER) {
   const t0 = performance.now();
   const proc = Bun.spawnSync(
     [PIPER_EXE, "-m", PIPER_VOICE_KK, "-f", rawAbs, "--speaker", String(speakerId)],
-    { stdin: new TextEncoder().encode(text) },
+    { stdin: new TextEncoder().encode(text), timeout: SPAWN_TIMEOUT_MS },
   );
   if (proc.exitCode !== 0) throw new Error(`piper failed: ${new TextDecoder().decode(proc.stderr)}`);
 
@@ -284,7 +292,7 @@ async function speak(text, speakerId = HERO_SPEAKER) {
       "-af", `asetrate=22050*${PITCH_FACTOR},aresample=22050,atempo=${1 / PITCH_FACTOR}`,
       outFromTools,
     ],
-    { cwd: TOOLS },
+    { cwd: TOOLS, timeout: SPAWN_TIMEOUT_MS },
   );
   if (pitch.exitCode !== 0) throw new Error(`ffmpeg pitch-shift failed: ${new TextDecoder().decode(pitch.stderr)}`);
   const ms = Math.round(performance.now() - t0);

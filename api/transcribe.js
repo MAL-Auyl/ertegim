@@ -1,66 +1,20 @@
 // Vercel Edge Function — cloud-only counterpart to app/server.js's
-// /api/transcribe route. No native binaries here (Piper/Whisper.cpp can't
-// run on Vercel), so this is Groq-only: same STT engine that's already
-// primary in the local server, just without the local-Whisper fallback
-// (nothing to fall back to on a serverless platform). The Web-standard
-// Request/Response API on Edge runtime maps almost 1:1 to the Bun code.
+// /api/transcribe route. No native binaries here (Piper/Whisper.cpp/ffmpeg
+// can't run on Vercel Edge), so this is Groq-only: same STT engine that's
+// already primary in the local server, just without the local-Whisper
+// fallback (nothing to fall back to on a serverless platform) and without
+// the ffmpeg loudnorm preprocessing pass app/server.js applies before
+// sending audio to Groq (no ffmpeg binary available here — the raw browser
+// MediaRecorder blob is sent as-is). The Web-standard Request/Response API
+// on Edge runtime maps almost 1:1 to the Bun code.
 //
-// Blocklist logic is inlined (not imported from ../spike/blocklist.js)
-// because that file uses `import.meta.main` for its CLI entry point — a
-// Bun-only API with no CommonJS equivalent, which silently broke Vercel's
-// ESM->CJS build (checkBlocklist came out undefined). Keep this in sync
-// with spike/blocklist.js by hand if the matching logic changes.
+// Blocklist logic lives in ../spike/blocklist-core.js, shared with
+// app/server.js via spike/blocklist.js — see that file for why the matching
+// logic had to be split out of the Bun-only CLI entry point.
+
+import { checkBlocklist } from "../spike/blocklist-core.js";
 
 export const config = { runtime: "edge" };
-
-const TRIGGERS = [
-  "маған ойыншық сатып бер", // "buy me a toy" — the scripted off-topic line
-];
-
-function levenshtein(a, b) {
-  const m = a.length, n = b.length;
-  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
-  for (let j = 0; j <= n; j++) dp[0][j] = j;
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-    }
-  }
-  return dp[m][n];
-}
-
-function normalize(text) {
-  return text.toLowerCase().replace(/[.,!?;:()"'«»]/g, "").trim();
-}
-
-function tolerance(len) {
-  if (len <= 3) return 1;
-  if (len <= 6) return 1;
-  return Math.max(2, Math.floor(len * 0.3));
-}
-
-function wordFuzzyMatch(triggerWord, transcriptWords) {
-  for (const tw of transcriptWords) {
-    const dist = levenshtein(triggerWord, tw);
-    if (dist <= tolerance(triggerWord.length)) return { hit: true, matched: tw, dist };
-  }
-  return { hit: false };
-}
-
-function checkBlocklist(transcript, triggers = TRIGGERS, threshold = 0.5) {
-  const transcriptWords = normalize(transcript).split(/\s+/).filter(Boolean);
-  const results = [];
-  for (const trigger of triggers) {
-    const triggerWords = normalize(trigger).split(/\s+/).filter(Boolean);
-    const matches = triggerWords.map((tw) => ({ word: tw, ...wordFuzzyMatch(tw, transcriptWords) }));
-    const hitCount = matches.filter((m) => m.hit).length;
-    const ratio = hitCount / triggerWords.length;
-    if (ratio >= threshold && hitCount >= 2) results.push({ trigger, ratio, matches });
-  }
-  return { blocked: results.length > 0, results };
-}
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_TIMEOUT_MS = 8000; // more headroom than local (no LAN, real internet round-trip)
@@ -68,8 +22,12 @@ const GROQ_TIMEOUT_MS = 8000; // more headroom than local (no LAN, real internet
 // Whisper sometimes hallucinates into a completely different language on
 // short/unclear audio even with language=kk forced — a `prompt` hint
 // biasing the decoder toward expected story vocabulary measurably reduces
-// this (standard Whisper mitigation, not Kazakh-specific).
-const GROQ_PROMPT = "Сәлем, түлкі, үкі, жидек, санау, ұйқас, мысық, қасық, дұрыс, ойнайық";
+// this (standard Whisper mitigation, not Kazakh-specific). Kept in sync by
+// hand with app/server.js's GROQ_PROMPT (fox_question's answer space is the
+// numbers 1-5, and the owl's rhyme source needs "балық").
+const GROQ_PROMPT =
+  "Сәлем, түлкі, үкі, жидек, санау, ұйқас, мысық, балық, қасық, дұрыс, ойнайық, " +
+  "бір, екі, үш, төрт, бес, один, два, три, четыре, пять";
 
 function isMostlyCyrillic(text) {
   const letters = text.match(/\p{L}/gu) || [];
