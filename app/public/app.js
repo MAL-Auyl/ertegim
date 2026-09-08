@@ -581,7 +581,7 @@ function renderState(id) {
     sceneStage.classList.add("hidden");
     nextBtn.style.display = "none";
     recordBtn.style.display = "none";
-    uploadRow.style.display = "none";
+    uploadRow.classList.remove("active");
     reportDate.textContent = new Date().toLocaleDateString("ru-RU", {
       day: "numeric",
       month: "long",
@@ -608,7 +608,7 @@ function renderState(id) {
   if (s.kind === "narration") {
     nextBtn.style.display = "block";
     recordBtn.style.display = "none";
-    uploadRow.style.display = "none";
+    uploadRow.classList.remove("active");
     // Child screen has no buttons by design (IDEA.md "Детский экран без
     // интерфейса") — nextBtn stays only as an operator override/killswitch.
     // Normal flow advances itself once the line has finished playing
@@ -627,7 +627,7 @@ function renderState(id) {
     recordBtn.disabled = false;
     recordBtn.textContent = "🎙 Слушаю… (нажми, если ребёнок уже ответил)";
     recordBtn.classList.remove("recording", "pulse");
-    uploadRow.style.display = "block";
+    uploadRow.classList.add("active");
     if (activeQuestionId !== id) {
       reaskUsed = false;
       activeQuestionId = id;
@@ -642,7 +642,7 @@ function renderState(id) {
     // "end"
     nextBtn.style.display = "none";
     recordBtn.style.display = "none";
-    uploadRow.style.display = "none";
+    uploadRow.classList.remove("active");
     statusText.textContent = "Демо завершено.";
   }
 
@@ -783,7 +783,7 @@ async function submitAudio(blob, filename) {
       blockedFlash.classList.add("show", "materialize-in");
       storyEnded = true;
       recordBtn.style.display = "none";
-      uploadRow.style.display = "none";
+      uploadRow.classList.remove("active");
       log(`BLOCKED (автоматически, без оператора): "${data.transcript}" — сценарий остановлен`);
     } else {
       setStage("safety", "ok", "");

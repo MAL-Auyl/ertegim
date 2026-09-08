@@ -69,7 +69,9 @@ const GROQ_TIMEOUT_MS = 8000; // more headroom than local (no LAN, real internet
 // short/unclear audio even with language=kk forced — a `prompt` hint
 // biasing the decoder toward expected story vocabulary measurably reduces
 // this (standard Whisper mitigation, not Kazakh-specific).
-const GROQ_PROMPT = "Сәлем, түлкі, үкі, жидек, санау, ұйқас, мысық, қасық, дұрыс, ойнайық";
+const GROQ_PROMPT =
+  "Сәлем, түлкі, үкі, жидек, санау, ұйқас, мысық, балық, қасық, дұрыс, ойнайық, " +
+  "бір, екі, үш, төрт, бес, один, два, три, четыре, пять";
 
 function isMostlyCyrillic(text) {
   const letters = text.match(/\p{L}/gu) || [];
