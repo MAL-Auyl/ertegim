@@ -25,7 +25,7 @@ const FFMPEG_REL = findFfmpegRel(); // e.g. "ffmpeg-n8.1-latest-win64-gpl-8.1/bi
 // Whisper is the fallback so the demo still works with zero network/cloud
 // dependency if Groq is unreachable or the key is missing/rate-limited.
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_TIMEOUT_MS = 5000;
+const GROQ_TIMEOUT_MS = 8000; // raised from 5000 — whisper-large-v3 (full model, swapped in for Kazakh accuracy) is slower than turbo
 
 // Whisper sometimes hallucinates into a completely different language on
 // short/unclear audio even with language=kk forced — a `prompt` hint
@@ -99,8 +99,19 @@ async function transcribeGroq(audioBuf, ext) {
 
   const form = new FormData();
   form.append("file", new Blob([uploadBuf]), uploadName);
-  form.append("model", "whisper-large-v3-turbo");
-  form.append("language", "kk");
+  // whisper-large-v3-turbo is faster but noticeably weaker than the full
+  // model on lower-resource languages — worth the extra latency here since
+  // the demo already has an 8-12s TTS/mic budget and a "think" animation
+  // covering the wait. Forcing language=kk was making it worse, not
+  // better: on unclear mobile audio it confidently hallucinated Kazakh-
+  // shaped nonsense instead of Kazakh words (reported live: "үңі ғыңңқ").
+  // Every question in this story already accepts a Kazakh OR Russian
+  // answer (see story.js criteria), so there's no reason to force the
+  // harder, lower-resource language — auto-detect plus the vocabulary
+  // prompt below plus isMostlyCyrillic() (still rejects a wrong-script
+  // guess) covers both.
+  form.append("model", "whisper-large-v3");
+  form.append("temperature", "0");
   form.append("prompt", GROQ_PROMPT);
   form.append("response_format", "json");
 

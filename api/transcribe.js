@@ -63,7 +63,7 @@ function checkBlocklist(transcript, triggers = TRIGGERS, threshold = 0.5) {
 }
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_TIMEOUT_MS = 8000; // more headroom than local (no LAN, real internet round-trip)
+const GROQ_TIMEOUT_MS = 12000; // raised from 8000 — whisper-large-v3 (full model, swapped in for Kazakh accuracy) is slower than turbo
 
 // Whisper sometimes hallucinates into a completely different language on
 // short/unclear audio even with language=kk forced — a `prompt` hint
@@ -84,8 +84,13 @@ async function transcribeGroq(audioBuf, ext) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
   const form = new FormData();
   form.append("file", new Blob([audioBuf]), `clip.${ext}`);
-  form.append("model", "whisper-large-v3-turbo");
-  form.append("language", "kk");
+  // See the matching comment in app/server.js — turbo + forced language=kk
+  // was confidently hallucinating Kazakh-shaped nonsense on real mobile
+  // audio instead of failing safely. Every question already accepts a
+  // Kazakh OR Russian answer, so auto-detect + the vocabulary prompt below
+  // + isMostlyCyrillic() (still rejects a wrong-script guess) is enough.
+  form.append("model", "whisper-large-v3");
+  form.append("temperature", "0");
   form.append("prompt", GROQ_PROMPT);
   form.append("response_format", "json");
 
