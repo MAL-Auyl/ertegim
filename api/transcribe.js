@@ -109,9 +109,29 @@ async function transcribeGroq(audioBuf, ext) {
   }
 }
 
+// The repo is public, so this URL is visible to anyone reading it — a bare
+// script hitting it directly would burn the shared Groq quota right before
+// the pitch. Not a real security boundary (Origin is trivially spoofable
+// from a non-browser client), just a cheap filter against naive/accidental
+// hits; the app's own fetch() always sends a same-origin Origin header on
+// POST, so real traffic from the deployed page is unaffected.
+const ALLOWED_ORIGIN_HOST = /(^|\.)vercel\.app$|^localhost$|^127\.0\.0\.1$/;
+function isAllowedOrigin(request) {
+  const origin = request.headers.get("origin") || request.headers.get("referer");
+  if (!origin) return false;
+  try {
+    return ALLOWED_ORIGIN_HOST.test(new URL(origin).hostname);
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(request) {
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "method not allowed" }), { status: 405 });
+  }
+  if (!isAllowedOrigin(request)) {
+    return new Response(JSON.stringify({ error: "forbidden origin" }), { status: 403 });
   }
   try {
     const form = await request.formData();

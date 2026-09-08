@@ -59,9 +59,25 @@ async function classifyAnswer(transcript, questionKk, criterion) {
   }
 }
 
+// See the matching guard in api/transcribe.js — same reasoning, same
+// (deliberately loose) check.
+const ALLOWED_ORIGIN_HOST = /(^|\.)vercel\.app$|^localhost$|^127\.0\.0\.1$/;
+function isAllowedOrigin(request) {
+  const origin = request.headers.get("origin") || request.headers.get("referer");
+  if (!origin) return false;
+  try {
+    return ALLOWED_ORIGIN_HOST.test(new URL(origin).hostname);
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(request) {
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "method not allowed" }), { status: 405 });
+  }
+  if (!isAllowedOrigin(request)) {
+    return new Response(JSON.stringify({ error: "forbidden origin" }), { status: 403 });
   }
   try {
     const { transcript, questionKk, criterion } = await request.json();

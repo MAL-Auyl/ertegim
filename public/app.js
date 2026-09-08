@@ -426,6 +426,11 @@ function startVadRecorder() {
   // its own dedicated getUserMedia stream instead of reusing vadStream — same
   // pattern as the manual startRecording() path, which was verified working
   // on a real iPhone earlier.
+  const askedId = currentId; // identity check below — vadArmed alone isn't enough: it's just
+  // "some question is armed", and by the time this promise resolves that could
+  // be a *different* question (this turn ended and the next one got armed
+  // while getUserMedia() was still pending). Same pattern as askedId in
+  // submitAudio()/classifyAndSuggest().
   vadRecording = true; // set synchronously so vadLoop() doesn't re-enter while the stream request is in flight
   recordBtn.classList.add("recording", "pulse");
   statusText.textContent = "Слушаю...";
@@ -433,8 +438,9 @@ function startVadRecorder() {
   navigator.mediaDevices
     .getUserMedia({ audio: true })
     .then((stream) => {
-      if (!vadArmed) {
-        // question was answered/left while permission was pending
+      if (!vadArmed || currentId !== askedId) {
+        // this question was answered/left (or a new one already armed) while
+        // permission/the stream request was in flight
         stream.getTracks().forEach((t) => t.stop());
         vadRecording = false;
         return;
