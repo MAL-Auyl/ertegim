@@ -1,5 +1,5 @@
 const { test, expect, describe } = require("bun:test");
-const { localClassify, detectRoute } = require("../public/classify-local.js");
+const { localClassify, detectRoute, phonetic, NUM_FORMS } = require("../public/classify-local.js");
 
 const NUM_KK = ["", "бір", "екі", "үш", "төрт", "бес"];
 const NUM_RU = ["", "один", "два", "три", "четыре", "пять"];
@@ -90,5 +90,43 @@ describe("detectRoute", () => {
   });
   test("none", () => {
     expect(detectRoute(["привет"])).toBeNull();
+  });
+});
+
+describe("phonetic", () => {
+  test("collapses Kazakh-specific letters to their nearest Russian sound", () => {
+    expect(phonetic("қасық")).toBe("касик");
+    expect(phonetic("үш")).toBe("уш");
+    expect(phonetic("төрт")).toBe("торт");
+    expect(phonetic("өзен")).toBe("озен");
+  });
+  test("drops soft/hard signs and doubled letters", () => {
+    expect(phonetic("пять")).toBe("пят");
+    expect(phonetic("аллея")).toBe("алея");
+  });
+});
+
+describe("count with child pronunciations", () => {
+  const node = { mode: "exact", skill: "count" };
+  for (const [n, forms] of [[3, ["уч", "тли", "тьли", "тры"]], [4, ["четыле", "торт"]], [5, ["пат", "бес", "пяць"]], [2, ["еки", "дфа"]], [1, ["бир", "адин"]]]) {
+    for (const f of forms) {
+      test(`${f} → ${n}`, () => {
+        expect(localClassify(node, f, { ...ctx, trackCount: n }).label).toBe("correct");
+      });
+    }
+  }
+  test("wrong number still unclear", () => {
+    expect(localClassify(node, "уш", { ...ctx, trackCount: 4 }).label).toBe("unclear");
+  });
+  test("NUM_FORMS has 5 entries, each non-empty", () => {
+    expect(NUM_FORMS.length).toBe(6);
+    for (let i = 1; i <= 5; i++) expect(NUM_FORMS[i].length).toBeGreaterThan(2);
+  });
+});
+
+describe("rhyme with phonetic suffix", () => {
+  const node = { mode: "exact", skill: "rhyme" };
+  test("қасик (mixed script) counts", () => {
+    expect(localClassify(node, "қасик", ctx).label).toBe("correct");
   });
 });

@@ -32,9 +32,37 @@ function wordsOf(transcript) {
     .filter(Boolean);
 }
 
+// Children and STT both "simplify" Kazakh-specific sounds the same way
+// (қ→к, ү→у, і→и …), so answers are compared as rough phonetic strings,
+// not letter-for-letter. Applied to both sides of every fuzzy match.
+const PHONETIC_MAP = {
+  қ: "к", ғ: "г", ң: "н", һ: "х", ә: "а", ө: "о", ү: "у", ұ: "у", і: "и", ы: "и",
+  э: "е", ё: "е", й: "и", ь: "", ъ: "",
+};
+function phonetic(word) {
+  const mapped = String(word || "")
+    .toLowerCase()
+    .split("")
+    .map((ch) => (ch in PHONETIC_MAP ? PHONETIC_MAP[ch] : ch))
+    .join("");
+  return mapped.replace(/(.)\1+/g, "$1");
+}
+
+// Accepted spoken forms of 1..5: canonical kk/ru plus the distortions a
+// 3-7-year-old (and Whisper on a 3-7-year-old) actually produce.
+const NUM_FORMS = [
+  [],
+  ["бір", "бир", "один", "адин", "раз", "1"],
+  ["екі", "еки", "два", "дфа", "2"],
+  ["үш", "уш", "уч", "три", "тры", "тли", "тьли", "3"],
+  ["төрт", "торт", "четыре", "четыле", "четыри", "4"],
+  ["бес", "пять", "пяць", "пат", "5"],
+];
+
 function fuzzyIncludes(words, target) {
-  const t = target.toLowerCase();
-  return words.some((w) => levenshtein(w, t) <= tolerance(t.length));
+  const t = phonetic(target);
+  if (!t) return false;
+  return words.some((w) => levenshtein(phonetic(w), t) <= tolerance(t.length));
 }
 
 // Kazakh + Russian keywords for the fork question. Matched as prefixes so
@@ -75,7 +103,7 @@ function localClassify(node, transcript, ctx) {
 
   if (node.skill === "count") {
     const n = ctx.trackCount;
-    const accepted = [ctx.numKk[n], ctx.numRu[n], String(n)];
+    const accepted = [ctx.numKk?.[n], ctx.numRu?.[n], String(n), ...(NUM_FORMS[n] || [])].filter(Boolean);
     const hit = accepted.some((form) => fuzzyIncludes(words, form));
     return hit
       ? { label: "correct", reason: "число совпало (локально)" }
@@ -83,7 +111,7 @@ function localClassify(node, transcript, ctx) {
   }
 
   if (node.skill === "rhyme") {
-    const rhymes = words.some((w) => /(ық|ик)$/.test(w));
+    const rhymes = words.some((w) => /(ик|ык)$/.test(phonetic(w)));
     return rhymes
       ? { label: "correct", reason: "рифма «-ық/-ик» (локально)" }
       : { label: "unclear", reason: "рифма не найдена (локально)" };
@@ -93,5 +121,5 @@ function localClassify(node, transcript, ctx) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { localClassify, detectRoute, wordsOf, levenshtein };
+  module.exports = { localClassify, detectRoute, wordsOf, levenshtein, phonetic, NUM_FORMS };
 }
