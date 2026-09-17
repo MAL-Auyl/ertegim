@@ -4,6 +4,7 @@
 //   1. Automatic blocklist (fuzzy, no human) — fires BLOCKED on its own.
 //   2. Transcript + audio handed to the operator for Correct/Re-ask/Advance.
 import { checkBlocklist } from "../spike/blocklist.js";
+import { sttHintFor } from "../spike/stt-hints-core.js";
 
 const ROOT = `${import.meta.dir}/`; // Bun-native, already decoded (handles Cyrillic paths)
 const TMP = `${ROOT}tmp`;
@@ -32,20 +33,6 @@ const SPAWN_TIMEOUT_MS = 20000;
 // dependency if Groq is unreachable or the key is missing/rate-limited.
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_TIMEOUT_MS = 5000;
-
-// Whisper sometimes hallucinates into a completely different language on
-// short/unclear audio even with language=kk forced — a `prompt` hint
-// biasing the decoder toward expected story vocabulary measurably reduces
-// this (standard Whisper mitigation, not Kazakh-specific).
-//
-// The actual child answers were under-covered here: fox_question's entire
-// answer space is the numbers 1-5 (kk and ru), and the owl's rhyme source
-// can be either OWL_WORDS entry (app.js) — neither "бір/екі/үш/төрт/бес"
-// nor "балық" were in the hint, so the decoder had zero bias toward the
-// exact words it most needs to get right. Added below.
-const GROQ_PROMPT =
-  "Сәлем, түлкі, үкі, жидек, санау, ұйқас, мысық, балық, қасық, дұрыс, ойнайық, " +
-  "бір, екі, үш, төрт, бес, один, два, три, четыре, пять";
 
 function isMostlyCyrillic(text) {
   const letters = text.match(/\p{L}/gu) || [];
@@ -89,7 +76,7 @@ async function preprocessForSTT(audioBuf, ext) {
   }
 }
 
-async function transcribeGroq(audioBuf, ext) {
+async function transcribeGroq(audioBuf, ext, hint) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
   // t0 starts here (not after preprocessing) so the reported `ms` is
   // comparable to transcribeLocal's, which times its own ffmpeg step too.
@@ -110,7 +97,8 @@ async function transcribeGroq(audioBuf, ext) {
   form.append("file", new Blob([uploadBuf]), uploadName);
   form.append("model", "whisper-large-v3-turbo");
   form.append("language", "kk");
-  form.append("prompt", GROQ_PROMPT);
+  form.append("prompt", hint);
+  form.append("temperature", "0");
   form.append("response_format", "json");
 
   const controller = new AbortController();
@@ -198,9 +186,9 @@ async function classifyAnswer(transcript, questionKk, criterion) {
   }
 }
 
-async function transcribe(audioBuf, ext) {
+async function transcribe(audioBuf, ext, hint) {
   try {
-    return await transcribeGroq(audioBuf, ext);
+    return await transcribeGroq(audioBuf, ext, hint);
   } catch (err) {
     console.error(`Groq STT failed, falling back to local Whisper: ${err}`);
     const local = await transcribeLocal(audioBuf, ext);
@@ -337,7 +325,10 @@ Bun.serve({
         // labeling it "webm" anyway corrupts decoding on both ends).
         const clientExt = audio.name?.split(".").pop();
         const ext = clientExt && /^[a-z0-9]{2,5}$/i.test(clientExt) ? clientExt : "webm";
-        const { transcript, ms, engine } = await transcribe(buf, ext);
+        const nodeId = typeof form.get("nodeId") === "string" ? form.get("nodeId") : "";
+        const brotherName = typeof form.get("brotherName") === "string" ? form.get("brotherName") : "";
+        const hint = sttHintFor(nodeId, { brotherName });
+        const { transcript, ms, engine } = await transcribe(buf, ext, hint);
         const { blocked, results } = checkBlocklist(transcript);
         return Response.json({ transcript, blocked, blockDetails: results, ms, engine });
       } catch (err) {
