@@ -58,6 +58,11 @@ describe("branch (choice)", () => {
     expect(r.label).toBe("unclear");
     expect(r.route).toBeUndefined();
   });
+  test("солай ма (filler, not a route answer) → unclear, no route", () => {
+    const r = localClassify(node, "солай ма", ctx);
+    expect(r.label).toBe("unclear");
+    expect(r.route).toBeUndefined();
+  });
 });
 
 describe("open (empathy)", () => {

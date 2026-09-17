@@ -77,5 +77,6 @@ test("echoLines uses brother name", () => {
     expect(e.kk).toContain(b.kk);
     expect(e.ru).toContain(b.kkLower);
     expect(e.criterion).toContain(b.kkLower);
+    expect(b.slug).toMatch(/^[a-z]+$/);
   }
 });

@@ -104,7 +104,7 @@ function rerollBrotherName() {
 // (tools/prerender.py renders tracks_reveal_2..5 and q_echo_<name>).
 function audioIdFor(id) {
   if (id === "tracks_reveal") return `tracks_reveal_${trackCount}`;
-  if (id === "q_echo") return `q_echo_${brotherName.kkLower}`;
+  if (id === "q_echo") return `q_echo_${brotherName.slug}`;
   return id;
 }
 
@@ -452,6 +452,7 @@ function renderState(id) {
 
 nextBtn.addEventListener("click", () => {
   if (storyEnded) return;
+  if (!currentId) return;
   cancelNarrationAutoAdvance();
   const s = STORY[currentId];
   if (s.kind !== "narration") return;
@@ -761,7 +762,7 @@ function showVerdictAndAutoAdvance(data, source) {
   aiVerdictEl.className = `ai-verdict show ${data.label}`;
   aiVerdictEl.innerHTML = `
     <span class="label">${source}: ${labelText}${pendingRoute ? ` → ${pendingRoute}` : ""}</span>
-    <span class="reason">${data.reason || ""}${data.ms ? ` (${data.ms}ms)` : ""}</span>
+    <span class="reason">${esc(data.reason || "")}${data.ms ? ` (${data.ms}ms)` : ""}</span>
     <span class="countdown">Авто-переход через ${(AI_AUTO_ADVANCE_MS / 1000).toFixed(1)}с — нажми кнопку, чтобы отменить</span>
   `;
   log(`${source}: ${data.label} — "${data.reason}"${data.ms ? ` (${data.ms}ms)` : ""}`);
@@ -814,15 +815,18 @@ async function classifyAndSuggest(transcript) {
 // a second time. resetBtn clears storyEnded and is the way out.
 document.getElementById("btnCorrect").addEventListener("click", () => {
   if (storyEnded) return;
+  if (!currentId) return;
   markCorrect("оператор");
 });
 document.getElementById("btnReask").addEventListener("click", () => {
   if (storyEnded) return;
+  if (!currentId) return;
   markReask("оператор");
 });
 
 document.getElementById("btnAdvance").addEventListener("click", () => {
   if (storyEnded) return;
+  if (!currentId) return;
   cancelAiAutoAdvance();
   const s = STORY[currentId];
   if (s.kind !== "question") return;

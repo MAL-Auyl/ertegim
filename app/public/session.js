@@ -70,6 +70,8 @@ function summarize(r) {
   for (const skill of SKILLS) {
     const turns = r.turns.filter((t) => t.skill === skill);
     if (turns.length === 0) { skills[skill] = "skipped"; continue; }
+    const answered = turns.filter((t) => t.verdict !== null);
+    if (answered.length === 0) { skills[skill] = "skipped"; continue; }
     const first = turns.find((t) => t.attempt === 1);
     if (first && first.verdict === "correct") { skills[skill] = "first"; continue; }
     skills[skill] = turns.some((t) => t.verdict === "reveal") ? "reveal" : "reask";

@@ -13,3 +13,4 @@ app/server_test.log
 
 tools/voices/
 tools/.venv/
+tools/__pycache__/

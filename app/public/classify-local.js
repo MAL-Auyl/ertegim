@@ -40,11 +40,15 @@ function fuzzyIncludes(words, target) {
 // Kazakh + Russian keywords for the fork question. Matched as prefixes so
 // case endings (солға, өзенге, орманға, реку, лесу) don't matter.
 const ROUTE_KEYWORDS = {
-  river: ["сол", "өзен", "налев", "лев", "рек", "реч"],
+  river: ["солға", "солжақ", "өзен", "налев", "лев", "рек", "реч"],
   forest: ["оң", "орман", "направ", "прав", "лес"],
 };
 
 function detectRoute(words) {
+  // Bare «сол» (just the one word, no suffix) is a valid river answer on
+  // its own, but "сол" is also a prefix of "солай" ("that way" / filler),
+  // which is NOT a route answer — so it only counts as an exact single word.
+  if (words.length === 1 && words[0] === "сол") return "river";
   for (const [route, keys] of Object.entries(ROUTE_KEYWORDS)) {
     if (words.some((w) => keys.some((k) => w.startsWith(k)))) return route;
   }

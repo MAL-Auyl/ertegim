@@ -42,8 +42,8 @@ function trackLines(n) {
 // Both real Kazakh words ending in -ық, same rhyme family as the reveal
 // example «қасық», so echo_reveal never needs to change.
 const BROTHER_NAMES = [
-  { kk: "Балық", kkLower: "балық", ru: "Балык (рыбка)" },
-  { kk: "Мысық", kkLower: "мысық", ru: "Мысык (котик)" },
+  { kk: "Балық", kkLower: "балық", ru: "Балык (рыбка)", slug: "balyq" },
+  { kk: "Мысық", kkLower: "мысық", ru: "Мысык (котик)", slug: "mysyq" },
 ];
 
 function echoLines(b) {

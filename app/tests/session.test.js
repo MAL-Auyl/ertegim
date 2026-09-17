@@ -47,6 +47,13 @@ describe("summarize", () => {
     expect(s.skills.count).toBe("skipped");
     expect(s.avgResponseSec).toBeNull();
   });
+
+  test("shown but never answered (all verdicts null) is 'skipped'", () => {
+    Session.questionShown("q_tracks", "count", 1, 1000);
+    const s = Session.summarize(Session.current());
+    expect(s.skills.count).toBe("skipped");
+    expect(s.questionsTotal).toBe(0);
+  });
 });
 
 describe("memory + history", () => {

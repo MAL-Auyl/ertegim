@@ -12,6 +12,6 @@ for (const [id, node] of Object.entries(STORY)) {
   out[id] = node.kk;
 }
 for (let n = 2; n <= 5; n++) out[`tracks_reveal_${n}`] = trackLines(n).revealKk;
-for (const b of BROTHER_NAMES) out[`q_echo_${b.kkLower}`] = echoLines(b).kk;
+for (const b of BROTHER_NAMES) out[`q_echo_${b.slug}`] = echoLines(b).kk;
 
 process.stdout.write(JSON.stringify(out, null, 2));

@@ -71,5 +71,5 @@ function renderReport(summary, history, doc = document) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { renderReport, fmtSec, skillLabel, skillPercent, historyRowText };
+  module.exports = { renderReport, fmtSec, skillLabel, skillPercent, historyRowText, esc };
 }
