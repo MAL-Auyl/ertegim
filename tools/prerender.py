@@ -9,7 +9,7 @@ Usage:
   python3 -m venv tools/.venv && tools/.venv/bin/pip install -r tools/requirements.txt
   tools/.venv/bin/python tools/prerender.py [--force] [--only intro,q_tracks]
 """
-import argparse, json, os, subprocess, sys, tempfile, urllib.request
+import argparse, json, os, subprocess, tempfile, urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -72,6 +72,7 @@ def main() -> None:
     ffmpeg = ffmpeg_bin()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     wanted = lines()
+    all_ids = set(wanted)
     if args.only:
         keep = set(args.only.split(","))
         wanted = {k: v for k, v in wanted.items() if k in keep}
@@ -82,7 +83,7 @@ def main() -> None:
             continue
         render(audio_id, text, voice, ffmpeg)
 
-    stale = sorted(p.name for p in OUT_DIR.glob("*.wav") if p.stem not in lines())
+    stale = sorted(p.name for p in OUT_DIR.glob("*.wav") if p.stem not in all_ids)
     if stale:
         print("stale (not in story):", ", ".join(stale))
 
