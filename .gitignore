@@ -8,3 +8,5 @@ app/server_test.log
 .claude/
 
 .vercel
+
+.superpowers/
