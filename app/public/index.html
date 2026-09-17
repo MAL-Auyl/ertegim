@@ -186,6 +186,10 @@
   }
 
   .dots { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
+  /* `display` on the class beats the UA's [hidden] rule, so the JS
+     `thinkingDots.hidden = true` never took — the "думает" dots stayed lit
+     on every screen, report included. */
+  .dots[hidden] { display: none; }
   .dots span {
     width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
     animation: dotBounce 1s infinite ease-in-out;

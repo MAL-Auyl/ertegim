@@ -44,6 +44,7 @@ const reportPanel = document.getElementById("reportPanel");
 const reportDate = document.getElementById("reportDate");
 const sceneStage = document.getElementById("sceneStage");
 const sceneStageWrap = document.getElementById("sceneStageWrap");
+const storyLineEl = document.getElementById("storyLine");
 const trackOverlay = document.getElementById("trackOverlay");
 const sceneOverlay = document.getElementById("sceneOverlay");
 const operatorPanel = document.getElementById("operatorPanel");
@@ -269,6 +270,16 @@ function armVadForQuestion() {
     heroStage.classList.remove("hero-listening");
     setStage("mic", "err", err.name || err.message);
     log(`VAD недоступен, ручной режим: ${err.name || err.message}`);
+    // No mic at all means no clip will ever be submitted, so the
+    // Correct/Re-ask/Advance controls (normally opened by submitAudio)
+    // would never appear and the operator would be stuck on this question
+    // with no path out. Open them now — same manual-by-ear mode as the
+    // total-STT-failure branch in submitAudio().
+    transcriptEl.textContent = "(микрофон недоступен — оцени ответ на слух)";
+    metaEl.textContent = "";
+    lastTranscript = "";
+    aiVerdictEl.classList.remove("show");
+    resultEl.classList.add("show", "materialize-in");
   });
 }
 
@@ -354,6 +365,9 @@ function renderState(id) {
     storyRu.textContent = "";
     heroStage.innerHTML = "";
     sceneStageWrap.classList.add("hidden");
+    // The speech bubble is empty on the report screen — leaving it mounted
+    // renders a stray blank bubble above the parent's numbers.
+    storyLineEl.style.display = "none";
     nextBtn.style.display = "none";
     recordBtn.style.display = "none";
     uploadRow.style.display = "none";
@@ -367,6 +381,7 @@ function renderState(id) {
   pinGate.classList.remove("show", "materialize-in");
   reportPanel.classList.remove("show", "materialize-in");
   sceneStageWrap.classList.remove("hidden");
+  storyLineEl.style.display = "";
 
   applyScene(s.bg);
   heroStage.classList.toggle("pose-happy", s.pose === "happy");
