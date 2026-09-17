@@ -17,6 +17,15 @@ function trimIdle(chunks, preRollChunks) {
   return [chunks[0], ...chunks.slice(chunks.length - preRollChunks)];
 }
 
+// One `dataavailable` step. Keyed on `spoke`, NOT on "is recording": the
+// final chunk after MediaRecorder.stop() arrives as its own task, long after
+// the synchronous `vadRecording = false`, and trimming it would collapse the
+// captured speech down to the header plus two clusters.
+function nextBuffer(buf, chunk, spoke, preRollChunks) {
+  const grown = chunk ? [...buf, chunk] : buf.slice();
+  return spoke ? grown : trimIdle(grown, preRollChunks);
+}
+
 if (typeof module !== "undefined") {
-  module.exports = { assembleClip, trimIdle };
+  module.exports = { assembleClip, trimIdle, nextBuffer };
 }

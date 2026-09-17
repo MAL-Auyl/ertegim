@@ -202,6 +202,8 @@ const VAD_PREROLL_CHUNKS = 2;
 let vadChunks = [];
 let vadSpeechChunkIdx = 0;
 let vadSpoke = false; // speech was detected during this arming (independent of chunk timing)
+let vadTurnNodeId = null; // node/brother captured at speech start: renderState may move on before the async onstop
+let vadTurnBrother = "";
 let vadRecorderGen = 0; // bumped per recorder so a stale onstop can't clobber the next question's buffer
 
 async function ensureMicStream() {
@@ -247,8 +249,8 @@ function startVadRecorder() {
   vadSpeechChunkIdx = 0;
   vadSpoke = false;
   vadRecorder.ondataavailable = (e) => {
-    if (e.data && e.data.size) vadChunks.push(e.data);
-    if (!vadRecording) vadChunks = trimIdle(vadChunks, VAD_PREROLL_CHUNKS);
+    const chunk = e.data && e.data.size ? e.data : null;
+    vadChunks = nextBuffer(vadChunks, chunk, vadSpoke, VAD_PREROLL_CHUNKS);
   };
   const gen = ++vadRecorderGen;
   vadRecorder.onstop = () => onVadRecordingStop(gen);
@@ -258,6 +260,8 @@ function startVadRecorder() {
 function markVadSpeechStart() {
   vadSpeechChunkIdx = vadChunks.length;
   vadSpoke = true;
+  vadTurnNodeId = currentId;
+  vadTurnBrother = brotherName?.kkLower || "";
   recordingStartedAt = Date.now();
   vadRecording = true;
   recordBtn.classList.add("recording");
@@ -277,7 +281,10 @@ async function onVadRecordingStop(gen) {
   vadChunks = [];
   if (!vadSpoke || !parts.length) return; // disarmed without speech (question changed) — nothing to send
   chunks = parts;
-  await onRecordingStop();
+  // VAD_MIN_SPEECH_MS is the gate that already accepted this turn — holding it
+  // to the manual flow's longer MIN_RECORDING_MS would silently drop a valid
+  // short answer ("да", "екі").
+  await onRecordingStop({ nodeId: vadTurnNodeId, brotherName: vadTurnBrother }, { minMs: VAD_MIN_SPEECH_MS });
 }
 
 function finishVadTurn() {
@@ -552,7 +559,7 @@ async function startRecording() {
   mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
   currentMimeType = mediaRecorder.mimeType || mimeType || "audio/webm";
   mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-  mediaRecorder.onstop = onRecordingStop;
+  mediaRecorder.onstop = () => onRecordingStop(); // drop the DOM event: onRecordingStop takes (meta, opts)
   mediaRecorder.start();
   recordingStartedAt = Date.now();
   recording = true;
@@ -596,19 +603,21 @@ function extFromMime(mime) {
 
 const MIN_RECORDING_MS = 600; // below this, Whisper tends to hallucinate on near-empty audio
 
-async function onRecordingStop() {
+async function onRecordingStop(meta = {}, { minMs = MIN_RECORDING_MS } = {}) {
   const elapsed = Date.now() - recordingStartedAt;
-  if (elapsed < MIN_RECORDING_MS) {
-    statusText.textContent = "Слишком коротко — нажми «Записать» и скажи ответ, потом «Стоп»";
-    log(`recording skipped: only ${elapsed}ms (min ${MIN_RECORDING_MS}ms)`);
+  if (elapsed < minMs) {
+    statusText.textContent = minMs === MIN_RECORDING_MS
+      ? "Слишком коротко — нажми «Записать» и скажи ответ, потом «Стоп»"
+      : "Слишком коротко — скажи ещё раз"; // VAD turn: there is no button to press
+    log(`recording skipped: only ${elapsed}ms (min ${minMs}ms)`);
     return;
   }
   const mime = currentMimeType || "audio/webm";
   const blob = new Blob(chunks, { type: mime });
-  await submitAudio(blob, `clip.${extFromMime(mime)}`);
+  await submitAudio(blob, `clip.${extFromMime(mime)}`, meta);
 }
 
-async function submitAudio(blob, filename) {
+async function submitAudio(blob, filename, meta = {}) {
   if (!blob || blob.size === 0) {
     statusText.textContent = "Запись пустая — попробуй ещё раз";
     log("submitAudio: skipped, empty blob (0 bytes)");
@@ -626,8 +635,11 @@ async function submitAudio(blob, filename) {
 
   const form = new FormData();
   form.append("audio", blob, filename);
-  form.append("nodeId", currentId || "");
-  form.append("brotherName", brotherName?.kkLower || "");
+  // meta wins when present: a VAD clip belongs to the question that was on
+  // screen when the child started talking, not to whatever renderState has
+  // advanced to by the time the async onstop fires.
+  form.append("nodeId", meta.nodeId ?? (currentId || ""));
+  form.append("brotherName", meta.brotherName ?? (brotherName?.kkLower || ""));
   setStage("stt", "running", "");
 
   try {
