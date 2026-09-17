@@ -44,95 +44,67 @@ const reportPanel = document.getElementById("reportPanel");
 const reportDate = document.getElementById("reportDate");
 const sceneStage = document.getElementById("sceneStage");
 const sceneStageWrap = document.getElementById("sceneStageWrap");
-const berryOverlay = document.getElementById("berryOverlay");
+const trackOverlay = document.getElementById("trackOverlay");
+const sceneOverlay = document.getElementById("sceneOverlay");
+const operatorPanel = document.getElementById("operatorPanel");
+const operatorToggle = document.getElementById("operatorToggle");
 const pinGate = document.getElementById("pinGate");
 const pinInput = document.getElementById("pinInput");
 const pinSubmitBtn = document.getElementById("pinSubmitBtn");
 
-// One background per hero, per design doc's "character + background switch
-// independently" approach — not one image per story branch. Add an entry
-// here as more scene art lands (e.g. owl once its background is generated).
-const SCENE_BG = {
-  fox: "/images/bg-fox.png",
-  owl: "/images/bg-owl.jpg",
+// One background image per "world" + a CSS overlay class per scene look
+// (night / river / forest / cave / dawn) — see #sceneOverlay in index.html.
+const SCENES = {
+  night: { image: "/images/bg-fox.png", cls: "scene-night" },
+  river: { image: "/images/bg-fox.png", cls: "scene-river" },
+  forest: { image: "/images/bg-fox.png", cls: "scene-forest" },
+  cave: { image: "/images/bg-owl.jpg", cls: "scene-cave" },
+  dawn: { image: "/images/bg-fox.png", cls: "scene-dawn" },
 };
 
-// Replay variety (no two sessions look identical, even with a scripted
-// story bank): the fox's berry count and the owl's target word are picked
-// at random per session instead of being hardcoded to "3" / "мысық". The
-// background art (bg-fox.png) has hand-painted berries baked in for the
-// original "3" case, so instead of swapping art per count we draw the
-// berries as a DOM overlay on top of it — same approach the design doc
-// already uses for "don't draw one asset per branch."
-const NUM_KK = ["", "бір", "екі", "үш", "төрт", "бес"];
-const NUM_RU = ["", "один", "два", "три", "четыре", "пять"];
-function ruBerryWord(n) {
-  if (n === 1) return "ягода";
-  if (n >= 2 && n <= 4) return "ягоды";
-  return "ягод";
-}
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+function applyScene(bg) {
+  const sc = SCENES[bg] || SCENES.night;
+  sceneStage.style.backgroundImage = `url(${sc.image})`;
+  sceneOverlay.className = sc.cls;
 }
 
-// Percentage positions roughly inside the bush area of bg-fox.png (upper-left
-// cluster of cream bush blobs). Values are approximate/artistic — precision
-// doesn't matter for a handful of small dots.
-const BERRY_SLOTS = [
-  { left: "33%", top: "39%" },
-  { left: "40%", top: "35%" },
-  { left: "45%", top: "42%" },
-  { left: "36%", top: "46%" },
-  { left: "42%", top: "49%" },
+// Replay variety: the number of tracks and the brother's name are rolled
+// once per session (never mid-question — a re-ask must show the same
+// tracks). Text templates + LLM criteria live in story.js.
+const TRACK_SLOTS = [
+  { left: "22%", top: "72%" }, { left: "34%", top: "66%" }, { left: "46%", top: "72%" },
+  { left: "58%", top: "66%" }, { left: "70%", top: "72%" },
 ];
-
-let berryCount = 3;
-function rerollBerries() {
-  berryCount = 2 + Math.floor(Math.random() * 4); // 2..5, still countable for a 3-7yo
-  const kkList = [];
-  const ruList = [];
-  for (let i = 1; i <= berryCount; i++) {
-    kkList.push(NUM_KK[i]);
-    ruList.push(NUM_RU[i]);
-  }
-  STORY.fox_reveal.kk = `Ештеңе етпейді! Бірге санайық: ${kkList.join(", ")}! ${capitalize(NUM_KK[berryCount])} жидек екен!`;
-  STORY.fox_reveal.ru = `Не страшно! Давай посчитаем вместе: ${ruList.join(", ")}! ${capitalize(NUM_RU[berryCount])} ${ruBerryWord(berryCount)}!`;
-  STORY.fox_question.criterion =
-    `Правильный ответ — число ${NUM_RU[berryCount]} (${berryCount}). Засчитывай верным любое произношение ` +
-    `этого числа на казахском («${NUM_KK[berryCount]}») или русском («${NUM_RU[berryCount]}», «${berryCount}», ` +
-    `«${berryCount} ${ruBerryWord(berryCount)}» и т.п.). Всё остальное (другое число, молчание не по теме, ` +
-    `посторонний ответ) — неверно.`;
+let trackCount = 3;
+function rerollTracks() {
+  trackCount = 2 + Math.floor(Math.random() * 4); // 2..5
+  const t = trackLines(trackCount);
+  STORY.tracks_reveal.kk = t.revealKk;
+  STORY.tracks_reveal.ru = t.revealRu;
+  STORY.q_tracks.criterion = t.criterion;
+}
+function renderTrackOverlay(show) {
+  if (!show) { trackOverlay.innerHTML = ""; trackOverlay.classList.remove("show"); return; }
+  trackOverlay.innerHTML = TRACK_SLOTS.slice(0, trackCount)
+    .map((p) => `<span class="track" style="left:${p.left};top:${p.top}"></span>`).join("");
+  trackOverlay.classList.add("show");
 }
 
-function renderBerryOverlay(show) {
-  if (!show) {
-    berryOverlay.innerHTML = "";
-    berryOverlay.classList.remove("show");
-    return;
-  }
-  berryOverlay.innerHTML = BERRY_SLOTS.slice(0, berryCount)
-    .map((p) => `<span class="berry" style="left:${p.left};top:${p.top}"></span>`)
-    .join("");
-  berryOverlay.classList.add("show");
+let brotherName = BROTHER_NAMES[0];
+function rerollBrotherName() {
+  brotherName = BROTHER_NAMES[Math.floor(Math.random() * BROTHER_NAMES.length)];
+  const e = echoLines(brotherName);
+  STORY.q_echo.kk = e.kk;
+  STORY.q_echo.ru = e.ru;
+  STORY.q_echo.criterion = e.criterion;
 }
 
-// Two source words for the owl's rhyme question — both real Kazakh words
-// ending in "-ық", the same rhyme family as the reveal example "қасық"
-// (ложка), so onReveal never needs to change no matter which is picked.
-const OWL_WORDS = [
-  { kk: "Мысық", kkLower: "мысық", ru: "кот" },
-  { kk: "Балық", kkLower: "балық", ru: "рыба" },
-];
-let rhymeWord = OWL_WORDS[0];
-function rerollRhymeWord() {
-  rhymeWord = OWL_WORDS[Math.floor(Math.random() * OWL_WORDS.length)];
-  STORY.owl_question.kk = `${rhymeWord.kk} — деп айттым. Осыған ұйқас сөз тап!`;
-  STORY.owl_question.ru = `Я сказал «${rhymeWord.kkLower}» (${rhymeWord.ru}). Найди слово, похожее по звучанию!`;
-  STORY.owl_question.criterion =
-    `Правильный ответ — любое существующее казахское или русское слово, фонетически похожее на ` +
-    `«${rhymeWord.kkLower}» (например, оканчивается на «-ық»/«-ик», как «қасық»). Не обязательно именно ` +
-    `«қасық» — любая настоящая рифма/созвучие засчитывается верной. Слово без всякого созвучия или ` +
-    `посторонний ответ — неверно.`;
+// Pre-rendered fallback audio id: dynamic lines have one .wav per variant
+// (tools/prerender.py renders tracks_reveal_2..5 and q_echo_<name>).
+function audioIdFor(id) {
+  if (id === "tracks_reveal") return `tracks_reveal_${trackCount}`;
+  if (id === "q_echo") return `q_echo_${brotherName.kkLower}`;
+  return id;
 }
 
 async function playWithTimeout(ms) {
@@ -240,9 +212,9 @@ function currentRMS() {
 }
 
 function setHeroPoseOverride(pose) {
-  const hero = HERO_FOR_STATE[currentId] || { character: "fox" };
-  heroStage.innerHTML = hero.character === "owl" ? owlSVG(pose) : foxPoseHTML(pose);
-  if (hero.character === "fox") animateFoxPose(heroStage, pose);
+  const node = STORY[currentId] || { character: "fox" };
+  heroStage.innerHTML = renderHero({ ...node, pose });
+  if (node.character === "fox") animateFoxPose(heroStage, pose);
 }
 
 function updateHeroAmplitude(rms) {
@@ -353,16 +325,18 @@ function log(msg) {
   logEl.prepend(line);
 }
 
+let currentRoute = null; // "river" | "forest", set at q_fork
+
 function renderState(id) {
+  // Soft session cap: past the limit, any non-final beat jumps straight to
+  // the finale instead of cutting the child off mid-story.
+  if (!FINAL_IDS.has(id) && Session.overLimit()) {
+    log(`лимит сессии (8 мин) → found`);
+    id = "found";
+  }
   currentId = id;
-  // Reroll BEFORE reading `s` below — `s` is just a reference into STORY,
-  // so mutating STORY[id].kk/ru/criterion here still lands before anything
-  // reads them. Only reroll on a genuinely new question, not a re-ask
-  // loop-back (fox_reask/owl_reask return to the SAME question id) — the
-  // child should recount the same bush, not a bush that changed underneath
-  // them. Mirrors the activeQuestionId check below, evaluated early.
-  if (id === "fox_question" && activeQuestionId !== id) rerollBerries();
-  if (id === "owl_question" && activeQuestionId !== id) rerollRhymeWord();
+  if (id === "q_tracks" && activeQuestionId !== id) rerollTracks();
+  if (id === "q_echo" && activeQuestionId !== id) rerollBrotherName();
   const s = STORY[id];
 
   cancelAiAutoAdvance();
@@ -386,6 +360,7 @@ function renderState(id) {
     reportPanel.classList.remove("show", "materialize-in");
     pinInput.value = "";
     pinGate.classList.add("show", "materialize-in");
+    lastSummary = Session.finish({ completed: true });
     log(`→ ${id}: PIN-гейт перед отчётом родителю`);
     return;
   }
@@ -393,18 +368,19 @@ function renderState(id) {
   reportPanel.classList.remove("show", "materialize-in");
   sceneStageWrap.classList.remove("hidden");
 
-  const hero = HERO_FOR_STATE[id] || { character: "fox" };
-  const bg = SCENE_BG[hero.character];
-  sceneStage.style.backgroundImage = bg ? `url(${bg})` : "none";
-  heroStage.classList.toggle("pose-happy", hero.pose === "happy");
-  renderBerryOverlay(hero.character === "fox" && (id === "fox_question" || id === "fox_reask" || id === "fox_reveal"));
+  applyScene(s.bg);
+  heroStage.classList.toggle("pose-happy", s.pose === "happy");
+  renderTrackOverlay(id === "q_tracks" || id === "tracks_reask" || id === "tracks_reveal");
 
   storySpeaker.textContent = s.speaker;
   storyKk.textContent = s.kk;
   storyRu.textContent = s.ru;
-  heroStage.innerHTML = renderHero(id);
-  if (hero.character === "fox") animateFoxPose(heroStage, hero.pose);
-  const speakDone = speakLine(s.kk, id);
+  heroStage.innerHTML = renderHero(s);
+  if (s.character === "fox") animateFoxPose(heroStage, s.pose);
+  const speakDone = speakLine(s.kk, audioIdFor(id));
+
+  if (id === "found") Session.moment("інісін тапты");
+  if (id === "cave_enter") Session.moment("түлкіге батылдық берді");
 
   if (s.kind === "narration") {
     nextBtn.style.display = "block";
@@ -412,14 +388,19 @@ function renderState(id) {
     uploadRow.style.display = "none";
     // Child screen has no buttons by design (IDEA.md "Детский экран без
     // интерфейса") — nextBtn stays only as an operator override/killswitch.
-    // Normal flow advances itself once the line has finished playing
-    // (live TTS, fallback audio, or even a silent text-only failure —
-    // speakLine() never rejects, so this always eventually fires).
+    let next = s.next;
+    if (id === "found" && Session.memory().runs > 0) next = "thanks_again";
+    if (id === "fork_reveal") {
+      currentRoute = Math.random() < 0.5 ? "river" : "forest";
+      Session.setRoute(currentRoute);
+      Session.moment(`түлкі жолды өзі таңдады: ${currentRoute === "river" ? "өзен" : "орман"}`);
+      next = STORY.q_fork.onAnswer[currentRoute];
+    }
     speakDone.then(() => {
-      if (currentId !== id || !s.next) return;
+      if (currentId !== id || !next) return;
       narrationAutoAdvanceTimer = setTimeout(() => {
         narrationAutoAdvanceTimer = null;
-        if (currentId === id) renderState(s.next);
+        if (currentId === id) renderState(next);
       }, NARRATION_AUTO_ADVANCE_MS);
     });
   } else if (s.kind === "question") {
@@ -435,6 +416,7 @@ function renderState(id) {
       reaskUsed = false;
       activeQuestionId = id;
     }
+    Session.questionShown(id, s.skill, reaskUsed ? 2 : 1);
     armVadForQuestion();
   } else {
     // "end"
@@ -450,20 +432,23 @@ function renderState(id) {
 nextBtn.addEventListener("click", () => {
   cancelNarrationAutoAdvance();
   const s = STORY[currentId];
-  if (s.next) renderState(s.next);
+  if (s.kind !== "narration") return;
+  let next = s.next;
+  if (currentId === "found" && Session.memory().runs > 0) next = "thanks_again";
+  if (currentId === "fork_reveal") next = STORY.q_fork.onAnswer[currentRoute || "river"];
+  if (next) renderState(next);
 });
 
 // PIN gate is a cosmetic step (Next Steps #6 report is mocked data, no real
 // auth backend) — any PIN unlocks it, it just adds the "this is the parent's
 // private area" beat before showing numbers.
+let lastSummary = null;
 function unlockReport() {
   pinGate.classList.remove("show", "materialize-in");
-  reportDate.textContent = new Date().toLocaleDateString("ru-RU", {
-    day: "numeric",
-    month: "long",
-  });
+  reportDate.textContent = new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+  renderReport(lastSummary || Session.summarize(Session.current()), Session.history().slice(1));
   reportPanel.classList.add("show", "materialize-in");
-  log("→ parent_report: PIN принят, мок-отчёт родителю (статичные цифры, Next Steps #6)");
+  log("→ parent_report: PIN принят, отчёт из реальной сессии");
 }
 pinSubmitBtn.addEventListener("click", unlockReport);
 pinInput.addEventListener("keydown", (e) => {
@@ -473,7 +458,9 @@ pinInput.addEventListener("keydown", (e) => {
 resetBtn.addEventListener("click", () => {
   storyEnded = false;
   activeQuestionId = null;
-  renderState(START_STATE);
+  currentRoute = null;
+  Session.start();
+  renderState(startStateForMemory());
   log("── сброс сценария ──");
 });
 
@@ -592,6 +579,8 @@ async function submitAudio(blob, filename) {
       setStage("safety", "err", "BLOCKED");
       blockedFlash.classList.add("show", "materialize-in");
       storyEnded = true;
+      Session.markBlocked();
+      Session.finish({ completed: false });
       recordBtn.style.display = "none";
       uploadRow.style.display = "none";
       log(`BLOCKED (автоматически, без оператора): "${data.transcript}" — сценарий остановлен`);
@@ -613,6 +602,7 @@ async function submitAudio(blob, filename) {
     transcriptEl.textContent = "(распознавание недоступно — оцени ответ на слух)";
     metaEl.textContent = "";
     aiVerdictEl.classList.remove("show");
+    lastTranscript = "";
     resultEl.classList.add("show", "materialize-in");
     setStage("stt", "err", err.message);
     log(`STT недоступен, ручной режим: ${err.message}`);
@@ -682,11 +672,34 @@ function cancelAiAutoAdvance() {
   }
 }
 
+let pendingRoute = null; // route parsed from the last verdict (branch questions)
+let lastTranscript = "";
+
+function recordAnswer(verdict, source) {
+  Session.answer({
+    nodeId: currentId,
+    transcript: lastTranscript,
+    verdict,
+    source,
+    route: pendingRoute,
+    answeredAt: recordingStartedAt || Date.now(),
+  });
+}
+
 function markCorrect(source) {
   cancelAiAutoAdvance();
   const s = STORY[currentId];
   if (s.kind !== "question") return;
   log(`${source}: ВЕРНО`);
+  recordAnswer("correct", source);
+  if (s.mode === "branch") {
+    const route = pendingRoute || currentRoute || "river";
+    currentRoute = route;
+    Session.setRoute(route);
+    Session.moment(`жолды таңдады: ${route === "river" ? "өзен" : "орман"}`);
+    advanceFromQuestion(s.onAnswer[route]);
+    return;
+  }
   advanceFromQuestion(s.onCorrect);
 }
 
@@ -697,81 +710,35 @@ function markReask(source) {
   if (!reaskUsed) {
     reaskUsed = true;
     log(`${source}: ПЕРЕСПРОСИТЬ (1-я попытка)`);
+    recordAnswer("unclear", source);
     advanceFromQuestion(s.onReask);
   } else {
     log(`${source}: ПЕРЕСПРОСИТЬ второй раз → авто-раскрытие (third strike)`);
+    recordAnswer("reveal", source);
     advanceFromQuestion(s.onReveal);
   }
 }
 
-// Local, network-free answer check — used only when /api/classify is
-// unreachable, so the system still confirms itself instead of stalling on
-// the operator's buttons. Reuses the same word-level fuzzy-match approach
-// as spike/blocklist.js (Levenshtein tolerance scaled to word length),
-// against the actual accepted-answer set for the current question (not a
-// prose description — the real words currentId's criterion was built
-// from, see rerollBerries()/rerollRhymeWord() above).
-function localLevenshtein(a, b) {
-  const m = a.length, n = b.length;
-  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
-  for (let j = 0; j <= n; j++) dp[0][j] = j;
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-    }
-  }
-  return dp[m][n];
-}
-function localTolerance(len) {
-  if (len <= 3) return 1;
-  if (len <= 6) return 1;
-  return Math.max(2, Math.floor(len * 0.3));
-}
-function localWordsOf(transcript) {
-  return transcript
-    .toLowerCase()
-    .replace(/[.,!?;:()"'«»]/g, "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-}
-function localFuzzyIncludes(words, target) {
-  const t = target.toLowerCase();
-  return words.some((w) => localLevenshtein(w, t) <= localTolerance(t.length));
-}
-
-function localClassify(stateId, transcript) {
-  const words = localWordsOf(transcript);
-  if (words.length === 0) return { label: "unclear", reason: "пусто (локально)" };
-
-  if (stateId === "fox_question") {
-    const accepted = [NUM_KK[berryCount], NUM_RU[berryCount], String(berryCount)];
-    const hit = accepted.some((form) => localFuzzyIncludes(words, form));
-    return hit
-      ? { label: "correct", reason: "число совпало (локально)" }
-      : { label: "unclear", reason: "число не совпало (локально)" };
-  }
-
-  if (stateId === "owl_question") {
-    // Criterion is genuinely open-ended (any real word rhyming with the
-    // source word) — a fixed word list would wrongly reject valid answers.
-    // Approximate with the shared suffix instead of an exact word match.
-    const rhymes = words.some((w) => /(ық|ик)$/.test(w));
-    return rhymes
-      ? { label: "correct", reason: "рифма «-ық/-ик» (локально)" }
-      : { label: "unclear", reason: "рифма не найдена (локально)" };
-  }
-
-  return { label: "unclear", reason: "неизвестный вопрос (локально)" };
+// For branch questions the LLM is asked to put the route name in `reason`;
+// the local fallback returns it as `route` directly.
+function routeFromVerdict(data) {
+  if (data.route === "river" || data.route === "forest") return data.route;
+  const r = String(data.reason || "").toLowerCase();
+  if (r.includes("river")) return "river";
+  if (r.includes("forest")) return "forest";
+  return null;
 }
 
 function showVerdictAndAutoAdvance(data, source) {
+  const s = STORY[currentId];
+  pendingRoute = s.mode === "branch" ? routeFromVerdict(data) : null;
+  if (s.mode === "branch" && data.label === "correct" && !pendingRoute) {
+    data = { ...data, label: "unclear", reason: `${data.reason || ""} (маршрут не распознан)` };
+  }
   const labelText = { correct: "✅ ВЕРНО", incorrect: "❌ НЕВЕРНО", unclear: "🔁 НЕ ПОНЯЛ / ПЕРЕСПРОСИТЬ" }[data.label];
   aiVerdictEl.className = `ai-verdict show ${data.label}`;
   aiVerdictEl.innerHTML = `
-    <span class="label">${source}: ${labelText}</span>
+    <span class="label">${source}: ${labelText}${pendingRoute ? ` → ${pendingRoute}` : ""}</span>
     <span class="reason">${data.reason || ""}${data.ms ? ` (${data.ms}ms)` : ""}</span>
     <span class="countdown">Авто-переход через ${(AI_AUTO_ADVANCE_MS / 1000).toFixed(1)}с — нажми кнопку, чтобы отменить</span>
   `;
@@ -785,9 +752,14 @@ function showVerdictAndAutoAdvance(data, source) {
   }, AI_AUTO_ADVANCE_MS);
 }
 
+function classifyCtx() {
+  return { trackCount, brotherName: brotherName.kkLower, numKk: NUM_KK, numRu: NUM_RU };
+}
+
 async function classifyAndSuggest(transcript) {
   const s = STORY[currentId];
   if (s.kind !== "question" || !s.criterion) return;
+  lastTranscript = transcript;
   aiVerdictEl.className = "ai-verdict show";
   aiVerdictEl.innerHTML = `<span class="label">🤖 ИИ думает…</span>`;
   setStage("classify", "running", "");
@@ -807,8 +779,7 @@ async function classifyAndSuggest(transcript) {
     // parking on the operator's buttons until someone clicks.
     setStage("classify", "skip", "локальный фолбэк, без сети");
     log(`ИИ-классификатор недоступен, локальный фолбэк: ${err.message}`);
-    const local = localClassify(currentId, transcript);
-    showVerdictAndAutoAdvance(local, "🧮 Локально");
+    showVerdictAndAutoAdvance(localClassify(s, transcript, classifyCtx()), "🧮 Локально");
     return;
   }
 
@@ -824,6 +795,8 @@ document.getElementById("btnAdvance").addEventListener("click", () => {
   const s = STORY[currentId];
   if (s.kind !== "question") return;
   log("оператор: ADVANCE (форс, STT-килл-свитч) → как «верно»");
+  if (s.mode === "branch") { pendingRoute = pendingRoute || "river"; markCorrect("оператор-advance"); return; }
+  recordAnswer("correct", "оператор-advance");
   advanceFromQuestion(s.onCorrect);
 });
 
@@ -832,6 +805,24 @@ document.getElementById("btnAdvance").addEventListener("click", () => {
 // permission dialog, just a rejected play() promise). Every other
 // renderState() call in the app already runs inside a click handler;
 // this "Бастау" gate makes the first one no exception.
+function startStateForMemory() {
+  return Session.memory().runs > 0 ? START_STATE_AGAIN : START_STATE;
+}
+
+// Operator panel: hidden from the child, toggled by the ` key, the ⚙ button
+// or ?op=1 for a stage laptop.
+function setOperatorPanel(show) {
+  operatorPanel.classList.toggle("show", show);
+}
+operatorToggle.addEventListener("click", () => setOperatorPanel(!operatorPanel.classList.contains("show")));
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Backquote" && !e.target.matches("input, textarea")) {
+    e.preventDefault();
+    setOperatorPanel(!operatorPanel.classList.contains("show"));
+  }
+});
+if (new URLSearchParams(location.search).get("op") === "1") setOperatorPanel(true);
+
 Object.keys(pipelineStageEls).forEach((id) => setStage(id, "idle", ""));
 
 const startOverlay = document.getElementById("startOverlay");
@@ -842,5 +833,6 @@ document.getElementById("startBtn").addEventListener("click", () => {
   // ever arrives — not fatal if it fails, armVadForQuestion() re-attempts
   // ensureMicStream() per-question and falls back to the manual button.
   ensureMicStream().catch((err) => log(`mic prefetch failed: ${err.name || err.message}`));
-  renderState(START_STATE);
+  Session.start();
+  renderState(startStateForMemory());
 });
