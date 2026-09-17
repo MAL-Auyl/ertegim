@@ -10,3 +10,6 @@ app/server_test.log
 .vercel
 
 .superpowers/
+
+tools/voices/
+tools/.venv/
