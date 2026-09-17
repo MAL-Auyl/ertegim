@@ -404,6 +404,12 @@ function renderState(id) {
       }, NARRATION_AUTO_ADVANCE_MS);
     });
   } else if (s.kind === "question") {
+    // A fresh question must never inherit the previous turn's answer state:
+    // the operator buttons call recordAnswer() directly, without the
+    // classify path that normally re-sets these.
+    pendingRoute = null;
+    lastTranscript = "";
+    recordingStartedAt = 0;
     nextBtn.style.display = "none";
     recordBtn.style.display = "flex";
     recordBtn.disabled = false;
@@ -430,6 +436,7 @@ function renderState(id) {
 }
 
 nextBtn.addEventListener("click", () => {
+  if (storyEnded) return;
   cancelNarrationAutoAdvance();
   const s = STORY[currentId];
   if (s.kind !== "narration") return;
@@ -787,10 +794,20 @@ async function classifyAndSuggest(transcript) {
   showVerdictAndAutoAdvance(data, "🤖 ИИ");
 }
 
-document.getElementById("btnCorrect").addEventListener("click", () => markCorrect("оператор"));
-document.getElementById("btnReask").addEventListener("click", () => markReask("оператор"));
+// A blocked session is terminal (Session.finish already ran) — the operator
+// panel must not be able to walk it forward into parent_report and finish it
+// a second time. resetBtn clears storyEnded and is the way out.
+document.getElementById("btnCorrect").addEventListener("click", () => {
+  if (storyEnded) return;
+  markCorrect("оператор");
+});
+document.getElementById("btnReask").addEventListener("click", () => {
+  if (storyEnded) return;
+  markReask("оператор");
+});
 
 document.getElementById("btnAdvance").addEventListener("click", () => {
+  if (storyEnded) return;
   cancelAiAutoAdvance();
   const s = STORY[currentId];
   if (s.kind !== "question") return;
