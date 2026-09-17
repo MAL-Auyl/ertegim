@@ -186,11 +186,23 @@ let vadArmed = false; // true only while the current question hasn't been answer
 let vadSpeechStartedAt = 0;
 let vadLastLoudAt = 0;
 
-const VAD_START_RMS = 0.02; // amplitude that counts as "speech began"
-const VAD_SILENCE_RMS = 0.012; // lower bar to still count as "mid-speech" (hysteresis, avoids chatter at the threshold)
-const VAD_SILENCE_MS = 1000; // pause this long after speech means "child is done" (doc's 0.8-1.2s window)
-const VAD_MIN_SPEECH_MS = 400; // ignore blips shorter than this (cough, mic bump)
-const VAD_MAX_RECORD_MS = 8000; // hard cap so a held-open mic can't stall the demo indefinitely
+// Tuned for 3-7-year-olds (quieter than adults, pause mid-phrase): lower
+// start/keep thresholds, longer end-of-turn silence. Re-check against real
+// child recordings — these are informed guesses, not measurements.
+const VAD_START_RMS = 0.014;
+const VAD_SILENCE_RMS = 0.009;
+const VAD_SILENCE_MS = 1400;
+const VAD_MIN_SPEECH_MS = 300;
+const VAD_MAX_RECORD_MS = 8000;
+// The recorder runs the whole time a question is armed, in small slices,
+// so the clip can start ~500 ms BEFORE the amplitude gate tripped — the
+// first consonant of a child's answer is exactly what the gate misses.
+const VAD_CHUNK_MS = 250;
+const VAD_PREROLL_CHUNKS = 2;
+let vadChunks = [];
+let vadSpeechChunkIdx = 0;
+let vadSpoke = false; // speech was detected during this arming (independent of chunk timing)
+let vadRecorderGen = 0; // bumped per recorder so a stale onstop can't clobber the next question's buffer
 
 async function ensureMicStream() {
   if (vadStream) return vadStream;
@@ -231,10 +243,21 @@ function startVadRecorder() {
   const mimeType = pickMimeType();
   vadRecorder = mimeType ? new MediaRecorder(vadStream, { mimeType }) : new MediaRecorder(vadStream);
   currentMimeType = vadRecorder.mimeType || mimeType || "audio/webm";
-  chunks = [];
-  vadRecorder.ondataavailable = (e) => chunks.push(e.data);
-  vadRecorder.onstop = onRecordingStop; // same submit path as the manual flow
-  vadRecorder.start();
+  vadChunks = [];
+  vadSpeechChunkIdx = 0;
+  vadSpoke = false;
+  vadRecorder.ondataavailable = (e) => {
+    if (e.data && e.data.size) vadChunks.push(e.data);
+    if (!vadRecording) vadChunks = trimIdle(vadChunks, VAD_PREROLL_CHUNKS);
+  };
+  const gen = ++vadRecorderGen;
+  vadRecorder.onstop = () => onVadRecordingStop(gen);
+  vadRecorder.start(VAD_CHUNK_MS);
+}
+
+function markVadSpeechStart() {
+  vadSpeechChunkIdx = vadChunks.length;
+  vadSpoke = true;
   recordingStartedAt = Date.now();
   vadRecording = true;
   recordBtn.classList.add("recording");
@@ -243,9 +266,18 @@ function startVadRecorder() {
 }
 
 function stopVadRecorder() {
-  vadRecorder?.stop(); // keeps vadStream's tracks alive for the next question
+  if (vadRecorder && vadRecorder.state !== "inactive") vadRecorder.stop(); // keeps vadStream's tracks alive for the next question
   vadRecording = false;
   recordBtn.classList.remove("recording");
+}
+
+async function onVadRecordingStop(gen) {
+  if (gen !== vadRecorderGen) return; // superseded recorder (disarm + re-arm raced its async onstop)
+  const parts = assembleClip(vadChunks, vadSpeechChunkIdx, VAD_PREROLL_CHUNKS);
+  vadChunks = [];
+  if (!vadSpoke || !parts.length) return; // disarmed without speech (question changed) — nothing to send
+  chunks = parts;
+  await onRecordingStop();
 }
 
 function finishVadTurn() {
@@ -262,7 +294,13 @@ function armVadForQuestion() {
   vadRecording = false;
   resetTurnStages();
   setStage("mic", "running", "жду речь");
-  ensureMicStream().catch((err) => {
+  ensureMicStream()
+    .then(() => {
+      // Record from the moment the question is armed so the pre-roll buffer
+      // already holds the instant before the amplitude gate trips.
+      if (vadArmed && !vadRecorder) startVadRecorder();
+    })
+    .catch((err) => {
     // No mic / permission denied to the persistent stream — VAD can never
     // arm, so leave it disarmed and let the manual recordBtn path (its own
     // independent getUserMedia call, see startRecording()) carry the demo.
@@ -287,7 +325,10 @@ function disarmVad() {
   vadArmed = false;
   heroStage.classList.remove("hero-listening");
   setStage("mic", "idle", "");
-  if (vadRecording) stopVadRecorder();
+  vadRecording = false;
+  recordBtn.classList.remove("recording");
+  if (vadRecorder && vadRecorder.state !== "inactive") vadRecorder.stop(); // onVadRecordingStop discards if !vadSpoke
+  vadRecorder = null;
 }
 
 function vadLoop() {
@@ -300,10 +341,10 @@ function vadLoop() {
   const now = performance.now();
 
   if (!vadRecording) {
-    if (rms > VAD_START_RMS) {
+    if (rms > VAD_START_RMS && vadRecorder && vadRecorder.state === "recording") {
       vadSpeechStartedAt = now;
       vadLastLoudAt = now;
-      startVadRecorder();
+      markVadSpeechStart();
     }
     return;
   }
@@ -585,6 +626,8 @@ async function submitAudio(blob, filename) {
 
   const form = new FormData();
   form.append("audio", blob, filename);
+  form.append("nodeId", currentId || "");
+  form.append("brotherName", brotherName?.kkLower || "");
   setStage("stt", "running", "");
 
   try {
@@ -648,12 +691,12 @@ recordBtn.addEventListener("click", () => {
     // Operator override: end the current auto-captured turn right now
     // instead of waiting out the silence timer.
     finishVadTurn();
-  } else if (vadArmed) {
+  } else if (vadArmed && vadRecorder && vadRecorder.state === "recording") {
     // VAD is armed but hasn't crossed the amplitude threshold yet — force
     // a manual start (e.g. the child is speaking too quietly to trip it).
     vadSpeechStartedAt = performance.now();
     vadLastLoudAt = performance.now();
-    startVadRecorder();
+    markVadSpeechStart();
   } else if (recording) {
     stopRecording();
   } else {
