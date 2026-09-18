@@ -455,6 +455,12 @@ let recording = false;
 // same pattern as btnAdvance elsewhere in this file — for when a mic can't
 // trip the VAD threshold or Web Audio itself is unavailable.
 let vadStream = null;
+// iOS/WebKit: one MediaStreamTrack read by a Web Audio AnalyserNode AND
+// recorded by a MediaRecorder at the same time can silently produce
+// zero-byte output on Safari (found on a real iPhone during the pitch week).
+// On iOS the recorder therefore gets its OWN getUserMedia stream; everywhere
+// else this is the same object as vadStream, so nothing changes.
+let vadRecordStream = null;
 let vadAudioCtx = null;
 let vadAnalyser = null;
 let vadFloatBuf = null;
@@ -498,9 +504,22 @@ const MIC_CONSTRAINTS = {
   channelCount: 1,
 };
 
+// iPadOS 13+ reports itself as "MacIntel" with a touch screen, so the UA
+// string alone misses iPads — hence the maxTouchPoints half of the check.
+function isIOSWebKit() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
 async function ensureMicStream() {
   if (vadStream) return vadStream;
   vadStream = await navigator.mediaDevices.getUserMedia({ audio: MIC_CONSTRAINTS });
+  // See the note on vadRecordStream: a second, recorder-only stream on iOS,
+  // the very same stream everywhere else (one mic indicator, one permission
+  // prompt, and the pre-roll recorder keeps working exactly as it does now).
+  vadRecordStream = isIOSWebKit()
+    ? await navigator.mediaDevices.getUserMedia({ audio: MIC_CONSTRAINTS })
+    : vadStream;
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   if (!vadAudioCtx) vadAudioCtx = new AudioCtx(); // may already exist from playDing()
   const source = vadAudioCtx.createMediaStreamSource(vadStream);
@@ -555,7 +574,8 @@ function updateHeroAmplitude(rms) {
 
 function startVadRecorder() {
   const mimeType = pickMimeType();
-  vadRecorder = mimeType ? new MediaRecorder(vadStream, { mimeType }) : new MediaRecorder(vadStream);
+  const stream = vadRecordStream || vadStream; // recorder-only stream on iOS, see vadRecordStream
+  vadRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
   currentMimeType = vadRecorder.mimeType || mimeType || "audio/webm";
   vadChunks = [];
   vadSpeechChunkIdx = 0;
@@ -977,6 +997,16 @@ async function submitAudio(blob, filename, meta = {}) {
     return;
   }
 
+  // The question this clip actually answers, captured BEFORE the network
+  // round-trip. currentId is read fresh everywhere below, but only at the
+  // moment the async work finishes — if the operator advanced (or VAD armed
+  // the next question) while a slow /api/transcribe was in flight, the late
+  // response would paint its transcript and start the auto-advance countdown
+  // against whatever question is on screen NOW, not the one that was
+  // answered. meta.nodeId wins for a VAD clip for the same reason it wins in
+  // the form below: it is the node that was up when the child started talking.
+  const askedId = meta.nodeId ?? currentId;
+
   player.src = URL.createObjectURL(blob);
 
   recordBtn.disabled = true;
@@ -1001,6 +1031,14 @@ async function submitAudio(blob, filename, meta = {}) {
     const res = await fetch("/api/transcribe", { method: "POST", body: form });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
+
+    if (currentId !== askedId) {
+      log(`transcribe: ответ на "${askedId}" пришёл поздно, сейчас "${currentId}" — игнорирую`);
+      thinkingDots.hidden = true;
+      recordBtn.disabled = false;
+      fileInput.disabled = false;
+      return;
+    }
 
     statusText.textContent = "";
     thinkingDots.hidden = true;
@@ -1046,6 +1084,13 @@ async function submitAudio(blob, filename, meta = {}) {
       }
     }
   } catch (err) {
+    if (currentId !== askedId) {
+      log(`transcribe: ошибка для "${askedId}" пришла поздно, сейчас "${currentId}" — игнорирую`);
+      thinkingDots.hidden = true;
+      recordBtn.disabled = false;
+      fileInput.disabled = false;
+      return;
+    }
     // Total STT failure (Groq and local Whisper both down, or no network to
     // the server at all) — the operator still needs a way to move the story
     // forward. Show the manual Correct/Re-ask/Advance controls (normally
@@ -1242,8 +1287,12 @@ function expectedFormsForNode(nodeId) {
 }
 
 async function classifyAndSuggest(transcript) {
-  const s = STORY[currentId];
-  if (s.kind !== "question" || !s.criterion) return;
+  // Captured up front for the same reason as in submitAudio(): a slow
+  // /api/classify response must not paint a verdict, or start an
+  // auto-advance countdown, for a question that is no longer on screen.
+  const askedId = currentId;
+  const s = STORY[askedId];
+  if (!s || s.kind !== "question" || !s.criterion) return;
   lastTranscript = transcript;
   aiVerdictEl.className = "ai-verdict show";
   aiVerdictEl.innerHTML = `<span class="label">🤖 ИИ думает…</span>`;
@@ -1261,12 +1310,13 @@ async function classifyAndSuggest(transcript) {
         // Tagged, not positional: the server labels the prompt lines by
         // language, and a dropped/failed pass must not shift ru into kk.
         alternatives: lastAlternatives.map((a) => ({ lang: a.lang ?? null, text: a.text ?? "" })),
-        expectedForms: expectedFormsForNode(currentId),
+        expectedForms: expectedFormsForNode(askedId),
       }),
     });
     data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || res.statusText);
   } catch (err) {
+    if (currentId !== askedId) return; // question changed while this was in flight
     // The system still confirms itself here — it just switches from the
     // network LLM to a local, deterministic answer check instead of
     // parking on the operator's buttons until someone clicks.
@@ -1276,6 +1326,7 @@ async function classifyAndSuggest(transcript) {
     return;
   }
 
+  if (currentId !== askedId) return; // same guard for the success path
   setStage("classify", "ok", `${data.label} ${data.ms}ms`);
   showVerdictAndAutoAdvance(data, "🤖 ИИ");
 }

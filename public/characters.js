@@ -234,11 +234,20 @@ const FOX_POSE_IMAGE = {
 // with no alpha plane) — so transparency is done in JS instead: draw each
 // frame to a canvas and zero the alpha on near-black pixels every frame.
 // Poses with no clip yet fall back to the static FOX_POSE_IMAGE.
+// iOS Safari cannot play WebM video AT ALL, so the three VP9 clips showed
+// nothing on a phone — only the idle pose happened to already be H.264. The
+// same clips re-encoded to H.264/MP4 (same source, same frames) live beside
+// them, and the format is chosen per browser rather than switched wholesale:
+// the WebM files are smaller, so a browser that can actually play them still
+// gets them.
+const CAN_PLAY_WEBM =
+  document.createElement("video").canPlayType('video/webm; codecs="vp9"') !== "";
+
 const FOX_POSE_VIDEO = {
-  idle: "/images/fox_idle_test.mp4",
-  talk: "/images/fox_clip2.webm",
-  confused: "/images/fox_confused.webm",
-  think: "/images/fox_think.webm",
+  idle: "/images/fox_idle_test.mp4", // already H.264, no WebM source
+  talk: CAN_PLAY_WEBM ? "/images/fox_clip2.webm" : "/images/fox_clip2.mp4",
+  confused: CAN_PLAY_WEBM ? "/images/fox_confused.webm" : "/images/fox_confused.mp4",
+  think: CAN_PLAY_WEBM ? "/images/fox_think.webm" : "/images/fox_think.mp4",
 };
 
 function foxPoseHTML(pose) {
@@ -262,6 +271,14 @@ function startFoxVideoChromakey(root) {
   const video = root.querySelector(".fox-video");
   const canvas = root.querySelector(".fox-pose");
   if (!video || !canvas) return;
+  // The `autoplay` attribute alone doesn't reliably kick off playback when
+  // the <video> is inserted via innerHTML from an async callback (e.g. the
+  // Rive-load-failed fallback, which fires outside the original click's
+  // synchronous stack) — the video sits fully loaded (readyState 4) but
+  // paused, so the chromakey loop below just redraws the same frame forever.
+  // Kicking play() explicitly fixes that; muted+playsinline means there is no
+  // autoplay-policy rejection to worry about, but .catch() just in case.
+  video.play().catch(() => {});
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
   function draw() {
