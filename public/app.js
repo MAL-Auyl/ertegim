@@ -52,6 +52,9 @@ const operatorToggle = document.getElementById("operatorToggle");
 const pinGate = document.getElementById("pinGate");
 const pinInput = document.getElementById("pinInput");
 const pinSubmitBtn = document.getElementById("pinSubmitBtn");
+const endScreen = document.getElementById("endScreen");
+const playAgainBtn = document.getElementById("playAgainBtn");
+const parentBtn = document.getElementById("parentBtn");
 
 // One background image per "world" + a CSS overlay class per scene look
 // (night / river / forest / cave / dawn) — see #sceneOverlay in index.html.
@@ -420,12 +423,14 @@ function renderState(id) {
     recordBtn.style.display = "none";
     uploadRow.style.display = "none";
     reportPanel.classList.remove("show", "materialize-in");
+    pinGate.classList.remove("show", "materialize-in");
     pinInput.value = "";
-    pinGate.classList.add("show", "materialize-in");
     lastSummary = Session.finish({ completed: true });
-    log(`→ ${id}: PIN-гейт перед отчётом родителю`);
+    endScreen.classList.add("show");
+    log(`→ ${id}: балаға арналған соңғы экран (PIN жасырын)`);
     return;
   }
+  endScreen.classList.remove("show");
   pinGate.classList.remove("show", "materialize-in");
   reportPanel.classList.remove("show", "materialize-in");
   sceneStageWrap.classList.remove("hidden");
@@ -515,6 +520,7 @@ nextBtn.addEventListener("click", () => {
 // private area" beat before showing numbers.
 let lastSummary = null;
 function unlockReport() {
+  endScreen.classList.remove("show");
   pinGate.classList.remove("show", "materialize-in");
   reportDate.textContent = new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
   renderReport(lastSummary || Session.summarize(Session.current()), Session.history().slice(1));
@@ -526,13 +532,33 @@ pinInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") unlockReport();
 });
 
-resetBtn.addEventListener("click", () => {
+// Shared by the operator's "Сначала" killswitch and the child's "Тағы
+// ойнаймыз" on the end screen — both fully reset state and jump back to
+// the intro (startStateForMemory picks intro vs intro_again by replay count).
+function restartStory() {
   storyEnded = false;
   activeQuestionId = null;
   currentRoute = null;
+  endScreen.classList.remove("show");
   Session.start();
   renderState(startStateForMemory());
+}
+
+resetBtn.addEventListener("click", () => {
+  restartStory();
   log("── сброс сценария ──");
+});
+
+playAgainBtn.addEventListener("click", () => {
+  restartStory();
+  log("── тағы ойнаймыз: сценарий басынан ──");
+});
+
+parentBtn.addEventListener("click", () => {
+  endScreen.classList.remove("show");
+  pinInput.value = "";
+  pinGate.classList.add("show", "materialize-in");
+  log("→ parent_report: баладан ата-ана PIN-гейтіне өтті");
 });
 
 async function startRecording() {

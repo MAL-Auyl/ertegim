@@ -295,8 +295,14 @@
     <button id="operatorToggle" class="topbar-icon" title="Оператор (клавиша `)" aria-label="Панель оператора">⚙</button>
   </div>
   <div class="panel glass-panel" style="position:relative;">
-    <div id="startOverlay" style="position:absolute;inset:0;z-index:5;background:var(--card-solid);border-radius:inherit;display:flex;align-items:center;justify-content:center;">
-      <button id="startBtn" class="btn btn-primary" style="padding:20px 32px;font-size:1.1rem;">▶ Бастау</button>
+    <div id="startOverlay" class="start-overlay">
+      <img class="start-cover" src="/images/cover-fox-fullbody.png" alt="Түлкі">
+      <h2 class="start-title display">Түлкі інісін іздейді</h2>
+      <p class="start-subtitle">
+        <span class="kk">Түлкіге інісін табуға көмектес — дауыспен жауап бер</span>
+        <span class="ru">Помоги лисёнку найти братика — отвечай голосом</span>
+      </p>
+      <button id="startBtn" class="btn btn-primary start-btn">▶ Бастау</button>
     </div>
     <div id="sceneStageWrap">
       <div id="sceneStage">
@@ -318,6 +324,13 @@
     <div id="status"><span id="statusText"></span><span class="dots" id="thinkingDots" hidden><span></span><span></span><span></span></span></div>
 
     <div id="blockedFlash">⛔ Заблокировано — вне темы</div>
+
+    <div id="endScreen" class="end-screen">
+      <div class="end-title display">Сау бол! 🦊</div>
+      <p class="end-line body-text">Інімді тапқаныңа рахмет!</p>
+      <button id="playAgainBtn" class="btn btn-primary end-play-btn">🔄 Тағы ойнаймыз</button>
+      <button id="parentBtn" class="btn btn-muted end-parent-btn">Ата-анаға</button>
+    </div>
 
     <div id="pinGate" class="pin-gate">
       <div class="pin-avatar">🦊</div>

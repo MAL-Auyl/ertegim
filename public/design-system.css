@@ -407,3 +407,67 @@ body {
 .history-row { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 0.82rem; padding: 6px 0; border-top: 1px solid var(--line); }
 .history-row span:first-child { color: var(--ink-soft); }
 .skill-state { font-size: 0.7rem; color: var(--ink-soft); flex: 0 0 auto; }
+
+/* --- Start screen (first thing the child/operator sees, #startOverlay) --- */
+.start-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--card-solid);
+  border-radius: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-5);
+  gap: var(--space-3);
+}
+.start-cover {
+  max-height: 46%;
+  max-width: 100%;
+  object-fit: contain;
+  animation: startCoverIn 340ms var(--ease-materialize) both;
+}
+@keyframes startCoverIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.start-title { margin: 0; }
+.start-subtitle { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.start-subtitle .kk { font-size: 1rem; font-weight: 700; }
+.start-subtitle .ru { font-size: 0.82rem; color: var(--ink-soft); font-style: italic; }
+.start-btn { padding: 20px 32px; font-size: 1.1rem; margin-top: var(--space-2); }
+@media (prefers-reduced-motion: reduce) {
+  .start-cover { animation: none; }
+}
+
+/* --- End screen: child-facing finale, no PIN visible (#endScreen) --- */
+.end-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  position: relative;
+}
+.end-screen.show { display: flex; }
+.end-title { margin: 0; }
+.end-line { margin: 0; color: var(--ink-soft); }
+.end-play-btn { padding: 18px 32px; font-size: 1.05rem; margin-top: var(--space-3); width: 100%; max-width: 320px; }
+.end-parent-btn { position: absolute; top: 0; right: 0; padding: 6px 12px; font-size: 0.72rem; }
+.end-screen.show .end-title,
+.end-screen.show .end-line,
+.end-screen.show .end-play-btn,
+.end-screen.show .end-parent-btn {
+  animation: reportItemIn 340ms var(--ease-materialize) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .end-screen.show .end-title,
+  .end-screen.show .end-line,
+  .end-screen.show .end-play-btn,
+  .end-screen.show .end-parent-btn {
+    animation: none;
+  }
+}
