@@ -6,6 +6,7 @@
 import { mkdirSync } from "node:fs";
 
 import { checkBlocklist } from "../lib/blocklist-core.js";
+import { classifyAnswer, sanitizeClassifyInput } from "../lib/classify-core.js";
 import { sttHintFor } from "../lib/stt-hints-core.js";
 import { expectedForms, pickTranscript, filterHallucinations } from "../lib/stt-pick.js";
 
@@ -41,7 +42,11 @@ const SPAWN_TIMEOUT_MS = 20000;
 // Whisper is the fallback so the demo still works with zero network/cloud
 // dependency if Groq is unreachable or the key is missing/rate-limited.
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_TIMEOUT_MS = 5000;
+// Raised from 5000: the default model is now the full whisper-large-v3,
+// which is slower than turbo. The demo can afford it — Whisper is not the
+// bottleneck, the TTS/mic turnaround already budgets 8-12 s behind a
+// "think" animation.
+const GROQ_TIMEOUT_MS = Number(process.env.GROQ_TIMEOUT_MS) || 8000;
 
 function isMostlyCyrillic(text) {
   const letters = text.match(/\p{L}/gu) || [];
@@ -98,7 +103,30 @@ async function preprocessForSTT(audioBuf, ext) {
   }
 }
 
-const GROQ_STT_MODEL = "whisper-large-v3-turbo";
+// whisper-large-v3-turbo is faster but noticeably weaker than the full model
+// on lower-resource languages, and on real mobile audio during the pitch week
+// turbo + a forced language=kk confidently hallucinated Kazakh-SHAPED
+// nonsense («үңі ғыңңқ» for a real reply) instead of failing safely — a known
+// failure mode when a model is made to commit to a low-resource language it
+// is genuinely unsure about. The full model plus auto-detect plus the
+// vocabulary prompt behaved.
+const GROQ_STT_MODEL = process.env.GROQ_STT_MODEL || "whisper-large-v3";
+
+// Which passes transcribeDual runs, in order. "auto" means "send no
+// `language` field at all" — Whisper detects it and reports what it picked.
+// Default auto,ru rather than kk,ru: every question in story.js already
+// accepts a Kazakh OR a Russian answer, so there is no reason to force the
+// harder language, and forcing it is exactly what produced the hallucinated
+// Kazakh above. isMostlyCyrillic() still rejects a wrong-script guess.
+// Set STT_LANGS=kk,ru to restore the previous forced-Kazakh behaviour, or
+// STT_LANGS=auto for a single pass. Order matters: lib/stt-pick.js breaks a
+// score tie in favour of the candidate listed first.
+const STT_LANGS = (process.env.STT_LANGS || "auto,ru")
+  .split(",").map((s) => s.trim()).filter(Boolean);
+// An empty list (STT_LANGS="") would mean zero passes: Promise.allSettled([])
+// resolves to [], and the "everything failed" branch below would then throw
+// `settled[0].reason` === undefined, surfacing as an unreadable 500.
+if (STT_LANGS.length === 0) throw new Error("STT_LANGS is empty");
 
 // One Groq call on an already-prepared upload buffer. Split out of
 // transcribeGroq so transcribeDual can preprocess the clip ONCE and then run
@@ -110,7 +138,9 @@ async function groqCall(uploadBuf, uploadName, hint, lang, model = GROQ_STT_MODE
   const form = new FormData();
   form.append("file", new Blob([uploadBuf]), uploadName);
   form.append("model", model);
-  form.append("language", lang);
+  // "auto" = omit the field entirely and let Whisper decide; any other value
+  // forces that language. See STT_LANGS above for why auto is the default.
+  if (lang !== "auto") form.append("language", lang);
   form.append("prompt", hint);
   form.append("temperature", "0");
   // verbose_json is what carries per-segment no_speech_prob / avg_logprob —
@@ -145,7 +175,17 @@ async function groqCall(uploadBuf, uploadName, hint, lang, model = GROQ_STT_MODE
     // would hand a silent clip a free confidence bonus (see confidenceOf).
     const lps = segments.map((s) => Number(s.avg_logprob)).filter((n) => Number.isFinite(n));
     const avgLogprob = lps.length ? lps.reduce((a, b) => a + b, 0) / lps.length : null;
-    return { text, lang, noSpeechProb, avgLogprob, ms, engine: "groq" };
+    // An auto pass is labelled by what Whisper says it heard, so the
+    // operator log and the classifier prompt still show a real language tag
+    // instead of "auto"; `detected` keeps the raw answer for the lab page.
+    const detected = typeof data.language === "string" && data.language ? data.language : null;
+    return {
+      text,
+      lang: lang === "auto" ? (detected || "auto") : lang,
+      requested: lang,
+      detected,
+      noSpeechProb, avgLogprob, ms, engine: "groq",
+    };
   } finally {
     clearTimeout(timer);
   }
@@ -164,7 +204,7 @@ async function prepareUpload(audioBuf, ext) {
   }
 }
 
-async function transcribeGroq(audioBuf, ext, hint, lang = "kk", model = GROQ_STT_MODEL) {
+async function transcribeGroq(audioBuf, ext, hint, lang = "auto", model = GROQ_STT_MODEL) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
   // t0 starts before preprocessing so the reported `ms` is comparable to
   // transcribeLocal's, which times its own ffmpeg step too.
@@ -174,16 +214,17 @@ async function transcribeGroq(audioBuf, ext, hint, lang = "kk", model = GROQ_STT
   return { ...out, transcript: out.text, ms: Math.round(performance.now() - t0) };
 }
 
-// Ask Whisper the same clip twice — kk and ru — in parallel, then let
-// lib/stt-pick.js decide which recognition the story should believe. Children
-// here answer in either language (often mixing both inside one sentence), and
-// a single language=kk pass mangles a Russian "три" into Kazakh-shaped noise.
-async function transcribeDual(audioBuf, ext, hint, expected, model = GROQ_STT_MODEL) {
+// Ask Whisper the same clip once per entry in STT_LANGS, in parallel, then
+// let lib/stt-pick.js decide which recognition the story should believe.
+// Children here answer in either language (often mixing both inside one
+// sentence), and a single forced pass mangles the other language — a Russian
+// "три" comes back as Kazakh-shaped noise and vice versa.
+async function transcribeDual(audioBuf, ext, hint, expected, model = GROQ_STT_MODEL, langs = STT_LANGS) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
   const t0 = performance.now();
   const { uploadBuf, uploadName } = await prepareUpload(audioBuf, ext);
   const settled = await Promise.allSettled(
-    ["kk", "ru"].map((lang) => groqCall(uploadBuf, uploadName, hint, lang, model)),
+    langs.map((lang) => groqCall(uploadBuf, uploadName, hint, lang, model)),
   );
   const candidates = settled.filter((s) => s.status === "fulfilled").map((s) => s.value);
   if (candidates.length === 0) {
@@ -200,94 +241,10 @@ async function transcribeDual(audioBuf, ext, hint, expected, model = GROQ_STT_MO
   };
 }
 
-// LLM answer classifier (Next Steps #5) — replaces the operator's manual
-// Correct/Re-ask judgement with a real model call. Same Groq account as STT,
-// but the chat-completions endpoint, not Whisper. Kept deliberately separate
-// from the blocklist: the blocklist is a hard-coded, network-free safety gate
-// that fails closed; this classifier only judges answer correctness and is
-// allowed to fail OPEN (falls back to the operator's own buttons) since a
-// wrong "неверно"/"верно" call here just means one extra re-ask, not a
-// safety incident. See IDEA.md "Как закрываем риски".
-// This Groq account has no llama-3.x chat access (checked via /v1/models) —
-// gpt-oss-20b is the fastest model it does have access to, plenty for a
-// 3-way classification call.
-const GROQ_CHAT_MODEL = "openai/gpt-oss-20b";
-const CLASSIFY_TIMEOUT_MS = 4000;
-
-async function classifyAnswer(transcript, questionKk, criterion, extra = {}) {
-  const alts = extra.alternatives || [];
-  const forms = extra.expectedForms || [];
-  // The classifier sees BOTH recognitions, not just the picked one: when kk
-  // and ru disagree, one of them is usually the child's actual answer, and a
-  // model reading both can say so where a string comparison cannot.
-  // Read by LANGUAGE TAG, not by position: when one of the two Groq passes
-  // fails or is filtered out as a hallucination, alts[1] is not the ru pass,
-  // and labelling a Kazakh answer «распознавание ru» misleads the model.
-  const byLang = (l) => {
-    const hit = alts.find((a) => a && typeof a === "object" && a.lang === l);
-    return hit ? String(hit.text ?? "") : "";
-  };
-  const plain = alts.filter((a) => typeof a === "string"); // backward compat
-  const kkAlt = byLang("kk") || plain[0] || transcript;
-  const ruAlt = byLang("ru") || plain[1] || "";
-  // Only claim "one of the recognitions is enough" when we actually gave the
-  // model something to check against; with no expected forms and no second
-  // recognition that sentence just invites a guess.
-  const hasExpectation = forms.length > 0 || alts.length > 0;
-  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CLASSIFY_TIMEOUT_MS);
-  try {
-    const t0 = performance.now();
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GROQ_CHAT_MODEL,
-        temperature: 0,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "Ты оцениваешь ответ ребёнка 3-7 лет в детской интерактивной сказке. " +
-              "Тебе дают вопрос героя, критерий правильного ответа и то, что реально " +
-              "распознала речь-в-текст система (может быть неточным/обрезанным — " +
-              "суди по смыслу, а не по буквальному совпадению). Верни ТОЛЬКО JSON вида " +
-              '{"label": "correct" | "incorrect" | "unclear", "reason": "коротко, по-русски"}. ' +
-              '"unclear" — если ответ пустой, невнятный или не по теме вопроса (не значит ' +
-              "«неверно», значит «нужно переспросить»)." +
-              (hasExpectation
-                ? " Если хотя бы одно из распознаваний содержит ожидаемый ответ — считай его верным. " +
-                  "Исключение — вопросы с выбором варианта: если распознавания указывают на разные " +
-                  "варианты, верни unclear."
-                : ""),
-          },
-          {
-            role: "user",
-            content:
-              `Вопрос героя: ${questionKk}\nКритерий: ${criterion}\n` +
-              `Ответ ребёнка — распознавание kk: "${kkAlt}"; распознавание ru: "${ruAlt}"\n` +
-              `Ожидаемые формы ответа: ${forms.join(", ") || "—"}`,
-          },
-        ],
-      }),
-      signal: controller.signal,
-    });
-    if (!res.ok) throw new Error(`groq chat http ${res.status}: ${await res.text()}`);
-    const data = await res.json();
-    const ms = Math.round(performance.now() - t0);
-    const content = data.choices?.[0]?.message?.content || "{}";
-    const parsed = JSON.parse(content);
-    const label = ["correct", "incorrect", "unclear"].includes(parsed.label) ? parsed.label : "unclear";
-    return { label, reason: String(parsed.reason || ""), ms };
-  } finally {
-    clearTimeout(timer);
-  }
-}
+// The LLM answer classifier itself (prompt, model, timeout, input caps)
+// lives in lib/classify-core.js, shared verbatim with api/classify.js so the
+// Vercel deployment and this local server can never judge the same answer
+// differently. See that file for why it is allowed to fail OPEN.
 
 async function transcribe(audioBuf, ext, hint, expected) {
   try {
@@ -433,10 +390,12 @@ Bun.serve({
         const alternatives = filterHallucinations(
           (out.candidates || []).map((c) => ({ lang: c.lang, text: c.text })),
         );
-        const kk = alternatives.find((a) => a.lang === "kk")?.text ?? "";
-        const ru = alternatives.find((a) => a.lang === "ru")?.text ?? "";
+        // Logged by whatever language tag each pass actually came back with
+        // (an `auto` pass reports Whisper's own detection), not a fixed
+        // kk/ru pair — STT_LANGS is configurable.
+        const heard = alternatives.map((a) => `${a.lang || "?"}="${a.text}"`).join(" ");
         console.log(
-          `stt kk="${kk}" ru="${ru}" → ${out.lang || "-"} route=${out.route || "-"} score=${out.score ?? 0} conf=${out.confidence ?? 0}`,
+          `stt ${heard} → ${out.lang || "-"} route=${out.route || "-"} score=${out.score ?? 0} conf=${out.confidence ?? 0}`,
         );
         // A low-confidence pick is still blocklist-checked (safety never runs
         // on a subset of what the child might have said) — but per transcript,
@@ -481,7 +440,12 @@ Bun.serve({
     // Never shipped to Vercel — it exists to tune stt-pick.js against actual
     // kids' voices instead of guesses.
     if (url.pathname === "/lab.html" && req.method === "GET") {
-      return new Response(Bun.file(`${ROOT}lab.html`), {
+      // The langs box is pre-filled from the server's own STT_LANGS, so the
+      // lab starts from what the product actually runs and the user edits
+      // from there rather than re-typing the default.
+      const html = (await Bun.file(`${ROOT}lab.html`).text())
+        .replace("__STT_LANGS__", STT_LANGS.join(","));
+      return new Response(html, {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
     }
@@ -505,15 +469,32 @@ Bun.serve({
         const ext = clientExt && /^[a-z0-9]{2,5}$/i.test(clientExt) ? clientExt : "webm";
         const nodeId = String(form.get("nodeId") || "");
         const trackCount = Number(form.get("trackCount")) || 0;
-        const model = form.get("model") === "whisper-large-v3"
-          ? "whisper-large-v3"
+        const model = form.get("model") === "whisper-large-v3-turbo"
+          ? "whisper-large-v3-turbo"
           : GROQ_STT_MODEL;
+        // The whole point of the lab is A/B-ing this: kk,ru (the old forced
+        // behaviour) vs auto,ru (the default) vs auto, on real child clips.
+        const langsRaw = String(form.get("langs") || "").trim();
+        const langs = langsRaw
+          ? langsRaw.split(",").map((x) => x.trim()).filter(Boolean).slice(0, 4)
+          : STT_LANGS;
         const hint = sttHintFor(nodeId, { brotherName: String(form.get("brotherName") || "") });
         const expected = expectedForms(nodeId, { trackCount });
-        const out = await transcribeDual(buf, ext, hint, expected, model);
+        const out = await transcribeDual(buf, ext, hint, expected, model, langs);
         const byLang = (l) => out.candidates.find((c) => c.lang === l) || {};
         return Response.json({
           model,
+          langs,
+          // One row per pass, tagged by what was REQUESTED (auto/kk/ru) plus
+          // what Whisper detected — that pairing is the whole finding the
+          // lab exists to check.
+          passes: out.candidates.map((c) => ({
+            requested: c.requested ?? c.lang,
+            lang: c.lang,
+            detected: c.detected ?? null,
+            text: c.text ?? "",
+          })),
+          // Kept for the existing lab columns.
           kk: byLang("kk").text ?? "",
           ru: byLang("ru").text ?? "",
           picked: out.transcript,
@@ -531,29 +512,28 @@ Bun.serve({
 
     if (url.pathname === "/api/classify" && req.method === "POST") {
       try {
-        const { transcript, questionKk, criterion, alternatives, expectedForms: expForms } = await req.json();
-        if (typeof transcript !== "string" || typeof questionKk !== "string" || typeof criterion !== "string") {
+        const input = sanitizeClassifyInput(await req.json());
+        if (!input.valid) {
           return Response.json({ error: "missing transcript/questionKk/criterion field" }, { status: 400 });
         }
-        // Caps: this body is sent straight into an LLM prompt, so an oversized
-        // or repeated field is both a cost and a prompt-injection surface. Two
-        // recognitions, a handful of expected forms and one short child answer
-        // is all this endpoint is ever meant to carry.
-        const altsIn = (Array.isArray(alternatives) ? alternatives : []).slice(0, 4).map((a) =>
-          a && typeof a === "object"
-            ? { lang: String(a.lang ?? "").slice(0, 8), text: String(a.text ?? "").slice(0, 300) }
-            : String(a).slice(0, 300),
-        );
-        const { label, reason, ms } = await classifyAnswer(transcript.slice(0, 500), questionKk, criterion, {
-          alternatives: altsIn,
-          expectedForms: (Array.isArray(expForms) ? expForms : []).slice(0, 32).map((s) => String(s).slice(0, 40)),
+        // Caps (transcript length, number of alternatives, expected forms)
+        // are applied by sanitizeClassifyInput — this body goes straight into
+        // an LLM prompt, so an oversized or repeated field is both a cost and
+        // a prompt-injection surface.
+        const { label, reason, ms } = await classifyAnswer({
+          apiKey: GROQ_API_KEY,
+          transcript: input.transcript,
+          questionKk: input.questionKk,
+          criterion: input.criterion,
+          alternatives: input.alternatives,
+          expectedForms: input.expectedForms,
         });
         return Response.json({ label, reason, ms });
       } catch (err) {
         console.error(`classify failed (falling back to operator): ${err}`);
         // Fail OPEN: the frontend treats a non-200/error response as "AI
         // unavailable" and silently leaves the manual Correct/Re-ask/Advance
-        // buttons as the only path — see comment above classifyAnswer().
+        // buttons as the only path — see the note in lib/classify-core.js.
         return Response.json({ error: String(err) }, { status: 500 });
       }
     }

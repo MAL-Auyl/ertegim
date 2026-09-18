@@ -234,11 +234,20 @@ const FOX_POSE_IMAGE = {
 // with no alpha plane) — so transparency is done in JS instead: draw each
 // frame to a canvas and zero the alpha on near-black pixels every frame.
 // Poses with no clip yet fall back to the static FOX_POSE_IMAGE.
+// iOS Safari cannot play WebM video AT ALL, so the three VP9 clips showed
+// nothing on a phone — only the idle pose happened to already be H.264. The
+// same clips re-encoded to H.264/MP4 (same source, same frames) live beside
+// them, and the format is chosen per browser rather than switched wholesale:
+// the WebM files are smaller, so a browser that can actually play them still
+// gets them.
+const CAN_PLAY_WEBM =
+  document.createElement("video").canPlayType('video/webm; codecs="vp9"') !== "";
+
 const FOX_POSE_VIDEO = {
-  idle: "/images/fox_idle_test.mp4",
-  talk: "/images/fox_clip2.webm",
-  confused: "/images/fox_confused.webm",
-  think: "/images/fox_think.webm",
+  idle: "/images/fox_idle_test.mp4", // already H.264, no WebM source
+  talk: CAN_PLAY_WEBM ? "/images/fox_clip2.webm" : "/images/fox_clip2.mp4",
+  confused: CAN_PLAY_WEBM ? "/images/fox_confused.webm" : "/images/fox_confused.mp4",
+  think: CAN_PLAY_WEBM ? "/images/fox_think.webm" : "/images/fox_think.mp4",
 };
 
 function foxPoseHTML(pose) {
@@ -262,6 +271,14 @@ function startFoxVideoChromakey(root) {
   const video = root.querySelector(".fox-video");
   const canvas = root.querySelector(".fox-pose");
   if (!video || !canvas) return;
+  // The `autoplay` attribute alone doesn't reliably kick off playback when
+  // the <video> is inserted via innerHTML from an async callback (e.g. the
+  // Rive-load-failed fallback, which fires outside the original click's
+  // synchronous stack) — the video sits fully loaded (readyState 4) but
+  // paused, so the chromakey loop below just redraws the same frame forever.
+  // Kicking play() explicitly fixes that; muted+playsinline means there is no
+  // autoplay-policy rejection to worry about, but .catch() just in case.
+  video.play().catch(() => {});
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
   function draw() {
@@ -306,6 +323,98 @@ function animateFoxPose(root, pose) {
   } else if (pose === "confused") {
     gsap.to(img, { rotation: -5, duration: 1.4, ease: "sine.inOut", yoyo: true, repeat: -1 });
   }
+}
+
+
+// --- Rive-driven fox ---------------------------------------------------
+// Replaces the video-chromakey/GSAP pose art above once public/rive/fox.riv
+// exists (see docs/rive-fox-rig-spec.md for the rig contract). State
+// machine "State Machine 1" has two Number inputs: `pose` (0 idle/1 talk/
+// 2 happy/3 confused/4 think) for discrete pose switching, and `talkLevel`
+// (0-1) fed every frame from the hero's own TTS audio RMS (app.js) to
+// drive the mouth-open amount continuously instead of a fixed-rate flap
+// loop. Named "State Machine 1" (Rive's default) rather than a custom
+// name — the editor's rename-on-canvas gesture didn't stick for state
+// machines, so this is the name that's actually in the .riv file.
+//
+// mountFoxRive silently calls onFail — same "CDN blocked/offline" spirit
+// as animateFoxPose's gsap check above — whenever window.rive isn't
+// loaded, the .riv file 404s, or it loads but doesn't expose the expected
+// state machine/inputs (e.g. a typo during export). Callers fall back to
+// foxPoseHTML()/animateFoxPose() in that case.
+const FOX_RIVE_SRC = "/rive/fox.riv";
+const FOX_RIVE_STATE_MACHINE = "State Machine 1";
+const FOX_RIVE_POSE_INDEX = { idle: 0, talk: 1, happy: 2, confused: 3, think: 4 };
+
+let foxRive = null;
+let foxRiveInputs = null; // { pose, talkLevel } once loaded, else null
+let foxRivePendingPose = "idle"; // applied once inputs become available
+
+function mountFoxRive(canvas, initialPose, onFail) {
+  unmountFoxRive();
+  foxRivePendingPose = initialPose;
+  if (typeof rive === "undefined") {
+    onFail();
+    return;
+  }
+  // `instance` is captured by the closures below instead of reading the
+  // module-level `foxRive` at call time — if setHero() mounts/unmounts fox
+  // again before this instance's onLoad/onLoadError fires (fast pose
+  // flicker, e.g. fox -> owl -> fox), `foxRive` will already point at a
+  // *different* instance by then. The `foxRive !== instance` check makes
+  // that late callback a no-op instead of it clobbering the newer mount's
+  // state or calling .stateMachineInputs() on an instance already
+  // .cleanup()-ed by the intervening unmountFoxRive().
+  let instance;
+  try {
+    instance = new rive.Rive({
+      src: FOX_RIVE_SRC,
+      canvas,
+      autoplay: true,
+      stateMachines: FOX_RIVE_STATE_MACHINE,
+      onLoad: () => {
+        if (foxRive !== instance) return;
+        const inputs = instance.stateMachineInputs(FOX_RIVE_STATE_MACHINE);
+        const pose = inputs.find((i) => i.name === "pose");
+        const talkLevel = inputs.find((i) => i.name === "talkLevel");
+        if (!pose) {
+          // Tear the instance down first: otherwise a live Rive canvas keeps
+          // running underneath the fallback art the caller is about to draw.
+          unmountFoxRive();
+          onFail(); // .riv doesn't match the expected contract (docs/rive-fox-rig-spec.md)
+          return;
+        }
+        foxRiveInputs = { pose, talkLevel };
+        instance.resizeDrawingSurfaceToCanvas();
+        foxRiveInputs.pose.value = FOX_RIVE_POSE_INDEX[foxRivePendingPose] ?? 0;
+      },
+      onLoadError: () => {
+        if (foxRive === instance) onFail();
+      },
+    });
+    foxRive = instance;
+  } catch {
+    onFail();
+  }
+}
+
+function unmountFoxRive() {
+  if (foxRive) foxRive.cleanup();
+  foxRive = null;
+  foxRiveInputs = null;
+}
+
+function isFoxRiveActive() {
+  return !!foxRiveInputs;
+}
+
+function setFoxRivePose(pose) {
+  foxRivePendingPose = pose;
+  if (foxRiveInputs) foxRiveInputs.pose.value = FOX_RIVE_POSE_INDEX[pose] ?? 0;
+}
+
+function setFoxTalkLevel(level) {
+  if (foxRiveInputs && foxRiveInputs.talkLevel) foxRiveInputs.talkLevel.value = level;
 }
 
 // The story node itself says who is on stage and how (see story.js) —

@@ -296,3 +296,65 @@ describe("missing avg_logprob", () => {
     expect(meh.lowConfidence).toBe(false);
   });
 });
+
+// --- auto-detect candidates (STT_LANGS default "auto,ru") ---------------
+// The kk pass was replaced by an auto-detect pass: forcing language=kk made
+// whisper-large-v3-turbo commit to Kazakh phonetics on audio it was unsure
+// about and return confident nonsense («үңі ғыңңқ») instead of failing
+// safely. The picker must treat such a candidate as an ordinary one — its
+// tag is only a label — and must break a dead tie in the order given, which
+// is the STT_LANGS order.
+
+test("an auto-detect candidate is scored and picked like any other", async () => {
+  const { pickTranscript, expectedForms } = await load();
+  const expected = expectedForms("q_tracks", { trackCount: 3 });
+  const out = pickTranscript(
+    [
+      { lang: "kk", text: "үш", requested: "auto", detected: "kk", avgLogprob: -0.3, noSpeechProb: 0.1 },
+      { lang: "ru", text: "мм", avgLogprob: -0.2, noSpeechProb: 0.1 },
+    ],
+    expected,
+  );
+  expect(out.transcript).toBe("үш");
+  expect(out.lang).toBe("kk");
+  expect(out.lowConfidence).toBe(false);
+});
+
+test("a candidate Whisper could not label at all still works, tagged 'auto'", async () => {
+  const { pickTranscript, expectedForms } = await load();
+  const out = pickTranscript(
+    [{ lang: "auto", text: "три", avgLogprob: -0.4, noSpeechProb: 0.2 }],
+    expectedForms("q_tracks", { trackCount: 3 }),
+  );
+  expect(out.transcript).toBe("три");
+  expect(out.lang).toBe("auto");
+  expect(out.score).toBe(1);
+});
+
+test("a dead tie goes to the candidate listed first (STT_LANGS order)", async () => {
+  const { pickTranscript, expectedForms } = await load();
+  // Same score, same avgLogprob: the auto pass is listed first because
+  // STT_LANGS defaults to "auto,ru", and it is the one that should win.
+  const out = pickTranscript(
+    [
+      { lang: "kk", text: "үш", requested: "auto", avgLogprob: -0.5, noSpeechProb: 0.1 },
+      { lang: "ru", text: "три", requested: "ru", avgLogprob: -0.5, noSpeechProb: 0.1 },
+    ],
+    expectedForms("q_tracks", { trackCount: 3 }),
+  );
+  expect(out.transcript).toBe("үш");
+});
+
+test("route disagreement is still a re-ask when one side came from an auto pass", async () => {
+  const { pickTranscript, expectedForms } = await load();
+  const out = pickTranscript(
+    [
+      { lang: "kk", text: "өзенге", requested: "auto", avgLogprob: -0.3, noSpeechProb: 0.1 },
+      { lang: "ru", text: "направо", requested: "ru", avgLogprob: -0.2, noSpeechProb: 0.1 },
+    ],
+    expectedForms("q_fork"),
+  );
+  expect(out.route).toBe(null);
+  expect(out.lowConfidence).toBe(true);
+  expect(out.reason).toBe("route disagreement");
+});

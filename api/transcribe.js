@@ -15,11 +15,28 @@
 import { checkBlocklist } from "../lib/blocklist-core.js";
 import { sttHintFor } from "../lib/stt-hints-core.js";
 import { expectedForms, pickTranscript, filterHallucinations } from "../lib/stt-pick.js";
+import { isAllowedOrigin } from "../lib/origin-guard.js";
 
 export const config = { runtime: "edge" };
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_TIMEOUT_MS = 8000; // more headroom than local (no LAN, real internet round-trip)
+// More headroom than local (no LAN, a real internet round-trip) and raised
+// from 8000 because the default model is now the full whisper-large-v3,
+// which is slower than turbo.
+const GROQ_TIMEOUT_MS = Number(process.env.GROQ_TIMEOUT_MS) || 12000;
+
+// Same defaults and the same reasoning as server/server.js — see the long
+// comment there. In short: turbo + a forced language=kk confidently
+// hallucinated Kazakh-shaped nonsense on real mobile audio, and every
+// question already accepts a Kazakh OR a Russian answer, so nothing is
+// gained by forcing the harder language. process.env works on Edge.
+const GROQ_STT_MODEL = process.env.GROQ_STT_MODEL || "whisper-large-v3";
+const STT_LANGS = (process.env.STT_LANGS || "auto,ru")
+  .split(",").map((s) => s.trim()).filter(Boolean);
+// An empty list (STT_LANGS="") would mean zero passes: Promise.allSettled([])
+// resolves to [], and the "everything failed" branch below would then throw
+// `settled[0].reason` === undefined, surfacing as an unreadable 500.
+if (STT_LANGS.length === 0) throw new Error("STT_LANGS is empty");
 
 function isMostlyCyrillic(text) {
   const letters = text.match(/\p{L}/gu) || [];
@@ -32,8 +49,9 @@ async function transcribeGroq(audioBuf, ext, hint, lang) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
   const form = new FormData();
   form.append("file", new Blob([audioBuf]), `clip.${ext}`);
-  form.append("model", "whisper-large-v3-turbo");
-  form.append("language", lang);
+  form.append("model", GROQ_STT_MODEL);
+  // "auto" = omit the field and let Whisper detect the language.
+  if (lang !== "auto") form.append("language", lang);
   form.append("prompt", hint);
   form.append("temperature", "0");
   // verbose_json carries per-segment no_speech_prob / avg_logprob, which
@@ -62,13 +80,22 @@ async function transcribeGroq(audioBuf, ext, hint, lang) {
     // would give a silent clip a free confidence bonus — see confidenceOf).
     const lps = segments.map((s) => Number(s.avg_logprob)).filter((n) => Number.isFinite(n));
     const avgLogprob = lps.length ? lps.reduce((a, b) => a + b, 0) / lps.length : null;
-    return { text, lang, noSpeechProb, avgLogprob, ms: Date.now() - t0 };
+    // An auto pass is tagged with what Whisper says it heard, so the
+    // downstream log and classifier prompt still get a real language.
+    const detected = typeof data.language === "string" && data.language ? data.language : null;
+    return {
+      text,
+      lang: lang === "auto" ? (detected || "auto") : lang,
+      requested: lang,
+      detected,
+      noSpeechProb, avgLogprob, ms: Date.now() - t0,
+    };
   } finally {
     clearTimeout(timer);
   }
 }
 
-// kk + ru in parallel, picked by lib/stt-pick.js — same contract as
+// One pass per STT_LANGS entry, in parallel, picked by lib/stt-pick.js — same contract as
 // server/server.js's transcribeDual, minus the ffmpeg preprocessing (no
 // native binaries on Edge) and minus the local-Whisper fallback (nothing to
 // fall back to on a serverless platform: if both passes fail, so does the
@@ -76,7 +103,7 @@ async function transcribeGroq(audioBuf, ext, hint, lang) {
 async function transcribeDual(audioBuf, ext, hint, expected) {
   const t0 = Date.now();
   const settled = await Promise.allSettled(
-    ["kk", "ru"].map((lang) => transcribeGroq(audioBuf, ext, hint, lang)),
+    STT_LANGS.map((lang) => transcribeGroq(audioBuf, ext, hint, lang)),
   );
   const candidates = settled.filter((s) => s.status === "fulfilled").map((s) => s.value);
   if (candidates.length === 0) throw settled[0].reason;
@@ -86,6 +113,12 @@ async function transcribeDual(audioBuf, ext, hint, expected) {
 export default async function handler(request) {
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "method not allowed" }), { status: 405 });
+  }
+  // Cheap filter against naive/accidental hits on the shared Groq quota —
+  // see lib/origin-guard.js for why this is not (and is not meant to be) a
+  // security boundary.
+  if (!isAllowedOrigin(request)) {
+    return new Response(JSON.stringify({ error: "forbidden origin" }), { status: 403 });
   }
   try {
     const form = await request.formData();
@@ -111,9 +144,10 @@ export default async function handler(request) {
     const alternatives = filterHallucinations(
       out.candidates.map((c) => ({ lang: c.lang, text: c.text })),
     );
-    const kk = alternatives.find((a) => a.lang === "kk")?.text ?? "";
-    const ru = alternatives.find((a) => a.lang === "ru")?.text ?? "";
-    console.log(`stt kk="${kk}" ru="${ru}" → ${out.lang || "-"} route=${out.route || "-"} score=${out.score} conf=${out.confidence}`);
+    // Tagged by whatever each pass came back as (an auto pass reports
+    // Whisper's own detection), not a fixed kk/ru pair.
+    const heard = alternatives.map((a) => `${a.lang || "?"}="${a.text}"`).join(" ");
+    console.log(`stt ${heard} → ${out.lang || "-"} route=${out.route || "-"} score=${out.score} conf=${out.confidence}`);
     // Per transcript, never on a joined string: joining invents phrases across
     // the seam and hides which recognition actually tripped the list.
     const checks = [out.transcript, ...alternatives.map((a) => a.text)]
