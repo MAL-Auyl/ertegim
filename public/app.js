@@ -577,11 +577,117 @@ function setHeroHTML(html) {
   heroStage.innerHTML = `<div class="hero-inner">${html}</div>`;
 }
 
+// --- Hero rendering: Rive-first for the fox, DOM-rebuild fallback otherwise ---
+// Rive drives the fox off ONE persistent canvas + state machine
+// ("State Machine 1": pose 0-4, talkLevel 0-1, see docs/rive-fox-rig-spec.md)
+// so a pose change is just an input update, not a teardown/rebuild — that is
+// what keeps the idle breathing/blink loop running continuously across story
+// beats instead of restarting on every line. It falls back to the pre-Rive
+// video/GSAP pose art (foxPoseHTML/animateFoxPose) whenever the CDN, the WASM
+// runtime, or public/rive/fox.riv itself isn't there — mountFoxRive's onFail
+// below. public/rive/fox.riv does NOT exist yet (the rig still has to be
+// built in the Rive editor per the spec), so today every run takes the
+// fallback path and looks exactly as it did before this change. The owl and
+// the bear are still hand-coded SVG with no rig, so they always rebuild.
+let heroMountKey = null; // character + brother: a change means a real rebuild
+
+function heroKeyOf(node) {
+  if (!node) return null;
+  return `${node.character || "fox"}:${node.showBrother ? 1 : 0}`;
+}
+
+function renderHeroFallback(node) {
+  setHeroHTML(renderHero(node));
+  if ((node.character || "fox") === "fox") animateFoxPose(heroStage, node.pose || "idle");
+}
+
+function setHero(node) {
+  const key = heroKeyOf(node);
+  const pose = node?.pose || "idle";
+
+  if (key !== heroMountKey) {
+    unmountFoxRive();
+    heroMountKey = key;
+    if (!node) { heroStage.innerHTML = ""; return; }
+    if ((node.character || "fox") !== "fox") { renderHeroFallback(node); return; }
+    // The canvas lives inside .hero-inner like every other hero, so the
+    // idle CSS keyframes and heroShake keep working untouched.
+    setHeroHTML(`<canvas class="fox-pose fox-rive"></canvas>${node.showBrother ? brotherHTML() : ""}`);
+    mountFoxRive(heroStage.querySelector(".fox-rive"), pose, () => {
+      // .riv missing/blocked/contract mismatch — drop back to the pre-Rive
+      // renderer for as long as this hero stays mounted.
+      if (heroMountKey === key && !isFoxRiveActive()) renderHeroFallback(node);
+    });
+    return;
+  }
+
+  if ((node.character || "fox") === "fox" && isFoxRiveActive()) {
+    setFoxRivePose(pose); // same mount, just a new input value
+    return;
+  }
+  // Still loading (pendingPose covers it once it resolves) or already fell
+  // back — the fallback art has no state machine listening for pose changes,
+  // so it needs its own re-render.
+  setFoxRivePose(pose);
+  renderHeroFallback(node);
+}
+
 function setHeroPoseOverride(pose) {
   const node = STORY[currentId] || { character: "fox" };
-  setHeroHTML(renderHero({ ...node, pose }));
-  if (node.character === "fox") animateFoxPose(heroStage, pose);
+  setHero({ ...node, pose });
 }
+
+// TTS-driven mouth amplitude for the Rive fox's talkLevel input — mirrors
+// the VAD mic analyser above, but reads the hero's OWN voice (heroVoice)
+// instead of the mic, so the state machine's mouth-open blend tracks the
+// actual audio rather than a fixed-rate flap loop. Does nothing at all
+// unless Rive is actually driving the fox, which is also what keeps it from
+// routing heroVoice through Web Audio on today's fallback-only path.
+let ttsAudioCtx = null;
+let ttsAnalyser = null;
+let ttsFloatBuf = null;
+let ttsLevelRAF = null;
+
+function ensureTTSAnalyser() {
+  if (ttsAnalyser) return ttsAnalyser;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  ttsAudioCtx = new AudioCtx();
+  // createMediaElementSource can only ever be called once per <audio>
+  // element for the lifetime of the page — caching ttsAnalyser above makes
+  // this function idempotent, which is what keeps that a non-issue.
+  const source = ttsAudioCtx.createMediaElementSource(heroVoice);
+  ttsAnalyser = ttsAudioCtx.createAnalyser();
+  ttsAnalyser.fftSize = 512;
+  ttsFloatBuf = new Float32Array(ttsAnalyser.fftSize);
+  source.connect(ttsAnalyser);
+  source.connect(ttsAudioCtx.destination); // keep audible — an analyser alone is a silent tap
+  return ttsAnalyser;
+}
+
+function startTalkLevelLoop() {
+  if (!isFoxRiveActive()) return; // nothing to drive without the state machine input
+  try {
+    ensureTTSAnalyser();
+  } catch (err) {
+    log(`rive talkLevel: analyser unavailable (${err.message})`);
+    return;
+  }
+  cancelAnimationFrame(ttsLevelRAF);
+  function tick() {
+    ttsAnalyser.getFloatTimeDomainData(ttsFloatBuf);
+    let sum = 0;
+    for (let i = 0; i < ttsFloatBuf.length; i++) sum += ttsFloatBuf[i] * ttsFloatBuf[i];
+    const rms = Math.sqrt(sum / ttsFloatBuf.length);
+    setFoxTalkLevel(Math.max(0, Math.min(1, rms * 6))); // rough gain so quiet Piper output still opens the mouth
+    if (!heroVoice.paused && !heroVoice.ended) {
+      ttsLevelRAF = requestAnimationFrame(tick);
+    } else {
+      setFoxTalkLevel(0);
+    }
+  }
+  tick();
+}
+heroVoice.addEventListener("play", startTalkLevelLoop);
 
 const listenCue = document.getElementById("listenCue");
 
@@ -790,7 +896,7 @@ function renderState(id) {
     storySpeaker.textContent = "";
     storyKk.textContent = "";
     storyRu.textContent = "";
-    heroStage.innerHTML = "";
+    setHero(null);
     sceneStageWrap.classList.add("hidden");
     // The speech bubble is empty on the report screen — leaving it mounted
     // renders a stray blank bubble above the parent's numbers.
@@ -819,8 +925,7 @@ function renderState(id) {
   storySpeaker.textContent = s.speaker;
   storyKk.textContent = s.kk;
   storyRu.textContent = s.ru;
-  setHeroHTML(renderHero(s));
-  if (s.character === "fox") animateFoxPose(heroStage, s.pose);
+  setHero(s);
   const speakDone = speakLine(s.kk, audioIdFor(id), { echo: ECHO_IDS.has(id) });
   const gen = speakGen; // a line started later must win over this one's tail
 
