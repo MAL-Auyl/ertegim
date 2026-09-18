@@ -471,14 +471,29 @@ let vadArmed = false; // true only while the current question hasn't been answer
 let vadSpeechStartedAt = 0;
 let vadLastLoudAt = 0;
 
-// Tuned for 3-7-year-olds (quieter than adults, pause mid-phrase): lower
-// start/keep thresholds, longer end-of-turn silence. Re-check against real
-// child recordings — these are informed guesses, not measurements.
-const VAD_START_RMS = 0.014;
-const VAD_SILENCE_RMS = 0.009;
-const VAD_SILENCE_MS = 1400;
+// Tuned for 3-7-year-olds (quieter than adults, pause mid-phrase). These are
+// the values the user measured on a real phone during the pitch week, and
+// they beat the desk-guessed ones they replace:
+//   start 0.014 → 0.035  — under a phone's mic AGC, 0.02 and below
+//                          self-triggered on ambient room noise, opening
+//                          empty/garbage turns nobody spoke into.
+//   silence 0.009 → 0.02 — matching hysteresis below the start bar.
+//   silence 1400 → 1700  — 1000 ms cut a child off mid-count, between
+//                          «бір… екі…»; 1700 leaves room for that pause.
+//   max 8000 → 10000     — hard cap raised to match the longer silence
+//                          tolerance, so a real answer still fits.
+// VAD_MIN_SPEECH_MS stays at 300 (master used 400): the pre-roll buffer
+// below means a short «да»/«екі» is already captured from before the gate
+// tripped, and 400 was dropping exactly those valid one-word answers.
+// TO RE-TUNE: the start threshold was measured BEFORE the
+// noiseSuppression/autoGainControl constraints below were added, and those
+// change the level that reaches the analyser. Re-measure in /lab.html on
+// real child recordings rather than nudging these by feel.
+const VAD_START_RMS = 0.035;
+const VAD_SILENCE_RMS = 0.02;
+const VAD_SILENCE_MS = 1700;
 const VAD_MIN_SPEECH_MS = 300;
-const VAD_MAX_RECORD_MS = 8000;
+const VAD_MAX_RECORD_MS = 10000;
 // The recorder runs the whole time a question is armed, in small slices,
 // so the clip can start ~500 ms BEFORE the amplitude gate tripped — the
 // first consonant of a child's answer is exactly what the gate misses.
@@ -490,6 +505,23 @@ let vadSpoke = false; // speech was detected during this arming (independent of 
 let vadTurnNodeId = null; // node/brother captured at speech start: renderState may move on before the async onstop
 let vadTurnBrother = "";
 let vadRecorderGen = 0; // bumped per recorder so a stale onstop can't clobber the next question's buffer
+
+// If the child never speaks at all, rms never crosses VAD_START_RMS, so the
+// turn never "starts" and VAD_MAX_RECORD_MS (which only bounds an ALREADY
+// started recording) never applies — the mic would stay armed forever with
+// zero feedback. This timer covers exactly that total-silence case, and it
+// routes into the same markReask() ladder a wrong or unclear spoken answer
+// already uses (1st time → hint, 2nd time on the same question →
+// auto-reveal), so it needs no new story.js content.
+let vadSilenceTimer = null;
+const VAD_SILENCE_TIMEOUT_MS = 8000;
+
+function cancelVadSilenceTimer() {
+  if (vadSilenceTimer) {
+    clearTimeout(vadSilenceTimer);
+    vadSilenceTimer = null;
+  }
+}
 
 // A child sits further from the laptop than an adult and speaks quieter, on
 // top of whatever the room is doing. The browser's own AEC/NS/AGC chain is
@@ -590,6 +622,7 @@ function startVadRecorder() {
 }
 
 function markVadSpeechStart() {
+  cancelVadSilenceTimer(); // speech began — the total-silence timeout no longer applies to this turn
   vadSpeechChunkIdx = vadChunks.length;
   vadSpoke = true;
   vadTurnNodeId = currentId;
@@ -620,6 +653,7 @@ async function onVadRecordingStop(gen) {
 }
 
 function finishVadTurn() {
+  cancelVadSilenceTimer();
   vadArmed = false;
   statusText.textContent = "";
   setHeroPoseOverride("think");
@@ -633,6 +667,16 @@ function armVadForQuestion() {
   vadRecording = false;
   resetTurnStages();
   setStage("mic", "running", "жду речь");
+  // Started here, not when the question was rendered: arming happens only
+  // after the hero's voice line has actually ended (see speakLine), so these
+  // 8 s are 8 s of the CHILD being silent, not of the fox still talking.
+  cancelVadSilenceTimer();
+  vadSilenceTimer = setTimeout(() => {
+    vadSilenceTimer = null;
+    if (!vadArmed || vadRecording) return; // question already left, or speech already started
+    log(`VAD: ${VAD_SILENCE_TIMEOUT_MS / 1000}с полной тишины — переспрашиваю автоматически (без ручного клика)`);
+    markReask("тишина (авто)");
+  }, VAD_SILENCE_TIMEOUT_MS);
   ensureMicStream()
     .then(() => {
       // Record from the moment the question is armed so the pre-roll buffer
@@ -662,6 +706,7 @@ function armVadForQuestion() {
 }
 
 function disarmVad() {
+  cancelVadSilenceTimer(); // called by renderState on every transition, so this covers leaving the question too
   vadArmed = false;
   heroStage.classList.remove("hero-listening", "hero-recording");
   setListenCue(false, false);
@@ -1367,7 +1412,9 @@ function startStateForMemory() {
 }
 
 // Operator panel: hidden from the child, toggled by the ` key, the ⚙ button
-// or ?op=1 for a stage laptop.
+// or ?op=1 / ?operator=1 for a stage laptop. Both spellings are accepted
+// because the pitch-week build used ?operator=1 and that is what ends up in
+// the bookmarks and notes people actually type on the day.
 function setOperatorPanel(show) {
   operatorPanel.classList.toggle("show", show);
 }
@@ -1378,7 +1425,8 @@ document.addEventListener("keydown", (e) => {
     setOperatorPanel(!operatorPanel.classList.contains("show"));
   }
 });
-if (new URLSearchParams(location.search).get("op") === "1") setOperatorPanel(true);
+const opParams = new URLSearchParams(location.search);
+if (opParams.get("op") === "1" || opParams.get("operator") === "1") setOperatorPanel(true);
 
 // ?route=river|forest lets library.html cards pin which fork the fox takes
 // at q_fork when the child's answer doesn't make it clear — anything else
