@@ -248,10 +248,14 @@ body {
   box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.4);
   transition: transform var(--dur-press) var(--ease-response), opacity 150ms ease;
 }
-.mic-btn:hover { opacity: 1; }
-.mic-btn.recording { opacity: 1; }
+@media (hover: hover) {
+  /* Touch devices report a sticky :hover after a tap — keep the idle,
+     low-contrast look there. */
+  .mic-btn:hover { opacity: 1; }
+}
 .mic-btn:active { transform: scale(0.94); }
 .mic-btn.recording {
+  opacity: 1;
   background: radial-gradient(circle at 35% 30%, var(--danger) 0%, #b5342c 70%);
   animation: micPulse 1.4s ease-in-out infinite;
 }
@@ -462,6 +466,10 @@ body {
   25%  { opacity: 1; }
   to   { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(1); }
 }
+
+/* Wrapper for everything on the hero stage: one-off tweens (heroShake) own
+   this element's transform, while #heroStage keeps its idle CSS keyframes. */
+.hero-inner { width: 100%; height: 100%; transform-origin: bottom center; }
 
 /* GSAP does the fox's head-shake when it's loaded (see heroShake in app.js);
    this keyframe is the CDN-blocked/offline fallback. */

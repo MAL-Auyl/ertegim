@@ -75,6 +75,7 @@ const sceneLayers = [sceneOverlay, sceneOverlayNext];
 let sceneFront = 0; // index of the layer currently visible
 let currentSceneCls = "";
 let currentSceneImage = "";
+let sceneDipTimer = null; // pending "restore opacity" of the background swap
 
 // The cave stays "lit" from the moment the fox walks in (cave_enter) through
 // the whole echo beat — going dark again mid-scene would read as a bug.
@@ -90,11 +91,17 @@ function applyScene(bg, nodeId) {
     // near-black for the swap instead of cutting hard.
     const first = currentSceneImage === "";
     currentSceneImage = sc.image;
-    if (first) {
+    if (first || prefersReducedMotion()) {
+      // Reduced motion: swap the image outright, no dip to black.
       sceneStage.style.backgroundImage = `url(${sc.image})`;
+      sceneStage.style.opacity = "1";
     } else {
+      // Two quick swaps must not fight: the pending restore always belongs
+      // to the newest dip.
+      clearTimeout(sceneDipTimer);
       sceneStage.style.opacity = "0.15";
-      setTimeout(() => {
+      sceneDipTimer = setTimeout(() => {
+        sceneDipTimer = null;
         sceneStage.style.backgroundImage = `url(${sc.image})`;
         sceneStage.style.opacity = "1";
       }, 300);
@@ -190,6 +197,9 @@ function playDing() {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
+    // Normally the context already exists: the Бастау tap calls
+    // ensureMicStream(), which creates it inside a real user gesture. Keep
+    // that prefetch — a context created here first may start suspended.
     if (!vadAudioCtx) vadAudioCtx = new AudioCtx();
     const ctx = vadAudioCtx;
     if (ctx.state === "suspended") ctx.resume().catch(() => {});
@@ -216,16 +226,24 @@ function playDing() {
 // line is its own feedback) and never with a sound.
 function heroShake() {
   if (!heroStage || prefersReducedMotion()) return;
-  const img = heroStage.querySelector(".fox-pose");
-  if (img && typeof gsap !== "undefined") {
-    gsap.to(img, {
-      rotation: 4, duration: 0.125, repeat: 3, yoyo: true, ease: "sine.inOut",
-      onComplete: () => gsap.set(img, { rotation: 0 }),
-    });
+  // Shake the .hero-inner wrapper, never .fox-pose (animateFoxPose keeps
+  // infinite idle tweens on it — a second rotation tween there fights them and
+  // leaves the fox tilted) and never #heroStage itself (its CSS keyframes own
+  // `transform`, including the translateX(-50%) that centres it).
+  const target = heroStage.querySelector(".hero-inner") || heroStage.firstElementChild;
+  if (!target) return;
+  if (typeof gsap !== "undefined") {
+    gsap.set(target, { transformOrigin: "bottom center" });
+    gsap.fromTo(
+      target,
+      { rotation: 0 },
+      {
+        rotation: 4, duration: 0.12, yoyo: true, repeat: 3, ease: "sine.inOut",
+        overwrite: "auto", onComplete: () => gsap.set(target, { rotation: 0 }),
+      },
+    );
     return;
   }
-  const target = img || heroStage.firstElementChild;
-  if (!target) return;
   target.classList.remove("hero-shake");
   void target.offsetWidth; // restart the keyframe if it's still on the element
   target.classList.add("hero-shake");
@@ -240,27 +258,68 @@ function heroShake() {
 const ECHO_IDS = new Set(["q_echo", "echo_reask", "echo_reveal"]);
 const heroEcho = document.getElementById("heroEcho");
 let pendingEchoHandler = null;
+let pendingEchoFinish = null; // resolves the promise scheduleEcho() handed out
 
+// Drop a scheduled-but-not-yet-played echo (new line, reset, or the main line
+// that never fired `ended`) and settle its promise so nobody awaits forever.
+function cancelPendingEcho() {
+  if (pendingEchoHandler) {
+    heroVoice.removeEventListener("ended", pendingEchoHandler);
+    pendingEchoHandler = null;
+  }
+  if (pendingEchoFinish) pendingEchoFinish();
+}
+
+// Returns a promise that resolves when the echo has actually FINISHED playing
+// (or could never play). The mic must not be armed before that, or the VAD
+// hears the fox's own echo and "answers" for the child.
 function scheduleEcho(src) {
-  if (!heroEcho || !src) return;
-  if (pendingEchoHandler) heroVoice.removeEventListener("ended", pendingEchoHandler);
-  const onEnded = () => {
-    heroVoice.removeEventListener("ended", onEnded);
-    if (pendingEchoHandler === onEnded) pendingEchoHandler = null;
-    setTimeout(() => {
-      try {
-        heroEcho.src = src;
-        heroEcho.volume = 0.35;
-        heroEcho.playbackRate = 0.95;
-        const p = heroEcho.play();
-        if (p && p.catch) p.catch(() => {}); // autoplay refused — silent, the line was already heard
-      } catch (err) {
-        /* echo is decoration; never surface it */
-      }
-    }, 450);
-  };
-  pendingEchoHandler = onEnded;
-  heroVoice.addEventListener("ended", onEnded);
+  if (!heroEcho || !src) return Promise.resolve();
+  cancelPendingEcho();
+  return new Promise((resolve) => {
+    let done = false;
+    let leash = null;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(leash);
+      heroEcho.removeEventListener("ended", finish);
+      heroEcho.removeEventListener("error", finish);
+      heroEcho.removeEventListener("loadedmetadata", onMeta);
+      if (pendingEchoFinish === finish) pendingEchoFinish = null;
+      resolve();
+    };
+    const armLeash = () => {
+      clearTimeout(leash);
+      const d = heroEcho.duration;
+      leash = setTimeout(finish, Number.isFinite(d) && d > 0 ? d * 1000 + 1500 : 8000);
+    };
+    const onMeta = () => armLeash();
+    pendingEchoFinish = finish;
+    const onEnded = () => {
+      heroVoice.removeEventListener("ended", onEnded);
+      if (pendingEchoHandler === onEnded) pendingEchoHandler = null;
+      setTimeout(() => {
+        if (done) return;
+        try {
+          heroEcho.src = src;
+          heroEcho.volume = 0.35;
+          heroEcho.playbackRate = 0.95;
+          heroEcho.addEventListener("ended", finish);
+          heroEcho.addEventListener("error", finish);
+          heroEcho.addEventListener("loadedmetadata", onMeta);
+          armLeash();
+          const p = heroEcho.play();
+          // autoplay refused — silent, the line was already heard
+          if (p && p.catch) p.catch(() => finish());
+        } catch (err) {
+          finish(); /* echo is decoration; never surface it */
+        }
+      }, 450);
+    };
+    pendingEchoHandler = onEnded;
+    heroVoice.addEventListener("ended", onEnded);
+  });
 }
 
 async function playWithTimeout(ms) {
@@ -275,8 +334,14 @@ async function playWithTimeout(ms) {
 // actually SPOKEN, or every line is cut off after a few hundred ms. The leash
 // keeps a stalled/broken element from parking the demo forever.
 function awaitLineEnd() {
-  const leashMs = Math.min(20000, (heroVoice.duration || 8) * 1000 + 2000);
+  const d = heroVoice.duration;
+  // A broken/empty blob has duration NaN or 0 — a 10s leash is the longest
+  // the demo may ever sit silent, not the default wait.
+  const leashMs = Number.isFinite(d) && d > 0 ? Math.min(20000, d * 1000 + 2000) : 10000;
   return new Promise((resolve) => {
+    // `ended` may already have fired (very short line, or a replayed element):
+    // never park on an event that will not come again.
+    if (heroVoice.ended || heroVoice.error) return resolve();
     let done = false;
     const finish = () => {
       if (done) return;
@@ -296,11 +361,36 @@ function awaitLineEnd() {
 // served from /audio/<stateId>.wav) — stage-risk hedge in case live Piper
 // or the request itself lags. Live call gets a short leash (2.5s); on any
 // failure or timeout we fall back to the static file for that state.
+// The echo only ever starts on heroVoice's `ended` event. If the line
+// finished on its leash instead (broken blob, stalled element), the echo will
+// never play — settle it right away rather than waiting out its own leash.
+function settleEcho(echoDone) {
+  if (!echoDone) return Promise.resolve();
+  if (!heroVoice.ended) { cancelPendingEcho(); return Promise.resolve(); }
+  return echoDone;
+}
+
+let speakGen = 0; // bumped per line so a late awaitLineEnd/echo can be ignored
+function stopEchoPlayback() {
+  cancelPendingEcho();
+  try {
+    heroEcho.pause();
+    heroEcho.currentTime = 0;
+    heroEcho.removeAttribute("src");
+    heroEcho.load();
+  } catch { /* no echo element / nothing loaded */ }
+}
+
+// Awaits the echo too when the node has one: the resolved promise means
+// "the fox has stopped making noise", which is what arming the mic waits on.
 async function speakLine(text, stateId, { echo = false } = {}) {
-  if (!text) return;
+  speakGen++;
   // An operator override can switch nodes mid-line — the new line must cut
-  // the old one off instead of talking over it.
+  // the old one (and any pending/playing echo of it) off instead of talking
+  // over it.
   try { heroVoice.pause(); heroVoice.currentTime = 0; } catch { /* no media loaded yet */ }
+  stopEchoPlayback();
+  if (!text) return;
   setStage("tts", "running", "");
   try {
     const controller = new AbortController();
@@ -315,21 +405,26 @@ async function speakLine(text, stateId, { echo = false } = {}) {
     if (!res.ok) throw new Error((await res.json()).error || res.statusText);
     const ms = res.headers.get("X-Synth-Ms");
     const blob = await res.blob();
+    // The echo replays this very same object URL — do not revoke it while an
+    // echo may still be playing (it outlives the main line by ~0.45s + its
+    // own duration).
     heroVoice.src = URL.createObjectURL(blob);
-    if (echo) scheduleEcho(heroVoice.src);
+    const echoDone = echo && ECHO_IDS.has(currentId) ? scheduleEcho(heroVoice.src) : null;
     // play() can hang indefinitely instead of rejecting in some browser/
     // automation contexts — never let audio playback stall the demo.
     await playWithTimeout(3000);
     await awaitLineEnd();
+    await settleEcho(echoDone);
     log(`voice: "${text.slice(0, 40)}${text.length > 40 ? "…" : ""}" (${ms}ms synth)`);
     setStage("tts", "ok", `${ms}ms live`);
   } catch (err) {
     if (stateId) {
       try {
         heroVoice.src = `/audio/${stateId}.wav`;
-        if (echo) scheduleEcho(heroVoice.src);
+        const echoDone = echo && ECHO_IDS.has(currentId) ? scheduleEcho(heroVoice.src) : null;
         await playWithTimeout(3000);
         await awaitLineEnd();
+        await settleEcho(echoDone);
         log(`voice: fallback pre-rendered audio for "${stateId}" (live TTS: ${err.message})`);
         setStage("tts", "skip", "fallback wav");
         return;
@@ -410,9 +505,17 @@ function currentRMS() {
   return Math.sqrt(sum / vadFloatBuf.length);
 }
 
+// Everything the hero shows lives inside .hero-inner: #heroStage itself is
+// owned by the idle CSS keyframes (heroBreathe/heroBounce include the
+// translateX(-50%) that positions it), so one-off tweens like heroShake need
+// their own element to transform. animateFoxPose still finds .fox-pose below.
+function setHeroHTML(html) {
+  heroStage.innerHTML = `<div class="hero-inner">${html}</div>`;
+}
+
 function setHeroPoseOverride(pose) {
   const node = STORY[currentId] || { character: "fox" };
-  heroStage.innerHTML = renderHero({ ...node, pose });
+  setHeroHTML(renderHero({ ...node, pose }));
   if (node.character === "fox") animateFoxPose(heroStage, pose);
 }
 
@@ -638,9 +741,10 @@ function renderState(id) {
   storySpeaker.textContent = s.speaker;
   storyKk.textContent = s.kk;
   storyRu.textContent = s.ru;
-  heroStage.innerHTML = renderHero(s);
+  setHeroHTML(renderHero(s));
   if (s.character === "fox") animateFoxPose(heroStage, s.pose);
   const speakDone = speakLine(s.kk, audioIdFor(id), { echo: ECHO_IDS.has(id) });
+  const gen = speakGen; // a line started later must win over this one's tail
 
   if (id === "found") Session.moment("інісін тапты");
   if (id === "cave_enter") Session.moment("түлкіге батылдық берді");
@@ -660,7 +764,7 @@ function renderState(id) {
       next = STORY.q_fork.onAnswer[currentRoute];
     }
     speakDone.then(() => {
-      if (currentId !== id || !next) return;
+      if (currentId !== id || gen !== speakGen || !next) return;
       narrationAutoAdvanceTimer = setTimeout(() => {
         narrationAutoAdvanceTimer = null;
         if (currentId === id) renderState(next);
@@ -689,7 +793,9 @@ function renderState(id) {
     // Arm the mic only once the question has been spoken — otherwise the mic
     // hears the hero's own voice from the speakers and trips the VAD.
     speakDone.then(() => {
-      if (currentId === id) armVadForQuestion();
+      if (currentId !== id || gen !== speakGen) return;
+      armVadForQuestion();
+      log("mic armed after line");
     });
   } else {
     // "end"
@@ -736,6 +842,8 @@ pinInput.addEventListener("keydown", (e) => {
 // the intro (startStateForMemory picks intro vs intro_again by replay count).
 function restartStory() {
   storyEnded = false;
+  try { heroVoice.pause(); heroVoice.currentTime = 0; } catch { /* nothing loaded */ }
+  stopEchoPlayback();
   activeQuestionId = null;
   currentRoute = null;
   endScreen.classList.remove("show");
