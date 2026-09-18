@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pre-render every hero line to app/public/audio/<id>.wav.
+"""Pre-render every hero line to public/audio/<id>.wav.
 
 Same voice settings as app/server.js's live speak(): Piper kk_KZ-issai-high,
 speaker 3, then a pitch shift up by 1.4x with the duration restored
@@ -13,7 +13,7 @@ import argparse, json, os, subprocess, tempfile, urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT_DIR = ROOT / "app" / "public" / "audio"
+OUT_DIR = ROOT / "public" / "audio"
 VOICES = ROOT / "tools" / "voices"
 VOICE_NAME = "kk_KZ-issai-high"
 VOICE_URL = f"https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/kk/kk_KZ/issai/high/{VOICE_NAME}"

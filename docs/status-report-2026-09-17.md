@@ -5,8 +5,8 @@
 ## Сделано
 
 - Новая история «Түлкі інісін іздейді»: цель/страх/таймер/память
-  (`app/public/story.js`, `docs/story-script.md`); герои — лисёнок, медведь,
-  брат (`app/public/characters.js`).
+  (`public/story.js`, `docs/story-script.md`); герои — лисёнок, медведь,
+  брат (`public/characters.js`).
 - `session.js` — реальные метрики, память героя, история 30 сессий в
   `localStorage`; `report.js` — отчёт родителю из реальных данных сессии;
   `classify-local.js` — локальный классификатор, отдельный модуль, с тестами.
@@ -46,9 +46,9 @@ PIN на отчёте родителю косметический (открыв�
 
 ## Этап 1b — распознавание детской речи
 
-Сделано: pre-roll 500 мс + детские VAD-пороги (`app/public/app.js`,
-`app/public/preroll.js`); промпт под каждый узел для Whisper через
-`spike/stt-hints-core.js`, подключён в обоих STT-эндпоинтах
+Сделано: pre-roll 500 мс + детские VAD-пороги (`public/app.js`,
+`public/preroll.js`); промпт под каждый узел для Whisper через
+`lib/stt-hints-core.js`, подключён в обоих STT-эндпоинтах
 (`app/server.js`, `api/transcribe.js`) вместе с `temperature: 0`;
 фонетическое сопоставление и детские формы чисел в `classify-local.js`;
 64 unit-теста (`cd app && bun test`) зелёные.

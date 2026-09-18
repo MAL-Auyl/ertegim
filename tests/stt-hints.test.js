@@ -1,7 +1,7 @@
 const { test, expect } = require("bun:test");
 
 test("stt hints per node", async () => {
-  const { sttHintFor, DEFAULT_HINT } = await import("../../spike/stt-hints-core.js");
+  const { sttHintFor, DEFAULT_HINT } = await import("../lib/stt-hints-core.js");
   expect(sttHintFor("q_tracks")).toContain("бір, екі, үш, төрт, бес");
   expect(sttHintFor("q_tracks")).toContain("один, два, три, четыре, пять");
   expect(sttHintFor("q_fork")).toContain("солға");

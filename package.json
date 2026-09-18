@@ -1,0 +1,10 @@
+{
+  "name": "ertegim",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "bun test",
+    "start": "bun server/server.js",
+    "prerender": "tools/.venv/bin/python tools/prerender.py"
+  }
+}

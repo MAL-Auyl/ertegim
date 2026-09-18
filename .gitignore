@@ -1,8 +1,7 @@
 .env
-spike/audio/
-spike/tools/
-app/tmp/*
-!app/tmp/.gitkeep
+server/tmp/*
+!server/tmp/.gitkeep
+tools/models/
 app/server.log
 app/server_test.log
 .claude/

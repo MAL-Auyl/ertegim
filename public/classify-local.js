@@ -1,6 +1,6 @@
 // Local, network-free answer check — used only when /api/classify is
 // unreachable, so the story still confirms itself instead of stalling.
-// Same word-level fuzzy matching as spike/blocklist-core.js (Levenshtein
+// Same word-level fuzzy matching as lib/blocklist-core.js (Levenshtein
 // tolerance scaled to word length). Pure functions, no DOM: loaded as a
 // classic <script> in index.html and require()'d by bun test.
 

@@ -8,12 +8,12 @@
 // MediaRecorder blob is sent as-is). The Web-standard Request/Response API
 // on Edge runtime maps almost 1:1 to the Bun code.
 //
-// Blocklist logic lives in ../spike/blocklist-core.js, shared with
-// app/server.js via spike/blocklist.js — see that file for why the matching
+// Blocklist logic lives in ../lib/blocklist-core.js, shared with
+// app/server.js via lib/blocklist-cli.js — see that file for why the matching
 // logic had to be split out of the Bun-only CLI entry point.
 
-import { checkBlocklist } from "../spike/blocklist-core.js";
-import { sttHintFor } from "../spike/stt-hints-core.js";
+import { checkBlocklist } from "../lib/blocklist-core.js";
+import { sttHintFor } from "../lib/stt-hints-core.js";
 
 export const config = { runtime: "edge" };
 

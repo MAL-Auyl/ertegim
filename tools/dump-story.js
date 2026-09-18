@@ -3,7 +3,7 @@
 // synthesise. story.js is a classic browser script with a module.exports
 // tail, so a plain require() works here.
 const path = require("path");
-const { STORY, trackLines, echoLines, BROTHER_NAMES } = require(path.join(__dirname, "..", "app", "public", "story.js"));
+const { STORY, trackLines, echoLines, BROTHER_NAMES } = require(path.join(__dirname, "..", "public", "story.js"));
 
 const out = {};
 for (const [id, node] of Object.entries(STORY)) {

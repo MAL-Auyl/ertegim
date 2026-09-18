@@ -3,8 +3,8 @@
 // the two independent systems on every uploaded clip:
 //   1. Automatic blocklist (fuzzy, no human) — fires BLOCKED on its own.
 //   2. Transcript + audio handed to the operator for Correct/Re-ask/Advance.
-import { checkBlocklist } from "../spike/blocklist.js";
-import { sttHintFor } from "../spike/stt-hints-core.js";
+import { checkBlocklist } from "../lib/blocklist-core.js";
+import { sttHintFor } from "../lib/stt-hints-core.js";
 
 const ROOT = `${import.meta.dir}/`; // Bun-native, already decoded (handles Cyrillic paths)
 const TMP = `${ROOT}tmp`;
