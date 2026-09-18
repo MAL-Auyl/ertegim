@@ -15,6 +15,7 @@
 import { checkBlocklist } from "../lib/blocklist-core.js";
 import { sttHintFor } from "../lib/stt-hints-core.js";
 import { expectedForms, pickTranscript, filterHallucinations } from "../lib/stt-pick.js";
+import { isAllowedOrigin } from "../lib/origin-guard.js";
 
 export const config = { runtime: "edge" };
 
@@ -86,6 +87,12 @@ async function transcribeDual(audioBuf, ext, hint, expected) {
 export default async function handler(request) {
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "method not allowed" }), { status: 405 });
+  }
+  // Cheap filter against naive/accidental hits on the shared Groq quota —
+  // see lib/origin-guard.js for why this is not (and is not meant to be) a
+  // security boundary.
+  if (!isAllowedOrigin(request)) {
+    return new Response(JSON.stringify({ error: "forbidden origin" }), { status: 403 });
   }
   try {
     const form = await request.formData();

@@ -15,12 +15,16 @@
 // public/classify-local.js), so a 500 here means "use the local one", never
 // a stall.
 import { classifyAnswer, sanitizeClassifyInput } from "../lib/classify-core.js";
+import { isAllowedOrigin } from "../lib/origin-guard.js";
 
 export const config = { runtime: "edge" };
 
 export default async function handler(request) {
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "method not allowed" }), { status: 405 });
+  }
+  if (!isAllowedOrigin(request)) {
+    return new Response(JSON.stringify({ error: "forbidden origin" }), { status: 403 });
   }
   try {
     const body = await request.json();
