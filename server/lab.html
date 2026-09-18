@@ -59,9 +59,9 @@
 <div class="totals" id="totals"></div>
 
 <script type="module">
-// Same module the server picks with — the «совпало» column must not be a
-// second, slightly different implementation of matching.
-import { phonetic, levenshtein, tolerance, wordsOf } from "/lab/stt-pick.js";
+// Same module the server picks with, including matchesForm itself — the
+// «совпало» column must not be a second, slightly different implementation.
+import { wordsOf, matchesForm } from "/lab/stt-pick.js";
 
 const filesInput = document.getElementById("files");
 const nodeSel = document.getElementById("node");
@@ -77,12 +77,14 @@ function matches(picked, expected) {
   const exp = String(expected || "").trim();
   if (!exp) return null; // nothing to compare against
   const words = wordsOf(picked);
-  return exp.split(/[,\s]+/).filter(Boolean).some((form) => {
-    const t = phonetic(form);
-    if (!t) return false;
-    if (t.length <= 3) return words.some((w) => phonetic(w) === t || phonetic(w).startsWith(t));
-    return words.some((w) => phonetic(w).startsWith(t) || levenshtein(phonetic(w), t) <= tolerance(t.length));
-  });
+  return exp.split(/[,\s]+/).filter(Boolean).some((form) => matchesForm(words, form));
+}
+
+// File names and the operator's own typed expectations go through innerHTML
+// below — a quote in either would otherwise break out of the attribute.
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 function render() {
@@ -90,8 +92,8 @@ function render() {
   files.forEach((f, i) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${f.file.name}</td>
-      <td><input class="exp" data-i="${i}" value="${f.expected}"></td>
+      <td>${esc(f.file.name)}</td>
+      <td><input class="exp" data-i="${i}" value="${esc(f.expected)}"></td>
       <td class="kk"></td><td class="ru"></td><td class="picked"></td>
       <td class="lang"></td><td class="score"></td><td class="conf"></td>
       <td class="ok"></td><td class="ms"></td>`;

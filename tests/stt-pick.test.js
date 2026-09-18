@@ -48,12 +48,20 @@ describe("expectedForms", () => {
     expect(e.forms).toContain("үш");
     expect(e.forms).toContain("три");
   });
-  test("fork node is a choice with both routes", async () => {
+  test("fork node is a choice with route-tagged forms", async () => {
     const { expectedForms } = await load();
     const e = expectedForms("q_fork", {});
     expect(e.kind).toBe("choice");
-    expect(e.forms).toContain("лес");
-    expect(e.forms).toContain("өзен");
+    expect(e.forms.map((g) => g.route)).toEqual(["river", "forest"]);
+    expect(e.forms.find((g) => g.route === "forest").forms).toContain("лес");
+    expect(e.forms.find((g) => g.route === "river").forms).toContain("өзен");
+  });
+  test("q_tracks without a trackCount degrades to free, not all-zero count", async () => {
+    const { expectedForms } = await load();
+    expect(expectedForms("q_tracks", {})).toEqual({ kind: "free", forms: [] });
+    expect(expectedForms("q_tracks", { trackCount: "abc" }).kind).toBe("free");
+    expect(expectedForms("q_tracks", { trackCount: 9 }).kind).toBe("free");
+    expect(expectedForms("q_tracks", { trackCount: 3 }).kind).toBe("count");
   });
   test("courage is empathy, echo is rhyme, unknown is free", async () => {
     const { expectedForms } = await load();
@@ -72,9 +80,25 @@ describe("scoreTranscript", () => {
     const { scoreTranscript, expectedForms } = await load();
     expect(scoreTranscript("бес", expectedForms("q_tracks", { trackCount: 3 }))).toBe(0);
   });
-  test("choice: «в лес» → 1", async () => {
+  test("choice: «в лес» → forest, «солға» → river, «налево» → river", async () => {
     const { scoreTranscript, expectedForms } = await load();
-    expect(scoreTranscript("в лес", expectedForms("q_fork", {}))).toBe(1);
+    const e = expectedForms("q_fork", {});
+    expect(scoreTranscript("в лес", e)).toEqual({ score: 1, route: "forest" });
+    expect(scoreTranscript("солға", e)).toEqual({ score: 1, route: "river" });
+    expect(scoreTranscript("направо", e)).toEqual({ score: 1, route: "forest" });
+    expect(scoreTranscript("сол жақ", e)).toEqual({ score: 1, route: "river" });
+  });
+  test("choice: everyday words must not look like a route", async () => {
+    const { scoreTranscript, expectedForms } = await load();
+    const e = expectedForms("q_fork", {});
+    for (const w of ["он", "она", "правда", "рекорд", "лесник"]) {
+      expect(scoreTranscript(w, e)).toEqual({ score: 0, route: null });
+    }
+  });
+  test("choice: both routes named at once → ambiguous 0.5, no route", async () => {
+    const { scoreTranscript, expectedForms } = await load();
+    expect(scoreTranscript("өзенге немесе орманға", expectedForms("q_fork", {})))
+      .toEqual({ score: 0.5, route: null });
   });
   test("rhyme: «қасық» → 1, «үй» → 0", async () => {
     const { scoreTranscript, expectedForms } = await load();
@@ -187,5 +211,88 @@ describe("pickTranscript", () => {
     expect(good.confidence).toBeGreaterThan(meh.confidence);
     expect(good.confidence).toBeLessThanOrEqual(1);
     expect(meh.confidence).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("fork routes in pickTranscript", () => {
+  const fork = async () => (await load()).expectedForms("q_fork", {});
+  test("kk=river / ru=forest → re-ask, no route", async () => {
+    const { pickTranscript } = await load();
+    const out = pickTranscript(
+      [
+        { lang: "kk", text: "өзенге", noSpeechProb: 0.1, avgLogprob: -0.4 },
+        { lang: "ru", text: "направо", noSpeechProb: 0.1, avgLogprob: -0.2 },
+      ],
+      await fork(),
+    );
+    expect(out.lowConfidence).toBe(true);
+    expect(out.route).toBe(null);
+    expect(out.reason).toBe("route disagreement");
+  });
+  test("both passes agree → route is returned", async () => {
+    const { pickTranscript } = await load();
+    const out = pickTranscript(
+      [
+        { lang: "kk", text: "орманға", noSpeechProb: 0.1, avgLogprob: -0.4 },
+        { lang: "ru", text: "в лес", noSpeechProb: 0.1, avgLogprob: -0.2 },
+      ],
+      await fork(),
+    );
+    expect(out.lowConfidence).toBe(false);
+    expect(out.route).toBe("forest");
+  });
+  test("only one usable candidate → its route", async () => {
+    const { pickTranscript } = await load();
+    const out = pickTranscript(
+      [
+        { lang: "kk", text: "солға", noSpeechProb: 0.1, avgLogprob: -0.4 },
+        { lang: "ru", text: "мм", noSpeechProb: 0.9, avgLogprob: -1.5 },
+      ],
+      await fork(),
+    );
+    expect(out.lowConfidence).toBe(false);
+    expect(out.route).toBe("river");
+    expect(out.lang).toBe("kk");
+  });
+  test("non-choice nodes report route null", async () => {
+    const { pickTranscript, expectedForms } = await load();
+    const out = pickTranscript(
+      [{ lang: "kk", text: "үш", noSpeechProb: 0.1, avgLogprob: -0.3 }],
+      expectedForms("q_tracks", { trackCount: 3 }),
+    );
+    expect(out.route).toBe(null);
+  });
+});
+
+describe("filterHallucinations", () => {
+  test("drops hallucinated and empty alternatives, keeps real ones", async () => {
+    const { filterHallucinations } = await load();
+    const out = filterHallucinations([
+      { lang: "kk", text: "үш" },
+      { lang: "ru", text: "Субтитры сделал DimaTorzok" },
+      { lang: "ru", text: "" },
+      null,
+    ]);
+    expect(out).toEqual([{ lang: "kk", text: "үш" }]);
+  });
+  test("accepts plain strings too", async () => {
+    const { filterHallucinations } = await load();
+    expect(filterHallucinations(["үш", "♪♪♪"])).toEqual(["үш"]);
+  });
+});
+
+describe("missing avg_logprob", () => {
+  test("null avgLogprob does not count as a perfect logprob", async () => {
+    const { pickTranscript, confidenceOf, expectedForms } = await load();
+    const e = expectedForms("q_tracks", { trackCount: 3 });
+    expect(confidenceOf(1, null)).toBe(1);
+    expect(confidenceOf(0, null)).toBe(0);
+    const out = pickTranscript([{ lang: "kk", text: "үш", noSpeechProb: 0.1, avgLogprob: null }], e);
+    expect(out.confidence).toBe(1);
+    expect(out.lowConfidence).toBe(false);
+    // ...and it must not be treated as "below the logprob floor" either.
+    const meh = pickTranscript([{ lang: "ru", text: "что-то", noSpeechProb: 0.1, avgLogprob: null }],
+      expectedForms("intro", {}));
+    expect(meh.lowConfidence).toBe(false);
   });
 });

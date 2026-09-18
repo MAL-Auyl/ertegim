@@ -14,7 +14,7 @@
 
 import { checkBlocklist } from "../lib/blocklist-core.js";
 import { sttHintFor } from "../lib/stt-hints-core.js";
-import { expectedForms, pickTranscript } from "../lib/stt-pick.js";
+import { expectedForms, pickTranscript, filterHallucinations } from "../lib/stt-pick.js";
 
 export const config = { runtime: "edge" };
 
@@ -58,9 +58,10 @@ async function transcribeGroq(audioBuf, ext, hint, lang) {
     const noSpeechProb = segments.length
       ? Math.max(...segments.map((s) => Number(s.no_speech_prob) || 0))
       : (text ? 0 : 1);
-    const avgLogprob = segments.length
-      ? segments.reduce((sum, s) => sum + (Number(s.avg_logprob) || 0), 0) / segments.length
-      : 0;
+    // Absent avg_logprob → null, never 0 (0 = "Whisper was certain", which
+    // would give a silent clip a free confidence bonus — see confidenceOf).
+    const lps = segments.map((s) => Number(s.avg_logprob)).filter((n) => Number.isFinite(n));
+    const avgLogprob = lps.length ? lps.reduce((a, b) => a + b, 0) / lps.length : null;
     return { text, lang, noSpeechProb, avgLogprob, ms: Date.now() - t0 };
   } finally {
     clearTimeout(timer);
@@ -104,20 +105,32 @@ export default async function handler(request) {
     const hint = sttHintFor(nodeId, { brotherName });
     const expected = expectedForms(nodeId, { trackCount, brotherName });
     const out = await transcribeDual(buf, ext, hint, expected);
-    const alternatives = out.candidates.map((c) => ({ lang: c.lang, text: c.text }));
+    // Hallucinated passes are dropped before anything downstream sees them —
+    // they are not a second opinion for the classifier and they only invent
+    // blocklist matches (same rule as server/server.js).
+    const alternatives = filterHallucinations(
+      out.candidates.map((c) => ({ lang: c.lang, text: c.text })),
+    );
     const kk = alternatives.find((a) => a.lang === "kk")?.text ?? "";
     const ru = alternatives.find((a) => a.lang === "ru")?.text ?? "";
-    console.log(`stt kk="${kk}" ru="${ru}" → ${out.lang || "-"} score=${out.score} conf=${out.confidence}`);
-    const { blocked, results } = checkBlocklist([out.transcript, kk, ru].join(" "));
+    console.log(`stt kk="${kk}" ru="${ru}" → ${out.lang || "-"} route=${out.route || "-"} score=${out.score} conf=${out.confidence}`);
+    // Per transcript, never on a joined string: joining invents phrases across
+    // the seam and hides which recognition actually tripped the list.
+    const checks = [out.transcript, ...alternatives.map((a) => a.text)]
+      .filter((t) => typeof t === "string" && t.trim())
+      .map((t) => checkBlocklist(t));
+    const blocked = checks.some((c) => c.blocked);
+    const firstBlocked = checks.find((c) => c.blocked);
     return new Response(
       JSON.stringify({
         transcript: out.transcript || "",
         lang: out.lang || null,
+        route: out.route ?? null,
         confidence: out.confidence,
         lowConfidence: out.lowConfidence,
         alternatives,
         blocked,
-        blockDetails: results,
+        blockDetails: firstBlocked ? firstBlocked.results : (checks[0]?.results ?? []),
         ms: out.ms,
         engine: "groq",
       }),

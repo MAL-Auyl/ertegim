@@ -788,6 +788,11 @@ function renderState(id) {
     // the operator buttons call recordAnswer() directly, without the
     // classify path that normally re-sets these.
     pendingRoute = null;
+    // The same reset applies to everything the previous answer left behind:
+    // a stale lastRoute would otherwise decide THIS question's branch.
+    lastAlternatives = [];
+    lastLowConfidence = false;
+    lastRoute = null;
     lastTranscript = "";
     recordingStartedAt = 0;
     nextBtn.style.display = "none";
@@ -1001,6 +1006,9 @@ async function submitAudio(blob, filename, meta = {}) {
     thinkingDots.hidden = true;
     lastAlternatives = data.alternatives || [];
     lastLowConfidence = !!data.lowConfidence;
+    // The route the picker read out of the audio (null when the two
+    // recognitions disagreed — then the story re-asks instead of guessing).
+    lastRoute = data.route ?? null;
     transcriptEl.textContent = data.transcript || "(тишина / не распознано)";
     const langBit = data.lang ? ` · ${data.lang} conf ${Number(data.confidence ?? 0).toFixed(2)}` : "";
     metaEl.textContent =
@@ -1126,6 +1134,9 @@ let lastTranscript = "";
 // together instead of only the one that scored highest.
 let lastAlternatives = [];
 let lastLowConfidence = false;
+// Route decided by lib/stt-pick.js on the server (fork questions). Null means
+// "no clear single route" — including the kk/ru disagreement case.
+let lastRoute = null;
 
 function recordAnswer(verdict, source) {
   Session.answer({
@@ -1183,7 +1194,10 @@ function markReask(source) {
 // For branch questions the LLM is asked to put the route name in `reason`;
 // the local fallback returns it as `route` directly.
 function routeFromVerdict(data) {
+  // Server-side picker first (it saw both recognitions and the expected
+  // forms), then the STT route from this clip, and only then the LLM's prose.
   if (data.route === "river" || data.route === "forest") return data.route;
+  if (lastRoute === "river" || lastRoute === "forest") return lastRoute;
   const r = String(data.reason || "").toLowerCase();
   if (r.includes("river")) return "river";
   if (r.includes("forest")) return "forest";
@@ -1244,7 +1258,9 @@ async function classifyAndSuggest(transcript) {
         transcript,
         questionKk: s.kk,
         criterion: s.criterion,
-        alternatives: lastAlternatives.map((a) => a.text),
+        // Tagged, not positional: the server labels the prompt lines by
+        // language, and a dropped/failed pass must not shift ru into kk.
+        alternatives: lastAlternatives.map((a) => ({ lang: a.lang ?? null, text: a.text ?? "" })),
         expectedForms: expectedFormsForNode(currentId),
       }),
     });
