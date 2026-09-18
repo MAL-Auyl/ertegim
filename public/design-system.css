@@ -231,24 +231,31 @@ body {
   clip-path: polygon(0 0, 100% 100%, 0 100%);
 }
 
-/* --- Mic button: glowing circular CTA overlaid on the scene --- */
+/* --- Mic button: the OPERATOR's override, not the child's call to action.
+   The child is told to just talk (#listenCue + the VAD), so this sits back:
+   44px, low-contrast idle. Its .recording state is unchanged — when it is
+   actually capturing, it still reads loud and clear. --- */
 .mic-btn {
-  width: 76px; height: 76px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   border: none;
-  background: radial-gradient(circle at 35% 30%, var(--accent) 0%, var(--accent-dark) 70%);
-  color: #fff;
-  font-size: 1.7rem;
+  background: color-mix(in srgb, var(--accent) 55%, rgba(0, 0, 0, 0.35));
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 1.05rem;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  box-shadow:
-    0 0 0 6px color-mix(in srgb, var(--accent) 22%, transparent),
-    0 0 0 14px color-mix(in srgb, var(--accent) 12%, transparent),
-    0 10px 24px -6px rgba(0, 0, 0, 0.45);
-  transition: transform var(--dur-press) var(--ease-response);
+  opacity: 0.7;
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.4);
+  transition: transform var(--dur-press) var(--ease-response), opacity 150ms ease;
+}
+@media (hover: hover) {
+  /* Touch devices report a sticky :hover after a tap — keep the idle,
+     low-contrast look there. */
+  .mic-btn:hover { opacity: 1; }
 }
 .mic-btn:active { transform: scale(0.94); }
 .mic-btn.recording {
+  opacity: 1;
   background: radial-gradient(circle at 35% 30%, var(--danger) 0%, #b5342c 70%);
   animation: micPulse 1.4s ease-in-out infinite;
 }
@@ -369,22 +376,159 @@ body {
   box-shadow: 0 1px 2px rgba(0,0,0,0.35);
   transform: translate(-50%, -50%) rotate(-20deg);
   opacity: 0.85;
+  /* Tracks appear one by one (inline animation-delay = i*160ms) so the child
+     can literally count them as they land — and can re-count on a re-ask,
+     when q_tracks re-renders and they pop again. */
+  animation: trackPop 380ms var(--ease-response) both;
+}
+@keyframes trackPop {
+  from { opacity: 0; transform: translate(-50%, -50%) rotate(-20deg) scale(0); }
+  to   { opacity: 0.85; transform: translate(-50%, -50%) rotate(-20deg) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #trackOverlay .track { animation: none; }
 }
 
 /* Scene looks: one background image per "world", the time-of-day and
-   cave darkness are CSS overlays — no new art per story beat. */
-#sceneOverlay {
+   cave darkness are CSS overlays — no new art per story beat.
+
+   TWO stacked layers (#sceneOverlay / #sceneOverlayNext, see applyScene in
+   app.js): the incoming look is painted on the hidden layer and faded in
+   while the outgoing one fades out, so nothing has to interpolate between
+   two different gradients (which browsers can't do smoothly anyway). */
+.scene-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  transition: background 900ms ease, opacity 900ms ease;
+  opacity: 0;
+  transition: opacity 700ms ease;
   z-index: 0;
 }
-#sceneOverlay.scene-night  { background: linear-gradient(180deg, rgba(20,30,80,0.55), rgba(10,15,45,0.45)); }
-#sceneOverlay.scene-river  { background: linear-gradient(180deg, rgba(30,60,110,0.45), rgba(20,90,140,0.35)); }
-#sceneOverlay.scene-forest { background: linear-gradient(180deg, rgba(20,50,30,0.5), rgba(10,30,15,0.5)); }
-#sceneOverlay.scene-cave   { background: radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0.25) 20%, rgba(0,0,0,0.85) 75%); }
-#sceneOverlay.scene-dawn   { background: linear-gradient(180deg, rgba(255,190,120,0.35), rgba(255,240,200,0.1)); }
+.scene-layer.scene-night  { background: linear-gradient(180deg, rgba(20,30,80,0.55), rgba(10,15,45,0.45)); }
+.scene-layer.scene-river  { background: linear-gradient(180deg, rgba(30,60,110,0.45), rgba(20,90,140,0.35)); }
+.scene-layer.scene-forest { background: linear-gradient(180deg, rgba(20,50,30,0.5), rgba(10,30,15,0.5)); }
+.scene-layer.scene-cave   { background: radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0.25) 20%, rgba(0,0,0,0.85) 75%); }
+.scene-layer.scene-dawn   { background: linear-gradient(180deg, rgba(255,190,120,0.35), rgba(255,240,200,0.1)); }
+
+/* Dawn is the story's one earned slow moment: sunrise after the cave takes
+   3s, not 700ms, and brings a warm sun glow up with it. */
+.scene-layer.scene-dawn { transition-duration: 3000ms; }
+.scene-layer.scene-dawn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 78% 18%, rgba(255,214,140,0.75) 0%, rgba(255,186,110,0.35) 28%, rgba(255,186,110,0) 62%);
+  animation: dawnGlow 3000ms ease both;
+}
+@keyframes dawnGlow { from { opacity: 0; } to { opacity: 1; } }
+
+/* Cave "torch": a second vignette that leaves a lit ellipse around the hero.
+   On cave_enter (the fox goes in with the child) the lit radius opens up —
+   the same darkness, just braver. */
+.scene-layer.scene-cave::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 65%, rgba(0,0,0,0) 22%, rgba(0,0,0,0.72) 62%);
+  transition: background 1200ms var(--ease-materialize);
+}
+.scene-layer.scene-cave.scene-cave-lit::after {
+  background: radial-gradient(circle at 50% 65%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.6) 85%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-layer,
+  .scene-layer.scene-dawn,
+  .scene-layer.scene-cave::after { transition-duration: 1ms; }
+  .scene-layer.scene-dawn::after { animation: none; opacity: 1; }
+  #sceneStage { transition: none; }
+}
+
+/* --- Child-facing feedback: sparkles on a correct answer, head-shake on a
+   re-ask. Both are fire-and-forget decorations over #heroStage; the story
+   never waits for them. --- */
+.sparkle {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff2c2, var(--accent) 70%);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
+  pointer-events: none;
+  z-index: 4;
+  animation: sparkleFly 700ms var(--ease-response) both;
+}
+@keyframes sparkleFly {
+  from { opacity: 0; transform: translate(0, 0) scale(0.2); }
+  25%  { opacity: 1; }
+  to   { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(1); }
+}
+
+/* Wrapper for everything on the hero stage: one-off tweens (heroShake) own
+   this element's transform, while #heroStage keeps its idle CSS keyframes. */
+.hero-inner { width: 100%; height: 100%; transform-origin: bottom center; }
+
+/* GSAP does the fox's head-shake when it's loaded (see heroShake in app.js);
+   this keyframe is the CDN-blocked/offline fallback. */
+.hero-shake { animation: heroShakeKf 500ms ease-in-out both; }
+@keyframes heroShakeKf {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-4deg); }
+  75% { transform: rotate(4deg); }
+}
+
+/* --- Listening cue: a calm caption under the hero, not a blinking alert.
+   Driven by the same armed/recording state as .hero-listening. --- */
+#listenCue {
+  position: absolute;
+  left: 50%;
+  bottom: 62px;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #000 42%, transparent);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 260ms var(--ease-materialize);
+}
+#listenCue.show { opacity: 1; }
+
+/* Soft ring around the hero that breathes with the child's own voice while
+   recording — the mic level made visible without a meter. */
+#heroStage::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(1);
+}
+#heroStage.hero-recording::before {
+  opacity: calc(0.25 + var(--amp, 0) * 0.55);
+  transform: scale(calc(1 + var(--amp, 0) * 0.25));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sparkle { display: none; }
+  .hero-shake { animation: none; }
+  #listenCue { transition: none; }
+  #heroStage.hero-recording::before { transform: none; }
+}
 
 .brother-fox {
   position: absolute;
@@ -407,3 +551,67 @@ body {
 .history-row { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 0.82rem; padding: 6px 0; border-top: 1px solid var(--line); }
 .history-row span:first-child { color: var(--ink-soft); }
 .skill-state { font-size: 0.7rem; color: var(--ink-soft); flex: 0 0 auto; }
+
+/* --- Start screen (first thing the child/operator sees, #startOverlay) --- */
+.start-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--card-solid);
+  border-radius: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-5);
+  gap: var(--space-3);
+}
+.start-cover {
+  max-height: 46%;
+  max-width: 100%;
+  object-fit: contain;
+  animation: startCoverIn 340ms var(--ease-materialize) both;
+}
+@keyframes startCoverIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.start-title { margin: 0; }
+.start-subtitle { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.start-subtitle .kk { font-size: 1rem; font-weight: 700; }
+.start-subtitle .ru { font-size: 0.82rem; color: var(--ink-soft); font-style: italic; }
+.start-btn { padding: 20px 32px; font-size: 1.1rem; margin-top: var(--space-2); }
+@media (prefers-reduced-motion: reduce) {
+  .start-cover { animation: none; }
+}
+
+/* --- End screen: child-facing finale, no PIN visible (#endScreen) --- */
+.end-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  position: relative;
+}
+.end-screen.show { display: flex; }
+.end-title { margin: 0; }
+.end-line { margin: 0; color: var(--ink-soft); }
+.end-play-btn { padding: 18px 32px; font-size: 1.05rem; margin-top: var(--space-3); width: 100%; max-width: 320px; }
+.end-parent-btn { position: absolute; top: 0; right: 0; padding: 6px 12px; font-size: 0.72rem; }
+.end-screen.show .end-title,
+.end-screen.show .end-line,
+.end-screen.show .end-play-btn,
+.end-screen.show .end-parent-btn {
+  animation: reportItemIn 340ms var(--ease-materialize) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .end-screen.show .end-title,
+  .end-screen.show .end-line,
+  .end-screen.show .end-play-btn,
+  .end-screen.show .end-parent-btn {
+    animation: none;
+  }
+}
