@@ -47,6 +47,7 @@ const sceneStageWrap = document.getElementById("sceneStageWrap");
 const storyLineEl = document.getElementById("storyLine");
 const trackOverlay = document.getElementById("trackOverlay");
 const sceneOverlay = document.getElementById("sceneOverlay");
+const sceneOverlayNext = document.getElementById("sceneOverlayNext");
 const operatorPanel = document.getElementById("operatorPanel");
 const operatorToggle = document.getElementById("operatorToggle");
 const pinGate = document.getElementById("pinGate");
@@ -66,10 +67,56 @@ const SCENES = {
   dawn: { image: "/images/bg-fox.png", cls: "scene-dawn" },
 };
 
-function applyScene(bg) {
+// Two stacked overlay layers cross-fade (see .scene-layer in
+// design-system.css): the new look is painted on whichever layer is
+// currently hidden, then the two swap opacity. Purely visual and
+// synchronous — never awaited by the story flow.
+const sceneLayers = [sceneOverlay, sceneOverlayNext];
+let sceneFront = 0; // index of the layer currently visible
+let currentSceneCls = "";
+let currentSceneImage = "";
+
+// The cave stays "lit" from the moment the fox walks in (cave_enter) through
+// the whole echo beat — going dark again mid-scene would read as a bug.
+const CAVE_LIT_IDS = new Set(["cave_enter", "q_echo", "echo_reask", "echo_reveal"]);
+
+function applyScene(bg, nodeId) {
   const sc = SCENES[bg] || SCENES.night;
-  sceneStage.style.backgroundImage = `url(${sc.image})`;
-  sceneOverlay.className = sc.cls;
+  const lit = sc.cls === "scene-cave" && CAVE_LIT_IDS.has(nodeId);
+  const cls = `scene-layer ${sc.cls}${lit ? " scene-cave-lit" : ""}`;
+
+  if (sc.image !== currentSceneImage) {
+    // Background images can't cross-fade on one element — dip the stage to
+    // near-black for the swap instead of cutting hard.
+    const first = currentSceneImage === "";
+    currentSceneImage = sc.image;
+    if (first) {
+      sceneStage.style.backgroundImage = `url(${sc.image})`;
+    } else {
+      sceneStage.style.opacity = "0.15";
+      setTimeout(() => {
+        sceneStage.style.backgroundImage = `url(${sc.image})`;
+        sceneStage.style.opacity = "1";
+      }, 300);
+    }
+  }
+
+  if (cls === currentSceneCls) return;
+  const front = sceneLayers[sceneFront];
+  if (front.classList.contains(sc.cls)) {
+    // Same world, only the torch/lit modifier changed — animate it in place
+    // (the ::after radius transition) instead of cross-fading to itself.
+    front.className = cls;
+    currentSceneCls = cls;
+    return;
+  }
+  const back = sceneLayers[1 - sceneFront];
+  back.className = cls;
+  void back.offsetWidth; // commit the class before flipping opacity, or there's no transition
+  back.style.opacity = "1";
+  front.style.opacity = "0";
+  sceneFront = 1 - sceneFront;
+  currentSceneCls = cls;
 }
 
 // Replay variety: the number of tracks and the brother's name are rolled
@@ -89,8 +136,10 @@ function rerollTracks() {
 }
 function renderTrackOverlay(show) {
   if (!show) { trackOverlay.innerHTML = ""; trackOverlay.classList.remove("show"); return; }
+  // Staggered pop-in (CSS .track / @keyframes trackPop): one track lands
+  // every 160ms so the child can count along.
   trackOverlay.innerHTML = TRACK_SLOTS.slice(0, trackCount)
-    .map((p) => `<span class="track" style="left:${p.left};top:${p.top}"></span>`).join("");
+    .map((p, i) => `<span class="track" style="left:${p.left};top:${p.top};animation-delay:${i * 160}ms"></span>`).join("");
   trackOverlay.classList.add("show");
 }
 
@@ -436,7 +485,7 @@ function renderState(id) {
   sceneStageWrap.classList.remove("hidden");
   storyLineEl.style.display = "";
 
-  applyScene(s.bg);
+  applyScene(s.bg, id);
   heroStage.classList.toggle("pose-happy", s.pose === "happy");
   renderTrackOverlay(id === "q_tracks" || id === "tracks_reask" || id === "tracks_reveal");
 

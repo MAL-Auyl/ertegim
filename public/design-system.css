@@ -369,22 +369,73 @@ body {
   box-shadow: 0 1px 2px rgba(0,0,0,0.35);
   transform: translate(-50%, -50%) rotate(-20deg);
   opacity: 0.85;
+  /* Tracks appear one by one (inline animation-delay = i*160ms) so the child
+     can literally count them as they land — and can re-count on a re-ask,
+     when q_tracks re-renders and they pop again. */
+  animation: trackPop 380ms var(--ease-response) both;
+}
+@keyframes trackPop {
+  from { opacity: 0; transform: translate(-50%, -50%) rotate(-20deg) scale(0); }
+  to   { opacity: 0.85; transform: translate(-50%, -50%) rotate(-20deg) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #trackOverlay .track { animation: none; }
 }
 
 /* Scene looks: one background image per "world", the time-of-day and
-   cave darkness are CSS overlays — no new art per story beat. */
-#sceneOverlay {
+   cave darkness are CSS overlays — no new art per story beat.
+
+   TWO stacked layers (#sceneOverlay / #sceneOverlayNext, see applyScene in
+   app.js): the incoming look is painted on the hidden layer and faded in
+   while the outgoing one fades out, so nothing has to interpolate between
+   two different gradients (which browsers can't do smoothly anyway). */
+.scene-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  transition: background 900ms ease, opacity 900ms ease;
+  opacity: 0;
+  transition: opacity 700ms ease;
   z-index: 0;
 }
-#sceneOverlay.scene-night  { background: linear-gradient(180deg, rgba(20,30,80,0.55), rgba(10,15,45,0.45)); }
-#sceneOverlay.scene-river  { background: linear-gradient(180deg, rgba(30,60,110,0.45), rgba(20,90,140,0.35)); }
-#sceneOverlay.scene-forest { background: linear-gradient(180deg, rgba(20,50,30,0.5), rgba(10,30,15,0.5)); }
-#sceneOverlay.scene-cave   { background: radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0.25) 20%, rgba(0,0,0,0.85) 75%); }
-#sceneOverlay.scene-dawn   { background: linear-gradient(180deg, rgba(255,190,120,0.35), rgba(255,240,200,0.1)); }
+.scene-layer.scene-night  { background: linear-gradient(180deg, rgba(20,30,80,0.55), rgba(10,15,45,0.45)); }
+.scene-layer.scene-river  { background: linear-gradient(180deg, rgba(30,60,110,0.45), rgba(20,90,140,0.35)); }
+.scene-layer.scene-forest { background: linear-gradient(180deg, rgba(20,50,30,0.5), rgba(10,30,15,0.5)); }
+.scene-layer.scene-cave   { background: radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0.25) 20%, rgba(0,0,0,0.85) 75%); }
+.scene-layer.scene-dawn   { background: linear-gradient(180deg, rgba(255,190,120,0.35), rgba(255,240,200,0.1)); }
+
+/* Dawn is the story's one earned slow moment: sunrise after the cave takes
+   3s, not 700ms, and brings a warm sun glow up with it. */
+.scene-layer.scene-dawn { transition-duration: 3000ms; }
+.scene-layer.scene-dawn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 78% 18%, rgba(255,214,140,0.75) 0%, rgba(255,186,110,0.35) 28%, rgba(255,186,110,0) 62%);
+  animation: dawnGlow 3000ms ease both;
+}
+@keyframes dawnGlow { from { opacity: 0; } to { opacity: 1; } }
+
+/* Cave "torch": a second vignette that leaves a lit ellipse around the hero.
+   On cave_enter (the fox goes in with the child) the lit radius opens up —
+   the same darkness, just braver. */
+.scene-layer.scene-cave::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 65%, rgba(0,0,0,0) 22%, rgba(0,0,0,0.72) 62%);
+  transition: background 1200ms var(--ease-materialize);
+}
+.scene-layer.scene-cave.scene-cave-lit::after {
+  background: radial-gradient(circle at 50% 65%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.6) 85%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-layer,
+  .scene-layer.scene-dawn,
+  .scene-layer.scene-cave::after { transition-duration: 1ms; }
+  .scene-layer.scene-dawn::after { animation: none; opacity: 1; }
+  #sceneStage { transition: none; }
+}
 
 .brother-fox {
   position: absolute;

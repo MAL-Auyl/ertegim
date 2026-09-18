@@ -32,7 +32,10 @@
     background-size: cover;
     background-position: center;
     background-color: var(--card-solid);
-    transition: background-image 200ms ease;
+    /* The background IMAGE swap (fox meadow <-> owl cave) can't cross-fade on
+       one element, so applyScene() dips the whole stage to 0.15 for 300ms
+       around the swap instead of letting it cut. */
+    transition: opacity 300ms ease;
   }
   #sceneStageWrap.hidden { display: none; }
 
@@ -306,7 +309,8 @@
     </div>
     <div id="sceneStageWrap">
       <div id="sceneStage">
-        <div id="sceneOverlay"></div>
+        <div id="sceneOverlay" class="scene-layer"></div>
+        <div id="sceneOverlayNext" class="scene-layer"></div>
         <div id="trackOverlay"></div>
         <div id="heroStage"></div>
       </div>
