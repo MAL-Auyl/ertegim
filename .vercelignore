@@ -1,7 +1,9 @@
-spike/tools
-spike/audio
-app/tmp
-.git
+server
+tools
+tests
+docs
+.superpowers
 .agents
 .claude
 sd-local
+.git

@@ -1,10 +1,13 @@
 .env
-spike/audio/
-spike/tools/
-app/tmp/*
-!app/tmp/.gitkeep
-app/server.log
-app/server_test.log
+server/tmp/*
+!server/tmp/.gitkeep
+tools/models/
 .claude/
 
 .vercel
+
+.superpowers/
+
+tools/voices/
+tools/.venv/
+tools/__pycache__/

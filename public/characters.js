@@ -176,22 +176,42 @@ function owlSVG(pose = "idle") {
   `);
 }
 
-// --- story-state -> {character, pose} mapping ---
+// --- Bear ----------------------------------------------------------------
+// Same flat picture-book style as the owl: round body, small ears, muzzle.
+// Only idle/talk/happy are needed by the story (bear_meet is "talk").
 
-const HERO_FOR_STATE = {
-  fox_intro: { character: "fox", pose: "talk" },
-  fox_question: { character: "fox", pose: "talk" },
-  fox_correct: { character: "fox", pose: "happy" },
-  fox_reask: { character: "fox", pose: "confused" },
-  fox_reveal: { character: "fox", pose: "think" },
-  owl_intro: { character: "owl", pose: "talk" },
-  owl_question: { character: "owl", pose: "talk" },
-  owl_correct: { character: "owl", pose: "happy" },
-  owl_reask: { character: "owl", pose: "confused" },
-  owl_reveal: { character: "owl", pose: "think" },
-  ending: { character: "fox", pose: "happy" },
-  parent_report: { character: "fox", pose: "idle" },
+const bearEyes = {
+  idle: `<circle cx="88" cy="105" r="7" fill="${PALETTE.ink}"/><circle cx="132" cy="105" r="7" fill="${PALETTE.ink}"/>`,
+  talk: `<circle cx="89" cy="104" r="7" fill="${PALETTE.ink}"/><circle cx="131" cy="104" r="7" fill="${PALETTE.ink}"/>`,
+  happy: `<path d="M80 106 Q88 96 96 106" stroke="${PALETTE.ink}" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M124 106 Q132 96 140 106" stroke="${PALETTE.ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`,
 };
+
+function bearSVG(pose = "idle") {
+  const eyes = bearEyes[pose] || bearEyes.idle;
+  const mouthClass = pose === "talk" ? "hero-mouth-talk" : "";
+  const mouth = pose === "talk"
+    ? `<ellipse cx="110" cy="146" rx="9" ry="7" fill="${PALETTE.ink}"/>`
+    : `<path d="M100 144 Q110 152 120 144" stroke="${PALETTE.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  const eyesClass = pose === "happy" ? "" : "hero-eyes";
+  return svgWrap(`
+    <circle cx="62" cy="62" r="20" fill="#6B4A2E" stroke="${PALETTE.ink}" stroke-width="4"/>
+    <circle cx="158" cy="62" r="20" fill="#6B4A2E" stroke="${PALETTE.ink}" stroke-width="4"/>
+    <circle cx="62" cy="62" r="9" fill="#C69A72"/>
+    <circle cx="158" cy="62" r="9" fill="#C69A72"/>
+    <ellipse cx="110" cy="122" rx="72" ry="66" fill="#6B4A2E" stroke="${PALETTE.ink}" stroke-width="5"/>
+    <ellipse cx="110" cy="140" rx="30" ry="22" fill="#C69A72"/>
+    <ellipse cx="110" cy="132" rx="9" ry="6" fill="${PALETTE.ink}"/>
+    <g class="${eyesClass}">${eyes}</g>
+    <g class="${mouthClass}">${mouth}</g>
+  `);
+}
+
+// Little brother — a shrunken copy of the happy fox art, shown next to the
+// hero on the found/thanks beats.
+function brotherHTML() {
+  return `<img src="/images/fox-happy.png" class="brother-fox" alt="інісі">`;
+}
 
 // Fox uses hand-illustrated full-body pose art — one coherent drawing per
 // emotion, proper proportions from a single generation — instead of a
@@ -288,8 +308,15 @@ function animateFoxPose(root, pose) {
   }
 }
 
-function renderHero(stateId) {
-  const h = HERO_FOR_STATE[stateId] || { character: "fox", pose: "idle" };
-  if (h.character === "owl") return owlSVG(h.pose);
-  return foxPoseHTML(h.pose);
+// The story node itself says who is on stage and how (see story.js) —
+// no separate id→hero table to keep in sync.
+function renderHero(node) {
+  const character = node?.character || "fox";
+  const pose = node?.pose || "idle";
+  let html;
+  if (character === "owl") html = owlSVG(pose);
+  else if (character === "bear") html = bearSVG(pose);
+  else html = foxPoseHTML(pose);
+  if (node?.showBrother) html += brotherHTML();
+  return html;
 }
