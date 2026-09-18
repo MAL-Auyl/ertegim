@@ -411,6 +411,60 @@ Bun.serve({
       }
     }
 
+    // Local-only STT tuning lab (see README «Лаборатория STT»): batch-run
+    // real child recordings through both Whisper models and both languages
+    // and see, per file, what each pass heard and which one the picker took.
+    // Never shipped to Vercel — it exists to tune stt-pick.js against actual
+    // kids' voices instead of guesses.
+    if (url.pathname === "/lab.html" && req.method === "GET") {
+      return new Response(Bun.file(`${ROOT}lab.html`), {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
+    // The page imports the picker as a module so its "did it match?" column
+    // uses exactly the server's phonetic/Levenshtein rules, not a copy.
+    if (url.pathname === "/lab/stt-pick.js" && req.method === "GET") {
+      return new Response(Bun.file(`${ROOT}../lib/stt-pick.js`), {
+        headers: { "Content-Type": "text/javascript; charset=utf-8" },
+      });
+    }
+
+    if (url.pathname === "/api/lab/transcribe" && req.method === "POST") {
+      try {
+        const form = await req.formData();
+        const audio = form.get("audio");
+        if (!audio || typeof audio === "string") {
+          return Response.json({ error: "missing audio field" }, { status: 400 });
+        }
+        const buf = new Uint8Array(await audio.arrayBuffer());
+        const clientExt = audio.name?.split(".").pop();
+        const ext = clientExt && /^[a-z0-9]{2,5}$/i.test(clientExt) ? clientExt : "webm";
+        const nodeId = String(form.get("nodeId") || "");
+        const trackCount = Number(form.get("trackCount")) || 0;
+        const model = form.get("model") === "whisper-large-v3"
+          ? "whisper-large-v3"
+          : GROQ_STT_MODEL;
+        const hint = sttHintFor(nodeId, { brotherName: String(form.get("brotherName") || "") });
+        const expected = expectedForms(nodeId, { trackCount });
+        const out = await transcribeDual(buf, ext, hint, expected, model);
+        const byLang = (l) => out.candidates.find((c) => c.lang === l) || {};
+        return Response.json({
+          model,
+          kk: byLang("kk").text ?? "",
+          ru: byLang("ru").text ?? "",
+          picked: out.transcript,
+          lang: out.lang,
+          score: out.score,
+          confidence: out.confidence,
+          lowConfidence: out.lowConfidence,
+          ms: out.ms,
+        });
+      } catch (err) {
+        console.error(err);
+        return Response.json({ error: String(err) }, { status: 500 });
+      }
+    }
+
     if (url.pathname === "/api/classify" && req.method === "POST") {
       try {
         const { transcript, questionKk, criterion, alternatives, expectedForms: expForms } = await req.json();

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ертегім — лаборатория STT</title>
+<link rel="stylesheet" href="/design-system.css">
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: #12131a; color: #e8e8ef; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 20px; opacity: .7; font-size: 13px; max-width: 70ch; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+  label { font-size: 13px; display: flex; gap: 6px; align-items: center; }
+  input, select, button { font: inherit; padding: 6px 10px; border-radius: 8px;
+    border: 1px solid #3a3b47; background: #1c1d26; color: inherit; }
+  button { cursor: pointer; background: #2b6cb0; border-color: #2b6cb0; }
+  button:disabled { opacity: .5; cursor: default; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border-bottom: 1px solid #2a2b36; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { position: sticky; top: 0; background: #12131a; }
+  td.hit { color: #7ee787; } td.miss { color: #ff7b72; }
+  .totals { margin-top: 16px; font-size: 14px; white-space: pre-line; }
+  .exp { width: 140px; }
+</style>
+</head>
+<body>
+<h1>Лаборатория STT</h1>
+<p class="sub">
+  Локальный инструмент (только <code>bun server/server.js</code>, не Vercel). Выбери реальные записи
+  детей, укажи узел и ожидаемый ответ — страница прогонит каждый файл через Groq Whisper на казахском
+  и русском параллельно и покажет, что услышал каждый проход и какой из них выбрал
+  <code>lib/stt-pick.js</code>. Две кнопки — сравнить turbo и большую модель на одних и тех же файлах.
+</p>
+
+<div class="controls">
+  <label>Файлы <input type="file" id="files" multiple accept="audio/*"></label>
+  <label>Узел
+    <select id="node">
+      <option value="q_tracks">q_tracks (счёт)</option>
+      <option value="q_fork">q_fork (развилка)</option>
+      <option value="q_courage">q_courage (поддержка)</option>
+      <option value="q_echo">q_echo (рифма)</option>
+    </select>
+  </label>
+  <label>trackCount <input type="number" id="trackCount" value="3" min="1" max="5" style="width:60px"></label>
+  <button id="runTurbo">Run turbo</button>
+  <button id="runV3">Run v3</button>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Файл</th><th>Ожидаем</th><th>kk</th><th>ru</th><th>Выбрано</th>
+      <th>lang</th><th>score</th><th>conf</th><th>совпало</th><th>ms</th>
+    </tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+<div class="totals" id="totals"></div>
+
+<script type="module">
+// Same module the server picks with — the «совпало» column must not be a
+// second, slightly different implementation of matching.
+import { phonetic, levenshtein, tolerance, wordsOf } from "/lab/stt-pick.js";
+
+const filesInput = document.getElementById("files");
+const nodeSel = document.getElementById("node");
+const trackCountEl = document.getElementById("trackCount");
+const rowsEl = document.getElementById("rows");
+const totalsEl = document.getElementById("totals");
+const runTurbo = document.getElementById("runTurbo");
+const runV3 = document.getElementById("runV3");
+
+let files = [];
+
+function matches(picked, expected) {
+  const exp = String(expected || "").trim();
+  if (!exp) return null; // nothing to compare against
+  const words = wordsOf(picked);
+  return exp.split(/[,\s]+/).filter(Boolean).some((form) => {
+    const t = phonetic(form);
+    if (!t) return false;
+    if (t.length <= 3) return words.some((w) => phonetic(w) === t || phonetic(w).startsWith(t));
+    return words.some((w) => phonetic(w).startsWith(t) || levenshtein(phonetic(w), t) <= tolerance(t.length));
+  });
+}
+
+function render() {
+  rowsEl.innerHTML = "";
+  files.forEach((f, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${f.file.name}</td>
+      <td><input class="exp" data-i="${i}" value="${f.expected}"></td>
+      <td class="kk"></td><td class="ru"></td><td class="picked"></td>
+      <td class="lang"></td><td class="score"></td><td class="conf"></td>
+      <td class="ok"></td><td class="ms"></td>`;
+    rowsEl.appendChild(tr);
+    f.row = tr;
+  });
+  rowsEl.querySelectorAll("input.exp").forEach((inp) => {
+    inp.addEventListener("input", () => { files[Number(inp.dataset.i)].expected = inp.value; });
+  });
+}
+
+filesInput.addEventListener("change", () => {
+  files = [...filesInput.files].map((file) => ({ file, expected: "" }));
+  totalsEl.textContent = "";
+  render();
+});
+
+async function runAll(model) {
+  if (files.length === 0) { totalsEl.textContent = "Сначала выбери файлы."; return; }
+  runTurbo.disabled = runV3.disabled = true;
+  let hits = 0, compared = 0, totalMs = 0, done = 0;
+  try {
+    for (const f of files) {
+      const form = new FormData();
+      form.append("audio", f.file, f.file.name);
+      form.append("model", model);
+      form.append("nodeId", nodeSel.value);
+      form.append("trackCount", trackCountEl.value);
+      form.append("expected", f.expected);
+      const cell = (c) => f.row.querySelector(`.${c}`);
+      cell("picked").textContent = "…";
+      let data;
+      try {
+        const res = await fetch("/api/lab/transcribe", { method: "POST", body: form });
+        data = await res.json();
+        if (data.error) throw new Error(data.error);
+      } catch (err) {
+        cell("picked").textContent = `ошибка: ${err.message}`;
+        continue;
+      }
+      done++;
+      totalMs += data.ms || 0;
+      cell("kk").textContent = data.kk;
+      cell("ru").textContent = data.ru;
+      cell("picked").textContent = data.lowConfidence ? `${data.picked} (низкая уверенность)` : data.picked;
+      cell("lang").textContent = data.lang || "—";
+      cell("score").textContent = data.score;
+      cell("conf").textContent = data.confidence;
+      cell("ms").textContent = data.ms;
+      const ok = matches(data.picked, f.expected);
+      const okCell = cell("ok");
+      okCell.textContent = ok === null ? "—" : ok ? "да" : "нет";
+      okCell.className = `ok ${ok === null ? "" : ok ? "hit" : "miss"}`;
+      if (ok !== null) { compared++; if (ok) hits++; }
+    }
+    totalsEl.textContent =
+      `${model}: точность ${compared ? Math.round((hits / compared) * 100) : 0}% (${hits}/${compared}), ` +
+      `среднее время ${done ? Math.round(totalMs / done) : 0} ms на файл`;
+  } finally {
+    runTurbo.disabled = runV3.disabled = false;
+  }
+}
+
+runTurbo.addEventListener("click", () => runAll("whisper-large-v3-turbo"));
+runV3.addEventListener("click", () => runAll("whisper-large-v3"));
+</script>
+</body>
+</html>
