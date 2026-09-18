@@ -2,8 +2,6 @@
 server/tmp/*
 !server/tmp/.gitkeep
 tools/models/
-app/server.log
-app/server_test.log
 .claude/
 
 .vercel

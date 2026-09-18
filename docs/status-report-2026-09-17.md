@@ -15,7 +15,7 @@
   (ветвления, сцены, session-хуки, память, лимит сессии, оператор).
 - `tools/prerender.py` — кроссплатформенный пререндер Piper (прогнан на
   Linux), озвучены все 28 новых реплик.
-- 38 unit-тестов (`cd app && bun test`) на классификатор и арифметику сессии.
+- 38 unit-тестов (`bun test`) на классификатор и арифметику сессии.
 - Ручной прогон в браузере: оба маршрута ветвления, переспрос/раскрытие,
   память (`intro_again`/`thanks_again`), лимит 8 минут, блокирующий UI
   (заглушка), переключение панели оператора. Найдено и исправлено
@@ -23,7 +23,7 @@
 
 ## НЕ проверено end-to-end
 
-Бэкенда на этой Linux-машине нет — `app/server.js` только под Windows
+Бэкенда на этой Linux-машине нет — `server/server.js` только под Windows
 (ffmpeg.exe/whisper-cli.exe/Piper-пути). Не проверялись живьём: STT (Groq),
 LLM-классификация, `classify-local.js` внутри приложения (нужен реальный
 transcript), живой Piper TTS, реальный микрофон/VAD. Тесты покрывают только
@@ -31,9 +31,10 @@ transcript), живой Piper TTS, реальный микрофон/VAD. Тес
 
 ## Осталось на этап «фундамент»
 
-Дубликат `public/` (устаревшая копия, деплоится Vercel); Windows-only
-`app/server.js`; нет README и CI; CSS сцен в `index.html`, а не в
-`design-system.css`; `tools/__pycache__/` нужно в `.gitignore`.
+Дубликат `public/` (устаревшая копия, деплоится Vercel) — сделано 18.09;
+Windows-only `server/server.js` — сделано 18.09; нет README и CI — сделано
+18.09; CSS сцен в `index.html`, а не в `design-system.css` — сделано 18.09;
+`tools/__pycache__/` нужно в `.gitignore` — сделано 18.09.
 
 ## Требует проверки носителем казахского
 
@@ -49,9 +50,9 @@ PIN на отчёте родителю косметический (открыв�
 Сделано: pre-roll 500 мс + детские VAD-пороги (`public/app.js`,
 `public/preroll.js`); промпт под каждый узел для Whisper через
 `lib/stt-hints-core.js`, подключён в обоих STT-эндпоинтах
-(`app/server.js`, `api/transcribe.js`) вместе с `temperature: 0`;
+(`server/server.js`, `api/transcribe.js`) вместе с `temperature: 0`;
 фонетическое сопоставление и детские формы чисел в `classify-local.js`;
-64 unit-теста (`cd app && bun test`) зелёные.
+64 unit-теста (`bun test`) зелёные.
 
 НЕ проверено живьём: pre-roll WebM с обрезанными кластерами через
 ffmpeg/Groq на Windows/Vercel; VAD-пороги на реальных детях.

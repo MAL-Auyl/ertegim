@@ -3,6 +3,8 @@
 // the two independent systems on every uploaded clip:
 //   1. Automatic blocklist (fuzzy, no human) — fires BLOCKED on its own.
 //   2. Transcript + audio handed to the operator for Correct/Re-ask/Advance.
+import { mkdirSync } from "node:fs";
+
 import { checkBlocklist } from "../lib/blocklist-core.js";
 import { sttHintFor } from "../lib/stt-hints-core.js";
 
@@ -13,6 +15,8 @@ const ROOT = `${import.meta.dir}/`;
 const TMP = `${ROOT}tmp`;
 const PUBLIC = `${ROOT}../public`;
 const PORT = Number(process.env.PORT) || 3000;
+
+mkdirSync(TMP, { recursive: true });
 
 // Native helpers are optional: each feature below degrades on its own when
 // its binary is missing (see server/bins.js). Windows note: whisper-cli /
@@ -186,8 +190,12 @@ async function transcribe(audioBuf, ext, hint) {
     return await transcribeGroq(audioBuf, ext, hint);
   } catch (err) {
     console.error(`Groq STT failed, falling back to local Whisper: ${err}`);
-    const local = await transcribeLocal(audioBuf, ext);
-    return { ...local, engine: "local" };
+    try {
+      const local = await transcribeLocal(audioBuf, ext);
+      return { ...local, engine: "local" };
+    } catch (localErr) {
+      throw new Error(`${localErr.message}; groq: ${err.message}`, { cause: err });
+    }
   }
 }
 
@@ -272,7 +280,8 @@ Bun.serve({
         if (!text || typeof text !== "string") {
           return Response.json({ error: "missing text field" }, { status: 400 });
         }
-        const { bytes, ms } = await speak(text, speaker);
+        const sp = Number.isInteger(speaker) && speaker >= 0 && speaker <= 5 ? speaker : HERO_SPEAKER;
+        const { bytes, ms } = await speak(text, sp);
         return new Response(bytes, {
           headers: { "Content-Type": "audio/wav", "X-Synth-Ms": String(ms) },
         });
