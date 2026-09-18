@@ -270,12 +270,37 @@ async function playWithTimeout(ms) {
   await Promise.race([heroVoice.play(), playTimeout]);
 }
 
+// play() only resolves when playback STARTS. The story (narration
+// auto-advance, arming the mic for a question) must wait for the line to be
+// actually SPOKEN, or every line is cut off after a few hundred ms. The leash
+// keeps a stalled/broken element from parking the demo forever.
+function awaitLineEnd() {
+  const leashMs = Math.min(20000, (heroVoice.duration || 8) * 1000 + 2000);
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      heroVoice.removeEventListener("ended", finish);
+      heroVoice.removeEventListener("error", finish);
+      resolve();
+    };
+    const timer = setTimeout(finish, leashMs);
+    heroVoice.addEventListener("ended", finish);
+    heroVoice.addEventListener("error", finish);
+  });
+}
+
 // Next Steps #7: pre-rendered fallback audio (tools/prerender.py output,
 // served from /audio/<stateId>.wav) — stage-risk hedge in case live Piper
 // or the request itself lags. Live call gets a short leash (2.5s); on any
 // failure or timeout we fall back to the static file for that state.
 async function speakLine(text, stateId, { echo = false } = {}) {
   if (!text) return;
+  // An operator override can switch nodes mid-line — the new line must cut
+  // the old one off instead of talking over it.
+  try { heroVoice.pause(); heroVoice.currentTime = 0; } catch { /* no media loaded yet */ }
   setStage("tts", "running", "");
   try {
     const controller = new AbortController();
@@ -295,6 +320,7 @@ async function speakLine(text, stateId, { echo = false } = {}) {
     // play() can hang indefinitely instead of rejecting in some browser/
     // automation contexts — never let audio playback stall the demo.
     await playWithTimeout(3000);
+    await awaitLineEnd();
     log(`voice: "${text.slice(0, 40)}${text.length > 40 ? "…" : ""}" (${ms}ms synth)`);
     setStage("tts", "ok", `${ms}ms live`);
   } catch (err) {
@@ -303,6 +329,7 @@ async function speakLine(text, stateId, { echo = false } = {}) {
         heroVoice.src = `/audio/${stateId}.wav`;
         if (echo) scheduleEcho(heroVoice.src);
         await playWithTimeout(3000);
+        await awaitLineEnd();
         log(`voice: fallback pre-rendered audio for "${stateId}" (live TTS: ${err.message})`);
         setStage("tts", "skip", "fallback wav");
         return;
@@ -659,7 +686,11 @@ function renderState(id) {
       activeQuestionId = id;
     }
     Session.questionShown(id, s.skill, reaskUsed ? 2 : 1);
-    armVadForQuestion();
+    // Arm the mic only once the question has been spoken — otherwise the mic
+    // hears the hero's own voice from the speakers and trips the VAD.
+    speakDone.then(() => {
+      if (currentId === id) armVadForQuestion();
+    });
   } else {
     // "end"
     nextBtn.style.display = "none";
