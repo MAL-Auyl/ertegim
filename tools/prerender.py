@@ -19,7 +19,8 @@ VOICE_NAME = "kk_KZ-issai-high"
 VOICE_URL = f"https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/kk/kk_KZ/issai/high/{VOICE_NAME}"
 SPEAKER = 3
 PITCH = 1.4
-PIPER_BIN = ROOT / "tools" / ".venv" / "bin" / "piper"
+_piper_win = ROOT / "tools" / ".venv" / "Scripts" / "piper.exe"
+PIPER_BIN = _piper_win if _piper_win.exists() else ROOT / "tools" / ".venv" / "bin" / "piper"
 
 
 def ensure_voice() -> Path:
@@ -42,7 +43,7 @@ def ffmpeg_bin() -> str:
 
 
 def lines() -> dict:
-    res = subprocess.run(["node", str(ROOT / "tools" / "dump-story.js")], check=True, capture_output=True, text=True)
+    res = subprocess.run(["node", str(ROOT / "tools" / "dump-story.js")], check=True, capture_output=True, text=True, encoding="utf-8")
     return json.loads(res.stdout)
 
 
