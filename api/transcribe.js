@@ -14,6 +14,7 @@
 
 import { checkBlocklist } from "../lib/blocklist-core.js";
 import { sttHintFor } from "../lib/stt-hints-core.js";
+import { expectedForms, pickTranscript } from "../lib/stt-pick.js";
 
 export const config = { runtime: "edge" };
 
@@ -27,15 +28,17 @@ function isMostlyCyrillic(text) {
   return cyrillic.length / letters.length >= 0.6;
 }
 
-async function transcribeGroq(audioBuf, ext, hint) {
+async function transcribeGroq(audioBuf, ext, hint, lang) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
   const form = new FormData();
   form.append("file", new Blob([audioBuf]), `clip.${ext}`);
   form.append("model", "whisper-large-v3-turbo");
-  form.append("language", "kk");
+  form.append("language", lang);
   form.append("prompt", hint);
   form.append("temperature", "0");
-  form.append("response_format", "json");
+  // verbose_json carries per-segment no_speech_prob / avg_logprob, which
+  // lib/stt-pick.js turns into the lowConfidence flag the client re-asks on.
+  form.append("response_format", "verbose_json");
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
@@ -50,11 +53,33 @@ async function transcribeGroq(audioBuf, ext, hint) {
     if (!res.ok) throw new Error(`groq http ${res.status}: ${await res.text()}`);
     const data = await res.json();
     const raw = (data.text || "").trim();
-    const transcript = isMostlyCyrillic(raw) ? raw : "";
-    return { transcript, ms: Date.now() - t0 };
+    const text = isMostlyCyrillic(raw) ? raw : "";
+    const segments = Array.isArray(data.segments) ? data.segments : [];
+    const noSpeechProb = segments.length
+      ? Math.max(...segments.map((s) => Number(s.no_speech_prob) || 0))
+      : (text ? 0 : 1);
+    const avgLogprob = segments.length
+      ? segments.reduce((sum, s) => sum + (Number(s.avg_logprob) || 0), 0) / segments.length
+      : 0;
+    return { text, lang, noSpeechProb, avgLogprob, ms: Date.now() - t0 };
   } finally {
     clearTimeout(timer);
   }
+}
+
+// kk + ru in parallel, picked by lib/stt-pick.js — same contract as
+// server/server.js's transcribeDual, minus the ffmpeg preprocessing (no
+// native binaries on Edge) and minus the local-Whisper fallback (nothing to
+// fall back to on a serverless platform: if both passes fail, so does the
+// request, and the client drops into its manual/offline path).
+async function transcribeDual(audioBuf, ext, hint, expected) {
+  const t0 = Date.now();
+  const settled = await Promise.allSettled(
+    ["kk", "ru"].map((lang) => transcribeGroq(audioBuf, ext, hint, lang)),
+  );
+  const candidates = settled.filter((s) => s.status === "fulfilled").map((s) => s.value);
+  if (candidates.length === 0) throw settled[0].reason;
+  return { ...pickTranscript(candidates, expected), candidates, ms: Date.now() - t0 };
 }
 
 export default async function handler(request) {
@@ -75,11 +100,27 @@ export default async function handler(request) {
     const ext = clientExt && /^[a-z0-9]{2,5}$/i.test(clientExt) ? clientExt : "webm";
     const nodeId = typeof form.get("nodeId") === "string" ? form.get("nodeId") : "";
     const brotherName = typeof form.get("brotherName") === "string" ? form.get("brotherName") : "";
+    const trackCount = Number(form.get("trackCount")) || 0;
     const hint = sttHintFor(nodeId, { brotherName });
-    const { transcript, ms } = await transcribeGroq(buf, ext, hint);
-    const { blocked, results } = checkBlocklist(transcript);
+    const expected = expectedForms(nodeId, { trackCount, brotherName });
+    const out = await transcribeDual(buf, ext, hint, expected);
+    const alternatives = out.candidates.map((c) => ({ lang: c.lang, text: c.text }));
+    const kk = alternatives.find((a) => a.lang === "kk")?.text ?? "";
+    const ru = alternatives.find((a) => a.lang === "ru")?.text ?? "";
+    console.log(`stt kk="${kk}" ru="${ru}" → ${out.lang || "-"} score=${out.score} conf=${out.confidence}`);
+    const { blocked, results } = checkBlocklist([out.transcript, kk, ru].join(" "));
     return new Response(
-      JSON.stringify({ transcript, blocked, blockDetails: results, ms, engine: "groq" }),
+      JSON.stringify({
+        transcript: out.transcript || "",
+        lang: out.lang || null,
+        confidence: out.confidence,
+        lowConfidence: out.lowConfidence,
+        alternatives,
+        blocked,
+        blockDetails: results,
+        ms: out.ms,
+        engine: "groq",
+      }),
       { headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {
