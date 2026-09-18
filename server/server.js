@@ -6,6 +6,7 @@
 import { mkdirSync } from "node:fs";
 
 import { checkBlocklist } from "../lib/blocklist-core.js";
+import { classifyAnswer, sanitizeClassifyInput } from "../lib/classify-core.js";
 import { sttHintFor } from "../lib/stt-hints-core.js";
 import { expectedForms, pickTranscript, filterHallucinations } from "../lib/stt-pick.js";
 
@@ -200,94 +201,10 @@ async function transcribeDual(audioBuf, ext, hint, expected, model = GROQ_STT_MO
   };
 }
 
-// LLM answer classifier (Next Steps #5) — replaces the operator's manual
-// Correct/Re-ask judgement with a real model call. Same Groq account as STT,
-// but the chat-completions endpoint, not Whisper. Kept deliberately separate
-// from the blocklist: the blocklist is a hard-coded, network-free safety gate
-// that fails closed; this classifier only judges answer correctness and is
-// allowed to fail OPEN (falls back to the operator's own buttons) since a
-// wrong "неверно"/"верно" call here just means one extra re-ask, not a
-// safety incident. See IDEA.md "Как закрываем риски".
-// This Groq account has no llama-3.x chat access (checked via /v1/models) —
-// gpt-oss-20b is the fastest model it does have access to, plenty for a
-// 3-way classification call.
-const GROQ_CHAT_MODEL = "openai/gpt-oss-20b";
-const CLASSIFY_TIMEOUT_MS = 4000;
-
-async function classifyAnswer(transcript, questionKk, criterion, extra = {}) {
-  const alts = extra.alternatives || [];
-  const forms = extra.expectedForms || [];
-  // The classifier sees BOTH recognitions, not just the picked one: when kk
-  // and ru disagree, one of them is usually the child's actual answer, and a
-  // model reading both can say so where a string comparison cannot.
-  // Read by LANGUAGE TAG, not by position: when one of the two Groq passes
-  // fails or is filtered out as a hallucination, alts[1] is not the ru pass,
-  // and labelling a Kazakh answer «распознавание ru» misleads the model.
-  const byLang = (l) => {
-    const hit = alts.find((a) => a && typeof a === "object" && a.lang === l);
-    return hit ? String(hit.text ?? "") : "";
-  };
-  const plain = alts.filter((a) => typeof a === "string"); // backward compat
-  const kkAlt = byLang("kk") || plain[0] || transcript;
-  const ruAlt = byLang("ru") || plain[1] || "";
-  // Only claim "one of the recognitions is enough" when we actually gave the
-  // model something to check against; with no expected forms and no second
-  // recognition that sentence just invites a guess.
-  const hasExpectation = forms.length > 0 || alts.length > 0;
-  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CLASSIFY_TIMEOUT_MS);
-  try {
-    const t0 = performance.now();
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GROQ_CHAT_MODEL,
-        temperature: 0,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "Ты оцениваешь ответ ребёнка 3-7 лет в детской интерактивной сказке. " +
-              "Тебе дают вопрос героя, критерий правильного ответа и то, что реально " +
-              "распознала речь-в-текст система (может быть неточным/обрезанным — " +
-              "суди по смыслу, а не по буквальному совпадению). Верни ТОЛЬКО JSON вида " +
-              '{"label": "correct" | "incorrect" | "unclear", "reason": "коротко, по-русски"}. ' +
-              '"unclear" — если ответ пустой, невнятный или не по теме вопроса (не значит ' +
-              "«неверно», значит «нужно переспросить»)." +
-              (hasExpectation
-                ? " Если хотя бы одно из распознаваний содержит ожидаемый ответ — считай его верным. " +
-                  "Исключение — вопросы с выбором варианта: если распознавания указывают на разные " +
-                  "варианты, верни unclear."
-                : ""),
-          },
-          {
-            role: "user",
-            content:
-              `Вопрос героя: ${questionKk}\nКритерий: ${criterion}\n` +
-              `Ответ ребёнка — распознавание kk: "${kkAlt}"; распознавание ru: "${ruAlt}"\n` +
-              `Ожидаемые формы ответа: ${forms.join(", ") || "—"}`,
-          },
-        ],
-      }),
-      signal: controller.signal,
-    });
-    if (!res.ok) throw new Error(`groq chat http ${res.status}: ${await res.text()}`);
-    const data = await res.json();
-    const ms = Math.round(performance.now() - t0);
-    const content = data.choices?.[0]?.message?.content || "{}";
-    const parsed = JSON.parse(content);
-    const label = ["correct", "incorrect", "unclear"].includes(parsed.label) ? parsed.label : "unclear";
-    return { label, reason: String(parsed.reason || ""), ms };
-  } finally {
-    clearTimeout(timer);
-  }
-}
+// The LLM answer classifier itself (prompt, model, timeout, input caps)
+// lives in lib/classify-core.js, shared verbatim with api/classify.js so the
+// Vercel deployment and this local server can never judge the same answer
+// differently. See that file for why it is allowed to fail OPEN.
 
 async function transcribe(audioBuf, ext, hint, expected) {
   try {
@@ -531,29 +448,28 @@ Bun.serve({
 
     if (url.pathname === "/api/classify" && req.method === "POST") {
       try {
-        const { transcript, questionKk, criterion, alternatives, expectedForms: expForms } = await req.json();
-        if (typeof transcript !== "string" || typeof questionKk !== "string" || typeof criterion !== "string") {
+        const input = sanitizeClassifyInput(await req.json());
+        if (!input.valid) {
           return Response.json({ error: "missing transcript/questionKk/criterion field" }, { status: 400 });
         }
-        // Caps: this body is sent straight into an LLM prompt, so an oversized
-        // or repeated field is both a cost and a prompt-injection surface. Two
-        // recognitions, a handful of expected forms and one short child answer
-        // is all this endpoint is ever meant to carry.
-        const altsIn = (Array.isArray(alternatives) ? alternatives : []).slice(0, 4).map((a) =>
-          a && typeof a === "object"
-            ? { lang: String(a.lang ?? "").slice(0, 8), text: String(a.text ?? "").slice(0, 300) }
-            : String(a).slice(0, 300),
-        );
-        const { label, reason, ms } = await classifyAnswer(transcript.slice(0, 500), questionKk, criterion, {
-          alternatives: altsIn,
-          expectedForms: (Array.isArray(expForms) ? expForms : []).slice(0, 32).map((s) => String(s).slice(0, 40)),
+        // Caps (transcript length, number of alternatives, expected forms)
+        // are applied by sanitizeClassifyInput — this body goes straight into
+        // an LLM prompt, so an oversized or repeated field is both a cost and
+        // a prompt-injection surface.
+        const { label, reason, ms } = await classifyAnswer({
+          apiKey: GROQ_API_KEY,
+          transcript: input.transcript,
+          questionKk: input.questionKk,
+          criterion: input.criterion,
+          alternatives: input.alternatives,
+          expectedForms: input.expectedForms,
         });
         return Response.json({ label, reason, ms });
       } catch (err) {
         console.error(`classify failed (falling back to operator): ${err}`);
         // Fail OPEN: the frontend treats a non-200/error response as "AI
         // unavailable" and silently leaves the manual Correct/Re-ask/Advance
-        // buttons as the only path — see comment above classifyAnswer().
+        // buttons as the only path — see the note in lib/classify-core.js.
         return Response.json({ error: String(err) }, { status: 500 });
       }
     }
