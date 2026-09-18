@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pre-render every hero line to public/audio/<id>.wav.
 
-Same voice settings as app/server.js's live speak(): Piper kk_KZ-issai-high,
+Same voice settings as server/server.js's live speak(): Piper kk_KZ-issai-high,
 speaker 3, then a pitch shift up by 1.4x with the duration restored
 (asetrate + atempo) so the cub sounds young without talking faster.
 

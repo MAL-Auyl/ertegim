@@ -1,15 +1,15 @@
-// Vercel Edge Function — cloud-only counterpart to app/server.js's
+// Vercel Edge Function — cloud-only counterpart to server/server.js's
 // /api/transcribe route. No native binaries here (Piper/Whisper.cpp/ffmpeg
 // can't run on Vercel Edge), so this is Groq-only: same STT engine that's
 // already primary in the local server, just without the local-Whisper
 // fallback (nothing to fall back to on a serverless platform) and without
-// the ffmpeg loudnorm preprocessing pass app/server.js applies before
+// the ffmpeg loudnorm preprocessing pass server/server.js applies before
 // sending audio to Groq (no ffmpeg binary available here — the raw browser
 // MediaRecorder blob is sent as-is). The Web-standard Request/Response API
 // on Edge runtime maps almost 1:1 to the Bun code.
 //
 // Blocklist logic lives in ../lib/blocklist-core.js, shared with
-// app/server.js via lib/blocklist-cli.js — see that file for why the matching
+// server/server.js via lib/blocklist-cli.js — see that file for why the matching
 // logic had to be split out of the Bun-only CLI entry point.
 
 import { checkBlocklist } from "../lib/blocklist-core.js";

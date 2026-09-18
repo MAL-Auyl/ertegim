@@ -6,17 +6,21 @@
 import { checkBlocklist } from "../lib/blocklist-core.js";
 import { sttHintFor } from "../lib/stt-hints-core.js";
 
-const ROOT = `${import.meta.dir}/`; // Bun-native, already decoded (handles Cyrillic paths)
+import { resolveBins, describeBins } from "./bins.js";
+import { safeStaticPath } from "./static.js";
+
+const ROOT = `${import.meta.dir}/`;
 const TMP = `${ROOT}tmp`;
-const TOOLS = `${ROOT}../spike/tools`;
+const PUBLIC = `${ROOT}../public`;
+const PORT = Number(process.env.PORT) || 3000;
 
-function findFfmpegRel() {
-  const glob = new Bun.Glob("ffmpeg-*win64-gpl*/bin/ffmpeg.exe");
-  for (const f of glob.scanSync({ cwd: TOOLS })) return f; // relative to TOOLS
-  throw new Error("ffmpeg.exe not found under spike/tools — did setup finish?");
-}
-
-const FFMPEG_REL = findFfmpegRel(); // e.g. "ffmpeg-n8.1-latest-win64-gpl-8.1/bin/ffmpeg.exe"
+// Native helpers are optional: each feature below degrades on its own when
+// its binary is missing (see server/bins.js). Windows note: whisper-cli /
+// ffmpeg mangle non-ASCII argv, so every spawn runs with cwd=TMP and passes
+// only the ASCII (UUID) file names relative to it — the project's own path
+// (which may be Cyrillic) never appears in argv.
+const bins = resolveBins();
+console.log("native helpers:\n  " + describeBins(bins).join("\n  "));
 
 // Bun.serve handles every request on one JS thread, so a hung child process
 // (malformed audio, a stuck ffmpeg/whisper-cli invocation) would otherwise
@@ -46,33 +50,24 @@ function isMostlyCyrillic(text) {
 // was sending the raw browser MediaRecorder blob untouched. A quiet/muffled
 // child voice sits well below adult speaking level, and loudnorm (EBU R128)
 // brings it up to a consistent target instead of relying on Whisper to cope
-// with whatever gain the mic captured at. Same Cyrillic-safe relative-path
-// dance as everywhere else ffmpeg is spawned in this file (see comment on
-// transcribeLocal): cwd=TOOLS, only ASCII relative segments in argv.
+// with whatever gain the mic captured at. Spawned with cwd=TMP and ASCII-only
+// relative names in argv (see the note at the top of this file).
 async function preprocessForSTT(audioBuf, ext) {
+  if (!bins.ffmpeg) return audioBuf; // no ffmpeg → send the raw clip as-is
   const id = crypto.randomUUID();
-  const rawAbs = `${TMP}/${id}.${ext}`;
-  const wavAbs = `${TMP}/${id}_norm.wav`;
-  const rawFromTools = `../../app/tmp/${id}.${ext}`;
-  const wavFromTools = `../../app/tmp/${id}_norm.wav`;
-
-  await Bun.write(rawAbs, audioBuf);
+  const rawName = `${id}.${ext}`;
+  const wavName = `${id}_norm.wav`;
+  await Bun.write(`${TMP}/${rawName}`, audioBuf);
   try {
     const ff = Bun.spawnSync(
-      [
-        FFMPEG_REL, "-y", "-loglevel", "error", "-i", rawFromTools,
-        "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
-        "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le",
-        wavFromTools,
-      ],
-      { cwd: TOOLS, timeout: SPAWN_TIMEOUT_MS },
+      [bins.ffmpeg, "-y", "-loglevel", "error", "-i", rawName,
+       "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", wavName],
+      { cwd: TMP, timeout: SPAWN_TIMEOUT_MS },
     );
     if (ff.exitCode !== 0) throw new Error(`ffmpeg loudnorm failed: ${new TextDecoder().decode(ff.stderr)}`);
-    return await Bun.file(wavAbs).arrayBuffer();
+    return await Bun.file(`${TMP}/${wavName}`).arrayBuffer();
   } finally {
-    for (const p of [rawAbs, wavAbs]) {
-      if (await Bun.file(p).exists()) await Bun.file(p).delete?.().catch(() => {});
-    }
+    for (const n of [rawName, wavName]) await Bun.file(`${TMP}/${n}`).delete?.().catch(() => {});
   }
 }
 
@@ -88,7 +83,7 @@ async function transcribeGroq(audioBuf, ext, hint) {
   let uploadName = `clip.${ext}`;
   try {
     uploadBuf = await preprocessForSTT(audioBuf, ext);
-    uploadName = "clip.wav";
+    if (bins.ffmpeg) uploadName = "clip.wav";
   } catch (err) {
     console.error(`STT preprocessing failed, sending raw audio: ${err}`);
   }
@@ -196,58 +191,32 @@ async function transcribe(audioBuf, ext, hint) {
   }
 }
 
-// whisper-cli.exe / ffmpeg.exe mangle non-ASCII (Cyrillic) argv on Windows
-// when invoked via Bun.spawnSync. Fix: run with cwd=ROOT and pass only
-// relative, ASCII-only path segments as args — the Cyrillic portion then
-// lives solely in `cwd`, which Windows' CreateProcess handles correctly
-// (only argv string-building is broken, not cwd).
+// Spawned with cwd=TMP and ASCII-only relative names in argv.
 async function transcribeLocal(audioBuf, ext) {
-  const id = crypto.randomUUID(); // ASCII, safe as a filename
-  // TOOLS is our spawn cwd (Ertegim/spike/tools); everything below is
-  // expressed relative to it as "../../app/tmp/..." (spike/tools -> spike
-  // -> Ertegim -> app/tmp), so no Cyrillic ever appears in argv.
-  const rawFromTools = `../../app/tmp/${id}.${ext}`;
-  const wavFromTools = `../../app/tmp/${id}.wav`;
-  const outBaseFromTools = `../../app/tmp/${id}`;
-
-  const rawAbs = `${TMP}/${id}.${ext}`;
-  const wavAbs = `${TMP}/${id}.wav`;
-  const txtAbs = `${TMP}/${id}.txt`;
-
-  await Bun.write(rawAbs, audioBuf);
-
-  const t0 = performance.now();
-
-  const ff = Bun.spawnSync(
-    [FFMPEG_REL, "-y", "-loglevel", "error", "-i", rawFromTools, "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", wavFromTools],
-    { cwd: TOOLS, timeout: SPAWN_TIMEOUT_MS },
-  );
-  if (ff.exitCode !== 0) throw new Error(`ffmpeg failed: ${new TextDecoder().decode(ff.stderr)}`);
-
-  const wh = Bun.spawnSync(
-    ["whisper-bin/Release/whisper-cli.exe", "-m", "ggml-small.bin", "-l", "kk", "-f", wavFromTools, "-otxt", "-of", outBaseFromTools, "-nt"],
-    { cwd: TOOLS, timeout: SPAWN_TIMEOUT_MS },
-  );
-  if (wh.exitCode !== 0) throw new Error(`whisper-cli failed: ${new TextDecoder().decode(wh.stderr)}`);
-
-  const transcript = (await Bun.file(txtAbs).text()).trim();
-  const ms = Math.round(performance.now() - t0);
-
-  for (const p of [rawAbs, wavAbs, txtAbs]) {
-    if (await Bun.file(p).exists()) await Bun.file(p).delete?.().catch(() => {});
+  if (!bins.ffmpeg || !bins.whisper || !bins.whisperModel) {
+    throw new Error("local whisper unavailable (need ffmpeg + whisper-cli + WHISPER_MODEL)");
   }
-
-  return { transcript, ms };
+  const id = crypto.randomUUID();
+  const rawName = `${id}.${ext}`, wavName = `${id}.wav`, txtName = `${id}.txt`;
+  await Bun.write(`${TMP}/${rawName}`, audioBuf);
+  const t0 = performance.now();
+  try {
+    const ff = Bun.spawnSync(
+      [bins.ffmpeg, "-y", "-loglevel", "error", "-i", rawName, "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", wavName],
+      { cwd: TMP, timeout: SPAWN_TIMEOUT_MS },
+    );
+    if (ff.exitCode !== 0) throw new Error(`ffmpeg failed: ${new TextDecoder().decode(ff.stderr)}`);
+    const wh = Bun.spawnSync(
+      [bins.whisper, "-m", bins.whisperModel, "-l", "kk", "-f", wavName, "-otxt", "-of", id, "-nt"],
+      { cwd: TMP, timeout: SPAWN_TIMEOUT_MS },
+    );
+    if (wh.exitCode !== 0) throw new Error(`whisper-cli failed: ${new TextDecoder().decode(wh.stderr)}`);
+    const transcript = (await Bun.file(`${TMP}/${txtName}`).text()).trim();
+    return { transcript, ms: Math.round(performance.now() - t0) };
+  } finally {
+    for (const n of [rawName, wavName, txtName]) await Bun.file(`${TMP}/${n}`).delete?.().catch(() => {});
+  }
 }
-
-// Piper TTS (rhasspy/piper) — local, free, no API key. Lives outside the
-// repo entirely at an ASCII-only path: piper.exe resolves its own
-// espeak-ng-data folder via the exe's real location, and that resolution
-// breaks on Cyrillic ("Рабочий стол") regardless of cwd/argv tricks — the
-// only fix that actually worked was moving the binary itself off the
-// Cyrillic path. Output files can still live back under the project path.
-const PIPER_EXE = process.env.PIPER_EXE || "C:/Users/zoomy/piper-tts/piper.exe";
-const PIPER_VOICE_KK = process.env.PIPER_VOICE_KK || "C:/Users/zoomy/piper-tts/voices/kk_KZ-issai-high.onnx";
 
 // kk_KZ-issai-high is a 6-speaker model; ids 2,3,4,5 are labeled female
 // (F3, Raya/F1, F1, F2) but sound near-identical to each other in practice —
@@ -261,38 +230,39 @@ const PITCH_FACTOR = 1.4; // ~+6 semitones — asetrate shifts formants too, not
 // formant-preserving shift would be. Tune here if it reads too "chipmunk."
 
 async function speak(text, speakerId = HERO_SPEAKER) {
+  if (!bins.piper || !bins.piperVoice) {
+    const err = new Error("piper unavailable (PIPER_BIN / PIPER_VOICE_KK)");
+    err.status = 503;
+    throw err;
+  }
   const id = crypto.randomUUID();
-  const rawAbs = `${TMP}/${id}_raw.wav`;
-  const outAbs = `${TMP}/${id}.wav`;
-  const rawFromTools = `../../app/tmp/${id}_raw.wav`;
-  const outFromTools = `../../app/tmp/${id}.wav`;
-
+  const rawName = `${id}_raw.wav`, outName = `${id}.wav`;
   const t0 = performance.now();
-  const proc = Bun.spawnSync(
-    [PIPER_EXE, "-m", PIPER_VOICE_KK, "-f", rawAbs, "--speaker", String(speakerId)],
-    { stdin: new TextEncoder().encode(text), timeout: SPAWN_TIMEOUT_MS },
-  );
-  if (proc.exitCode !== 0) throw new Error(`piper failed: ${new TextDecoder().decode(proc.stderr)}`);
-
-  const pitch = Bun.spawnSync(
-    [
-      FFMPEG_REL, "-y", "-loglevel", "error", "-i", rawFromTools,
-      "-af", `asetrate=22050*${PITCH_FACTOR},aresample=22050,atempo=${1 / PITCH_FACTOR}`,
-      outFromTools,
-    ],
-    { cwd: TOOLS, timeout: SPAWN_TIMEOUT_MS },
-  );
-  if (pitch.exitCode !== 0) throw new Error(`ffmpeg pitch-shift failed: ${new TextDecoder().decode(pitch.stderr)}`);
-  const ms = Math.round(performance.now() - t0);
-
-  const bytes = await Bun.file(outAbs).arrayBuffer();
-  await Bun.file(rawAbs).delete?.().catch(() => {});
-  await Bun.file(outAbs).delete?.().catch(() => {});
-  return { bytes, ms };
+  try {
+    const proc = Bun.spawnSync(
+      [bins.piper, "-m", bins.piperVoice, "-f", rawName, "--speaker", String(speakerId)],
+      { cwd: TMP, stdin: new TextEncoder().encode(text), timeout: SPAWN_TIMEOUT_MS },
+    );
+    if (proc.exitCode !== 0) throw new Error(`piper failed: ${new TextDecoder().decode(proc.stderr)}`);
+    let outFile = rawName;
+    if (bins.ffmpeg) {
+      const pitch = Bun.spawnSync(
+        [bins.ffmpeg, "-y", "-loglevel", "error", "-i", rawName,
+         "-af", `asetrate=22050*${PITCH_FACTOR},aresample=22050,atempo=${1 / PITCH_FACTOR}`, outName],
+        { cwd: TMP, timeout: SPAWN_TIMEOUT_MS },
+      );
+      if (pitch.exitCode !== 0) throw new Error(`ffmpeg pitch-shift failed: ${new TextDecoder().decode(pitch.stderr)}`);
+      outFile = outName;
+    }
+    const bytes = await Bun.file(`${TMP}/${outFile}`).arrayBuffer();
+    return { bytes, ms: Math.round(performance.now() - t0) };
+  } finally {
+    for (const n of [rawName, outName]) await Bun.file(`${TMP}/${n}`).delete?.().catch(() => {});
+  }
 }
 
 Bun.serve({
-  port: 3000,
+  port: PORT,
   async fetch(req) {
     const url = new URL(req.url);
 
@@ -308,7 +278,7 @@ Bun.serve({
         });
       } catch (err) {
         console.error(err);
-        return Response.json({ error: String(err) }, { status: 500 });
+        return Response.json({ error: String(err) }, { status: err.status || 500 });
       }
     }
 
@@ -355,12 +325,13 @@ Bun.serve({
     }
 
     // Static file serving from public/
-    let path = url.pathname === "/" ? "/index.html" : url.pathname;
-    const file = Bun.file(`${ROOT}public${path}`);
-    if (await file.exists()) return new Response(file);
-
+    const filePath = safeStaticPath(PUBLIC, url.pathname);
+    if (filePath) {
+      const file = Bun.file(filePath);
+      if (await file.exists()) return new Response(file);
+    }
     return new Response("Not found", { status: 404 });
   },
 });
 
-console.log("Ертегім WoZ screen: http://localhost:3000");
+console.log(`Ертегім: http://localhost:${PORT}`);

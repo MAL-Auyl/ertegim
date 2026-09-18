@@ -16,7 +16,9 @@ function defaultGlobVenvFfmpeg(root) {
   ];
   for (const p of patterns) {
     try {
-      for (const f of new Bun.Glob(p).scanSync({ cwd: root })) return join(root, f);
+      // dot: true — the venv lives under `tools/.venv`, and Bun.Glob skips
+      // dot-directories by default, so without this nothing ever matches.
+      for (const f of new Bun.Glob(p).scanSync({ cwd: root, dot: true })) return join(root, f);
     } catch {
       // root or venv missing — nothing to find
     }
