@@ -459,7 +459,7 @@ function renderState(id) {
     let next = s.next;
     if (id === "found" && Session.memory().runs > 0) next = "thanks_again";
     if (id === "fork_reveal") {
-      currentRoute = Math.random() < 0.5 ? "river" : "forest";
+      currentRoute = preferredRoute || (Math.random() < 0.5 ? "river" : "forest");
       Session.setRoute(currentRoute);
       Session.moment(`түлкі жолды өзі таңдады: ${currentRoute === "river" ? "өзен" : "орман"}`);
       next = STORY.q_fork.onAnswer[currentRoute];
@@ -511,7 +511,7 @@ nextBtn.addEventListener("click", () => {
   if (s.kind !== "narration") return;
   let next = s.next;
   if (currentId === "found" && Session.memory().runs > 0) next = "thanks_again";
-  if (currentId === "fork_reveal") next = STORY.q_fork.onAnswer[currentRoute || "river"];
+  if (currentId === "fork_reveal") next = STORY.q_fork.onAnswer[currentRoute || preferredRoute || (Math.random() < 0.5 ? "river" : "forest")];
   if (next) renderState(next);
 });
 
@@ -939,6 +939,13 @@ document.addEventListener("keydown", (e) => {
   }
 });
 if (new URLSearchParams(location.search).get("op") === "1") setOperatorPanel(true);
+
+// ?route=river|forest lets library.html cards pin which fork the fox takes
+// at q_fork when the child's answer doesn't make it clear — anything else
+// (missing, "op", typos) falls back to the existing 50/50 coin flip.
+const routeParam = new URLSearchParams(location.search).get("route");
+const preferredRoute = routeParam === "river" || routeParam === "forest" ? routeParam : null;
+if (preferredRoute) log(`маршрут по умолчанию из URL: ${preferredRoute}`);
 
 Object.keys(pipelineStageEls).forEach((id) => setStage(id, "idle", ""));
 
