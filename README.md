@@ -38,6 +38,7 @@ live-TTS отключаются, но заранее пре-рендеренны
 | `GROQ_API_KEY` | — | нет STT (Whisper) и LLM-классификатора ответов |
 | `GROQ_STT_MODEL` | `whisper-large-v3` | — |
 | `STT_LANGS` | `auto,ru` | — |
+| `ALLOWED_ORIGIN_EXTRA` | — | API на Vercel принимает только `*.vercel.app` / localhost; свой домен нужно перечислить здесь через запятую (`ertegim.kz,*.ertegim.kz`), иначе все запросы получат 403 (см. `lib/origin-guard.js`) |
 | `GROQ_TIMEOUT_MS` | `8000` локально, `12000` на Vercel | — |
 | `PORT` | `3000` | сервер слушает 3000 |
 | `FFMPEG_BIN` | `ffmpeg` из PATH, иначе бинарь `imageio-ffmpeg` из `tools/.venv` | нет loudnorm-препроцессинга и pitch-shift для TTS, локальный Whisper недоступен |

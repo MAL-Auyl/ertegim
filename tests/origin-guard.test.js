@@ -4,7 +4,7 @@
 // it to "anything containing vercel.app".
 import { test, expect } from "bun:test";
 
-import { isAllowedOrigin, isAllowedOriginHost } from "../lib/origin-guard.js";
+import { isAllowedOrigin, isAllowedOriginHost, matchesExtraHost, parseExtraHosts } from "../lib/origin-guard.js";
 
 test("origin guard allows the deployed/dev hosts and refuses everything else", () => {
   for (const ok of [
@@ -33,4 +33,21 @@ test("origin guard reads Origin first, then Referer, and refuses when both are a
   expect(isAllowedOrigin(req({ referer: "https://x.vercel.app/page" }))).toBe(true);
   expect(isAllowedOrigin(req({ origin: "https://evil.com", referer: "https://x.vercel.app" }))).toBe(false);
   expect(isAllowedOrigin(req({}))).toBe(false);
+});
+
+test("ALLOWED_ORIGIN_EXTRA adds exact hosts and, with a leading dot, subdomains", () => {
+  const hosts = parseExtraHosts(" ertegim.kz , *.demo.kz ,, ");
+  expect(hosts).toEqual(["ertegim.kz", ".demo.kz"]);
+  expect(matchesExtraHost("ertegim.kz", hosts)).toBe(true);
+  expect(matchesExtraHost("ERTEGIM.KZ", hosts)).toBe(true);
+  // Exact entries do NOT open up subdomains, and nothing matches by substring.
+  expect(matchesExtraHost("evil-ertegim.kz", hosts)).toBe(false);
+  expect(matchesExtraHost("www.ertegim.kz", hosts)).toBe(false);
+  // Dotted entries cover the bare host and its subdomains.
+  expect(matchesExtraHost("demo.kz", hosts)).toBe(true);
+  expect(matchesExtraHost("a.demo.kz", hosts)).toBe(true);
+  expect(matchesExtraHost("notdemo.kz", hosts)).toBe(false);
+  // Unset env var = no extra hosts at all.
+  expect(parseExtraHosts(undefined)).toEqual([]);
+  expect(matchesExtraHost("ertegim.kz", [])).toBe(false);
 });

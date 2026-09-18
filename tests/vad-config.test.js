@@ -58,3 +58,34 @@ test("the total-silence timeout is armed, cancelled on speech, and cancelled on 
 test("?operator=1 is accepted as an alias of ?op=1", () => {
   expect(SRC).toMatch(/get\("op"\) === "1" \|\| \w+\.get\("operator"\) === "1"/);
 });
+
+test("markReask refuses to run on a terminal (blocked) session", () => {
+  // The total-silence timer routes into markReask(). A blocked session has
+  // already called Session.finish({completed:false}); without this guard the
+  // timer would advance the story AND finish the session a second time.
+  const body = SRC.slice(SRC.indexOf("function markReask"), SRC.indexOf("function markReask") + 600);
+  expect(body).toMatch(/if \(storyEnded\) return;/);
+  // The guard must come before any side effect (cancelAiAutoAdvance/advance).
+  expect(body.indexOf("if (storyEnded) return;")).toBeLessThan(body.indexOf("cancelAiAutoAdvance()"));
+});
+
+test("the blocked branch disarms the VAD so no timer survives the block", () => {
+  const i = SRC.indexOf("Session.markBlocked()");
+  expect(i).toBeGreaterThan(0);
+  const body = SRC.slice(i, i + 600);
+  expect(body).toContain("Session.finish({ completed: false })");
+  expect(body).toContain("disarmVad()");
+});
+
+test("ensureMicStream never sets vadStream before the analyser exists", () => {
+  const body = SRC.slice(SRC.indexOf("async function ensureMicStream"), SRC.indexOf("function currentRMS"));
+  // Analyser attached first, module-level stream assigned only afterwards.
+  expect(body.indexOf("attachAnalyser(analyserStream)")).toBeLessThan(body.indexOf("vadStream = analyserStream"));
+  // The iOS recorder-only stream is requested FIRST and its failure is caught
+  // (a rejection there used to poison ensureMicStream for the whole session).
+  expect(body.indexOf("isIOSWebKit()")).toBeLessThan(body.indexOf("const analyserStream"));
+  expect(body).toMatch(/try \{[\s\S]*recordStream = await navigator\.mediaDevices\.getUserMedia[\s\S]*\} catch/);
+  expect(body).toContain("vadRecordStream = recordStream || analyserStream");
+  // And the long-lived analyser track is watched, not silently trusted.
+  expect(body).toContain("watchAnalyserTrack(analyserStream)");
+});

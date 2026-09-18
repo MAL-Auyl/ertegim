@@ -415,11 +415,16 @@
     <div id="resetRow"><button id="resetBtn" class="btn btn-muted">🔄 Сначала</button></div>
   </aside>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <!-- Rive fox rig (docs/rive-fox-rig-spec.md). characters.js checks
-       `typeof rive` and app.js falls back to the video/GSAP pose art above
-       if this is blocked/offline or public/rive/fox.riv is missing — which
-       it still is, so today this script only costs a request. -->
+  <!-- Rive fox rig (docs/rive-fox-rig-spec.md). DISABLED until public/rive/fox.riv
+       actually exists: loading the runtime for a rig that isn't there blocks
+       page parsing on a flaky demo network and leaves #heroStage an empty
+       canvas for the length of the request (forever, if it hangs rather than
+       errors — onLoadError never fires). With `rive` undefined, characters.js
+       mountFoxRive() calls its fail callback synchronously and the video/GSAP
+       fox renders in the same tick. Re-enable this line together with the .riv:
   <script src="https://cdn.jsdelivr.net/npm/@rive-app/canvas@2.21.2/rive.js"></script>
+  -->
+
   <script src="fx.js"></script>
   <script src="story.js"></script>
   <script src="characters.js"></script>

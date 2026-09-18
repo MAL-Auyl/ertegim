@@ -378,6 +378,9 @@ function mountFoxRive(canvas, initialPose, onFail) {
         const pose = inputs.find((i) => i.name === "pose");
         const talkLevel = inputs.find((i) => i.name === "talkLevel");
         if (!pose) {
+          // Tear the instance down first: otherwise a live Rive canvas keeps
+          // running underneath the fallback art the caller is about to draw.
+          unmountFoxRive();
           onFail(); // .riv doesn't match the expected contract (docs/rive-fox-rig-spec.md)
           return;
         }

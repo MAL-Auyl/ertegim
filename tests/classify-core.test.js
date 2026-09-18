@@ -88,14 +88,48 @@ test("buildMessages adds the choice-exception sentence only when there is an exp
 
 test("buildMessages labels the recognitions by language tag, not by position", () => {
   // Only the ru pass survived (the kk one was filtered as a hallucination):
-  // ru must not be presented to the model as the kk recognition.
+  // ru must not be presented to the model as the kk recognition, and no kk
+  // line may be invented for it.
   const msgs = buildMessages({
     transcript: "три", questionKk: "q", criterion: "c",
     alternatives: [{ lang: "ru", text: "три" }],
   });
   expect(msgs[1].content).toContain('распознавание ru: "три"');
-  // With no kk candidate the picked transcript stands in for it.
-  expect(msgs[1].content).toContain('распознавание kk: "три"');
+  expect(msgs[1].content).not.toContain("распознавание kk");
+});
+
+test("buildMessages de-duplicates identical recognitions (STT_LANGS=auto,ru both detect ru)", () => {
+  const msgs = buildMessages({
+    transcript: "три", questionKk: "q", criterion: "c",
+    alternatives: [{ lang: "ru", text: "три" }, { lang: "ru", text: "три" }],
+  });
+  const lines = msgs[1].content.match(/распознавание /g) || [];
+  expect(lines.length).toBe(1); // one opinion, not two "independent" ones
+  expect(msgs[1].content).toContain('распознавание ru: "три"');
+});
+
+test("buildMessages keeps two differently-tagged recognitions, each with its own label", () => {
+  const msgs = buildMessages({
+    transcript: "үш", questionKk: "q", criterion: "c",
+    alternatives: [{ lang: "ru", text: "три" }, { lang: "kk", text: "үш" }],
+  });
+  expect(msgs[1].content).toContain('распознавание ru: "три"');
+  expect(msgs[1].content).toContain('распознавание kk: "үш"');
+  expect((msgs[1].content.match(/распознавание /g) || []).length).toBe(2);
+});
+
+test("buildMessages falls back to the picked transcript when there are no alternatives", () => {
+  const msgs = buildMessages({ transcript: "үш", questionKk: "q", criterion: "c" });
+  expect(msgs[1].content).toContain('распознавание stt: "үш"');
+});
+
+test("buildMessages keeps plain-string alternatives (backward compat)", () => {
+  const msgs = buildMessages({
+    transcript: "үш", questionKk: "q", criterion: "c",
+    alternatives: ["үш", "три"],
+  });
+  expect(msgs[1].content).toContain('распознавание stt: "үш"');
+  expect(msgs[1].content).toContain('распознавание stt: "три"');
 });
 
 test("buildMessages renders an empty expected-form list as a dash, never as 'undefined'", () => {

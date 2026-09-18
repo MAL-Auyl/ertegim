@@ -543,22 +543,78 @@ function isIOSWebKit() {
     || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
-async function ensureMicStream() {
-  if (vadStream) return vadStream;
-  vadStream = await navigator.mediaDevices.getUserMedia({ audio: MIC_CONSTRAINTS });
-  // See the note on vadRecordStream: a second, recorder-only stream on iOS,
-  // the very same stream everywhere else (one mic indicator, one permission
-  // prompt, and the pre-roll recorder keeps working exactly as it does now).
-  vadRecordStream = isIOSWebKit()
-    ? await navigator.mediaDevices.getUserMedia({ audio: MIC_CONSTRAINTS })
-    : vadStream;
+// Builds the Web Audio analyser chain over `stream` and installs it as the
+// one the VAD loop reads. Split out so the onmute/onended fallback below can
+// re-point the analyser at the surviving stream without re-running the whole
+// acquisition.
+function attachAnalyser(stream) {
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   if (!vadAudioCtx) vadAudioCtx = new AudioCtx(); // may already exist from playDing()
-  const source = vadAudioCtx.createMediaStreamSource(vadStream);
-  vadAnalyser = vadAudioCtx.createAnalyser();
-  vadAnalyser.fftSize = 1024;
-  vadFloatBuf = new Float32Array(vadAnalyser.fftSize);
-  source.connect(vadAnalyser);
+  const source = vadAudioCtx.createMediaStreamSource(stream);
+  const analyser = vadAudioCtx.createAnalyser();
+  analyser.fftSize = 1024;
+  source.connect(analyser);
+  vadAnalyser = analyser;
+  vadFloatBuf = new Float32Array(analyser.fftSize);
+}
+
+// UNVERIFIED ON A REAL DEVICE — check before the pitch. On WebKit a second
+// concurrent capture can mute/end an already-open track. The long-lived
+// analyser stream is what the whole session's VAD depends on (the recording
+// stream is re-read per arm), so: watch the analyser track and, if it dies,
+// fall back to the recorder's stream rather than going silently deaf. With a
+// single shared stream (everywhere but iOS) there is nothing to fall back to
+// — log it and let the manual recordBtn override carry the turn.
+function watchAnalyserTrack(stream) {
+  const track = stream.getAudioTracks()[0];
+  if (!track) return;
+  const onLost = () => {
+    log(`VAD: аналайзер-трек ${track.readyState === "ended" ? "завершён" : "заглушён"} браузером`);
+    if (vadRecordStream && vadRecordStream !== stream) {
+      try {
+        attachAnalyser(vadRecordStream);
+        vadStream = vadRecordStream;
+        log("VAD: переключился на второй (записывающий) поток");
+        return;
+      } catch (err) {
+        log(`VAD: переключение не удалось: ${err.name || err.message}`);
+      }
+    }
+    setStage("mic", "err", "поток заглушён");
+    log("VAD недоступен — используй ручную кнопку записи");
+  };
+  track.onmute = onLost;
+  track.onended = onLost;
+}
+
+async function ensureMicStream() {
+  if (vadStream) return vadStream;
+  // iOS/WebKit gets TWO streams (see the note on vadRecordStream). The
+  // RECORDING one is requested FIRST on purpose: if a later concurrent
+  // capture mutes one of the tracks, it should be the short-lived recorder
+  // stream (reacquired per arm anyway), not the analyser stream the whole
+  // session's VAD hangs off.
+  let recordStream = null;
+  if (isIOSWebKit()) {
+    try {
+      recordStream = await navigator.mediaDevices.getUserMedia({ audio: MIC_CONSTRAINTS });
+    } catch (err) {
+      // Don't let a failed SECOND stream poison the whole function: falling
+      // back to one shared stream is exactly the non-iOS behaviour. Letting
+      // this reject after vadStream was set was what killed the analyser for
+      // the rest of the session.
+      recordStream = null;
+      log(`VAD: второй (записывающий) поток недоступен, один общий: ${err.name || err.message}`);
+    }
+  }
+  const analyserStream = await navigator.mediaDevices.getUserMedia({ audio: MIC_CONSTRAINTS });
+  // Analyser built BEFORE anything module-level is assigned: vadStream must
+  // never be set with an uninitialised analyser, or `if (vadStream) return`
+  // short-circuits every future call and the VAD is dead for the session.
+  attachAnalyser(analyserStream);
+  vadStream = analyserStream;
+  vadRecordStream = recordStream || analyserStream;
+  watchAnalyserTrack(analyserStream);
   return vadStream;
 }
 
@@ -1209,6 +1265,10 @@ async function submitAudio(blob, filename, meta = {}) {
       storyEnded = true;
       Session.markBlocked();
       Session.finish({ completed: false });
+      // The question this clip answered may still be armed, with the
+      // total-silence timer pending — disarm both so nothing can fire into a
+      // terminal session (markReask() guards on storyEnded too, belt and braces).
+      disarmVad();
       recordBtn.style.display = "none";
       uploadRow.style.display = "none";
       log(`BLOCKED (автоматически, без оператора): "${data.transcript}" — сценарий остановлен`);
@@ -1370,6 +1430,12 @@ function markCorrect(source) {
 }
 
 function markReask(source) {
+  // A blocked session is terminal: Session.finish() has already run and the
+  // controls are hidden. The total-silence timer (VAD_SILENCE_TIMEOUT_MS) can
+  // still fire after a block, and without this guard it would walk the story
+  // forward and finish the session a SECOND time. Same guard every other
+  // advance handler carries.
+  if (storyEnded) return;
   cancelAiAutoAdvance();
   const s = STORY[currentId];
   if (s.kind !== "question") return;

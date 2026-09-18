@@ -123,6 +123,10 @@ const GROQ_STT_MODEL = process.env.GROQ_STT_MODEL || "whisper-large-v3";
 // score tie in favour of the candidate listed first.
 const STT_LANGS = (process.env.STT_LANGS || "auto,ru")
   .split(",").map((s) => s.trim()).filter(Boolean);
+// An empty list (STT_LANGS="") would mean zero passes: Promise.allSettled([])
+// resolves to [], and the "everything failed" branch below would then throw
+// `settled[0].reason` === undefined, surfacing as an unreadable 500.
+if (STT_LANGS.length === 0) throw new Error("STT_LANGS is empty");
 
 // One Groq call on an already-prepared upload buffer. Split out of
 // transcribeGroq so transcribeDual can preprocess the clip ONCE and then run
