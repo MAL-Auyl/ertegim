@@ -994,10 +994,11 @@ function markCorrect(source) {
   const s = STORY[currentId];
   if (s.kind !== "question") return;
   log(`${source}: ВЕРНО`);
-  // Child-facing "yes!" — sparkles + a two-note ding. Fired before the
-  // advance and never awaited, so the story moves at exactly the same speed
-  // whether or not any of it works.
-  burstSparkles();
+  // Child-facing "yes!" — a two-note ding now, sparkles AFTER the advance:
+  // renderState replaces #heroStage's contents, which would wipe the sparkle
+  // nodes the same tick they were appended (same trap as heroShake below).
+  // Never awaited, so the story moves at exactly the same speed whether or
+  // not any of it works.
   playDing();
   recordAnswer("correct", source);
   if (s.mode === "branch") {
@@ -1006,9 +1007,11 @@ function markCorrect(source) {
     Session.setRoute(route);
     Session.moment(`жолды таңдады: ${route === "river" ? "өзен" : "орман"}`);
     advanceFromQuestion(s.onAnswer[route]);
+    burstSparkles();
     return;
   }
   advanceFromQuestion(s.onCorrect);
+  burstSparkles();
 }
 
 function markReask(source) {
@@ -1162,6 +1165,11 @@ document.getElementById("startBtn").addEventListener("click", () => {
   // ever arrives — not fatal if it fails, armVadForQuestion() re-attempts
   // ensureMicStream() per-question and falls back to the manual button.
   ensureMicStream().catch((err) => log(`mic prefetch failed: ${err.name || err.message}`));
+  // The happy pose is the one fox pose with no video clip, and it is first
+  // needed at `found` — the emotional peak. Cold, that 1.3MB PNG lands a
+  // second or two after the scene does and the hero (plus the little
+  // brother, same file) pops in late. Warm it here, in the same tap.
+  new Image().src = FOX_POSE_IMAGE.happy;
   Session.start();
   renderState(startStateForMemory());
 });
