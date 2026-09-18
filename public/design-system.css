@@ -231,22 +231,25 @@ body {
   clip-path: polygon(0 0, 100% 100%, 0 100%);
 }
 
-/* --- Mic button: glowing circular CTA overlaid on the scene --- */
+/* --- Mic button: the OPERATOR's override, not the child's call to action.
+   The child is told to just talk (#listenCue + the VAD), so this sits back:
+   44px, low-contrast idle. Its .recording state is unchanged — when it is
+   actually capturing, it still reads loud and clear. --- */
 .mic-btn {
-  width: 76px; height: 76px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   border: none;
-  background: radial-gradient(circle at 35% 30%, var(--accent) 0%, var(--accent-dark) 70%);
-  color: #fff;
-  font-size: 1.7rem;
+  background: color-mix(in srgb, var(--accent) 55%, rgba(0, 0, 0, 0.35));
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 1.05rem;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  box-shadow:
-    0 0 0 6px color-mix(in srgb, var(--accent) 22%, transparent),
-    0 0 0 14px color-mix(in srgb, var(--accent) 12%, transparent),
-    0 10px 24px -6px rgba(0, 0, 0, 0.45);
-  transition: transform var(--dur-press) var(--ease-response);
+  opacity: 0.7;
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.4);
+  transition: transform var(--dur-press) var(--ease-response), opacity 150ms ease;
 }
+.mic-btn:hover { opacity: 1; }
+.mic-btn.recording { opacity: 1; }
 .mic-btn:active { transform: scale(0.94); }
 .mic-btn.recording {
   background: radial-gradient(circle at 35% 30%, var(--danger) 0%, #b5342c 70%);
@@ -435,6 +438,88 @@ body {
   .scene-layer.scene-cave::after { transition-duration: 1ms; }
   .scene-layer.scene-dawn::after { animation: none; opacity: 1; }
   #sceneStage { transition: none; }
+}
+
+/* --- Child-facing feedback: sparkles on a correct answer, head-shake on a
+   re-ask. Both are fire-and-forget decorations over #heroStage; the story
+   never waits for them. --- */
+.sparkle {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff2c2, var(--accent) 70%);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
+  pointer-events: none;
+  z-index: 4;
+  animation: sparkleFly 700ms var(--ease-response) both;
+}
+@keyframes sparkleFly {
+  from { opacity: 0; transform: translate(0, 0) scale(0.2); }
+  25%  { opacity: 1; }
+  to   { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(1); }
+}
+
+/* GSAP does the fox's head-shake when it's loaded (see heroShake in app.js);
+   this keyframe is the CDN-blocked/offline fallback. */
+.hero-shake { animation: heroShakeKf 500ms ease-in-out both; }
+@keyframes heroShakeKf {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-4deg); }
+  75% { transform: rotate(4deg); }
+}
+
+/* --- Listening cue: a calm caption under the hero, not a blinking alert.
+   Driven by the same armed/recording state as .hero-listening. --- */
+#listenCue {
+  position: absolute;
+  left: 50%;
+  bottom: 62px;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #000 42%, transparent);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 260ms var(--ease-materialize);
+}
+#listenCue.show { opacity: 1; }
+
+/* Soft ring around the hero that breathes with the child's own voice while
+   recording — the mic level made visible without a meter. */
+#heroStage::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(1);
+}
+#heroStage.hero-recording::before {
+  opacity: calc(0.25 + var(--amp, 0) * 0.55);
+  transform: scale(calc(1 + var(--amp, 0) * 0.25));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sparkle { display: none; }
+  .hero-shake { animation: none; }
+  #listenCue { transition: none; }
+  #heroStage.hero-recording::before { transform: none; }
 }
 
 .brother-fox {

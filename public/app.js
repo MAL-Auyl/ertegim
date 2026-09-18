@@ -160,6 +160,109 @@ function audioIdFor(id) {
   return id;
 }
 
+// --- Child-facing feedback (fire-and-forget) --------------------------
+// Everything below is decoration: it is called for its side effect and
+// never awaited, so a failure (no WebAudio, no GSAP, blocked autoplay)
+// can't stall advanceFromQuestion / renderState / the VAD pipeline.
+function prefersReducedMotion() {
+  return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function burstSparkles() {
+  if (!heroStage || prefersReducedMotion() || typeof sparkleVectors !== "function") return;
+  const count = 10 + Math.floor(Math.random() * 5); // 10..14
+  const nodes = sparkleVectors(count).map(({ dx, dy }, i) => {
+    const el = document.createElement("span");
+    el.className = "sparkle";
+    el.style.setProperty("--dx", `${dx}px`);
+    el.style.setProperty("--dy", `${dy}px`);
+    el.style.animationDelay = `${i * 14}ms`;
+    heroStage.appendChild(el);
+    return el;
+  });
+  setTimeout(() => nodes.forEach((el) => el.remove()), 1000);
+}
+
+// Two short sine notes, synthesized — no audio file to ship, load or fail.
+// Reuses the VAD's AudioContext when the mic is already up (browsers cap how
+// many a page may create).
+function playDing() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!vadAudioCtx) vadAudioCtx = new AudioCtx();
+    const ctx = vadAudioCtx;
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
+    const t0 = ctx.currentTime + 0.01;
+    [880, 1320].forEach((freq, i) => {
+      const at = t0 + i * 0.12;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(0.22, at + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.12);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(at);
+      osc.stop(at + 0.14);
+    });
+  } catch (err) {
+    log(`ding skipped: ${err.message}`);
+  }
+}
+
+// Gentle "I didn't catch that" head-shake — never on the reveal (the reveal
+// line is its own feedback) and never with a sound.
+function heroShake() {
+  if (!heroStage || prefersReducedMotion()) return;
+  const img = heroStage.querySelector(".fox-pose");
+  if (img && typeof gsap !== "undefined") {
+    gsap.to(img, {
+      rotation: 4, duration: 0.125, repeat: 3, yoyo: true, ease: "sine.inOut",
+      onComplete: () => gsap.set(img, { rotation: 0 }),
+    });
+    return;
+  }
+  const target = img || heroStage.firstElementChild;
+  if (!target) return;
+  target.classList.remove("hero-shake");
+  void target.offsetWidth; // restart the keyframe if it's still on the element
+  target.classList.add("hero-shake");
+  setTimeout(() => target.classList.remove("hero-shake"), 560);
+}
+
+// --- Echo beat ---------------------------------------------------------
+// In the cave, the fox's line comes back at him once: same audio, quieter,
+// slower, 450ms after the original finishes. Works for both the live TTS
+// blob URL and the pre-rendered .wav — it just replays whatever heroVoice
+// ended up with.
+const ECHO_IDS = new Set(["q_echo", "echo_reask", "echo_reveal"]);
+const heroEcho = document.getElementById("heroEcho");
+let pendingEchoHandler = null;
+
+function scheduleEcho(src) {
+  if (!heroEcho || !src) return;
+  if (pendingEchoHandler) heroVoice.removeEventListener("ended", pendingEchoHandler);
+  const onEnded = () => {
+    heroVoice.removeEventListener("ended", onEnded);
+    if (pendingEchoHandler === onEnded) pendingEchoHandler = null;
+    setTimeout(() => {
+      try {
+        heroEcho.src = src;
+        heroEcho.volume = 0.35;
+        heroEcho.playbackRate = 0.95;
+        const p = heroEcho.play();
+        if (p && p.catch) p.catch(() => {}); // autoplay refused — silent, the line was already heard
+      } catch (err) {
+        /* echo is decoration; never surface it */
+      }
+    }, 450);
+  };
+  pendingEchoHandler = onEnded;
+  heroVoice.addEventListener("ended", onEnded);
+}
+
 async function playWithTimeout(ms) {
   const playTimeout = new Promise((_, reject) =>
     setTimeout(() => reject(new Error(`play() timed out after ${ms}ms`)), ms),
@@ -171,7 +274,7 @@ async function playWithTimeout(ms) {
 // served from /audio/<stateId>.wav) — stage-risk hedge in case live Piper
 // or the request itself lags. Live call gets a short leash (2.5s); on any
 // failure or timeout we fall back to the static file for that state.
-async function speakLine(text, stateId) {
+async function speakLine(text, stateId, { echo = false } = {}) {
   if (!text) return;
   setStage("tts", "running", "");
   try {
@@ -188,6 +291,7 @@ async function speakLine(text, stateId) {
     const ms = res.headers.get("X-Synth-Ms");
     const blob = await res.blob();
     heroVoice.src = URL.createObjectURL(blob);
+    if (echo) scheduleEcho(heroVoice.src);
     // play() can hang indefinitely instead of rejecting in some browser/
     // automation contexts — never let audio playback stall the demo.
     await playWithTimeout(3000);
@@ -197,6 +301,7 @@ async function speakLine(text, stateId) {
     if (stateId) {
       try {
         heroVoice.src = `/audio/${stateId}.wav`;
+        if (echo) scheduleEcho(heroVoice.src);
         await playWithTimeout(3000);
         log(`voice: fallback pre-rendered audio for "${stateId}" (live TTS: ${err.message})`);
         setStage("tts", "skip", "fallback wav");
@@ -262,7 +367,7 @@ async function ensureMicStream() {
   if (vadStream) return vadStream;
   vadStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  vadAudioCtx = new AudioCtx();
+  if (!vadAudioCtx) vadAudioCtx = new AudioCtx(); // may already exist from playDing()
   const source = vadAudioCtx.createMediaStreamSource(vadStream);
   vadAnalyser = vadAudioCtx.createAnalyser();
   vadAnalyser.fftSize = 1024;
@@ -284,10 +389,22 @@ function setHeroPoseOverride(pose) {
   if (node.character === "fox") animateFoxPose(heroStage, pose);
 }
 
+const listenCue = document.getElementById("listenCue");
+
+// The child is never told to press anything, so the screen has to say
+// "I'm listening" by itself — a calm caption, not a blinking alert.
+function setListenCue(listening, recording) {
+  if (!listenCue) return;
+  listenCue.classList.toggle("show", listening);
+  if (listening) listenCue.textContent = recording ? "Естіп тұрмын" : "Тыңдаймын…";
+}
+
 function updateHeroAmplitude(rms) {
   if (!heroStage) return;
   const listening = vadArmed || vadRecording;
   heroStage.classList.toggle("hero-listening", listening);
+  heroStage.classList.toggle("hero-recording", vadRecording);
+  setListenCue(listening, vadRecording);
   if (!listening) return;
   const level = Math.max(0, Math.min(1, rms / 0.08));
   heroStage.style.setProperty("--amp", String(level));
@@ -364,7 +481,8 @@ function armVadForQuestion() {
     // arm, so leave it disarmed and let the manual recordBtn path (its own
     // independent getUserMedia call, see startRecording()) carry the demo.
     vadArmed = false;
-    heroStage.classList.remove("hero-listening");
+    heroStage.classList.remove("hero-listening", "hero-recording");
+    setListenCue(false, false);
     setStage("mic", "err", err.name || err.message);
     log(`VAD недоступен, ручной режим: ${err.name || err.message}`);
     // No mic at all means no clip will ever be submitted, so the
@@ -382,7 +500,8 @@ function armVadForQuestion() {
 
 function disarmVad() {
   vadArmed = false;
-  heroStage.classList.remove("hero-listening");
+  heroStage.classList.remove("hero-listening", "hero-recording");
+  setListenCue(false, false);
   setStage("mic", "idle", "");
   vadRecording = false;
   recordBtn.classList.remove("recording");
@@ -494,7 +613,7 @@ function renderState(id) {
   storyRu.textContent = s.ru;
   heroStage.innerHTML = renderHero(s);
   if (s.character === "fox") animateFoxPose(heroStage, s.pose);
-  const speakDone = speakLine(s.kk, audioIdFor(id));
+  const speakDone = speakLine(s.kk, audioIdFor(id), { echo: ECHO_IDS.has(id) });
 
   if (id === "found") Session.moment("інісін тапты");
   if (id === "cave_enter") Session.moment("түлкіге батылдық берді");
@@ -844,6 +963,11 @@ function markCorrect(source) {
   const s = STORY[currentId];
   if (s.kind !== "question") return;
   log(`${source}: ВЕРНО`);
+  // Child-facing "yes!" — sparkles + a two-note ding. Fired before the
+  // advance and never awaited, so the story moves at exactly the same speed
+  // whether or not any of it works.
+  burstSparkles();
+  playDing();
   recordAnswer("correct", source);
   if (s.mode === "branch") {
     const route = pendingRoute || currentRoute || "river";
@@ -865,6 +989,7 @@ function markReask(source) {
     log(`${source}: ПЕРЕСПРОСИТЬ (1-я попытка)`);
     recordAnswer("unclear", source);
     advanceFromQuestion(s.onReask);
+    heroShake(); // after the re-render: renderState replaces #heroStage's contents
   } else {
     log(`${source}: ПЕРЕСПРОСИТЬ второй раз → авто-раскрытие (third strike)`);
     recordAnswer("reveal", source);
