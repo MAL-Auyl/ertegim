@@ -7,6 +7,7 @@ import { mkdirSync } from "node:fs";
 
 import { checkBlocklist } from "../lib/blocklist-core.js";
 import { sttHintFor } from "../lib/stt-hints-core.js";
+import { expectedForms, pickTranscript, filterHallucinations } from "../lib/stt-pick.js";
 
 import { resolveBins, describeBins } from "./bins.js";
 import { safeStaticPath } from "./static.js";
@@ -54,8 +55,22 @@ function isMostlyCyrillic(text) {
 // was sending the raw browser MediaRecorder blob untouched. A quiet/muffled
 // child voice sits well below adult speaking level, and loudnorm (EBU R128)
 // brings it up to a consistent target instead of relying on Whisper to cope
-// with whatever gain the mic captured at. Spawned with cwd=TMP and ASCII-only
+// with whatever gain the mic captured at. highpass=80 drops room rumble and
+// desk thumps and afftdn takes out steady fan/laptop hiss FIRST, so loudnorm
+// then raises the child's voice rather than the noise floor — a raised noise
+// floor is exactly what makes Whisper hallucinate subtitle credits.
+// Spawned with cwd=TMP and ASCII-only
 // relative names in argv (see the note at the top of this file).
+// afftdn is the fragile link in the chain (it is not built into every ffmpeg,
+// and it fails outright on very short clips) — and losing the whole
+// preprocessing pass because of the denoiser means sending Whisper the raw,
+// un-normalized child voice, which is the worst of the three options. So:
+// full chain → chain without afftdn → raw clip, in that order.
+const FILTER_CHAINS = [
+  ["highpass+afftdn+loudnorm", "highpass=f=80,afftdn=nf=-25,loudnorm=I=-16:TP=-1.5:LRA=11"],
+  ["highpass+loudnorm", "highpass=f=80,loudnorm=I=-16:TP=-1.5:LRA=11"],
+];
+
 async function preprocessForSTT(audioBuf, ext) {
   if (!bins.ffmpeg) return audioBuf; // no ffmpeg → send the raw clip as-is
   const id = crypto.randomUUID();
@@ -63,42 +78,45 @@ async function preprocessForSTT(audioBuf, ext) {
   const wavName = `${id}_norm.wav`;
   await Bun.write(`${TMP}/${rawName}`, audioBuf);
   try {
-    const ff = Bun.spawnSync(
-      [bins.ffmpeg, "-y", "-loglevel", "error", "-i", rawName,
-       "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", wavName],
-      { cwd: TMP, timeout: SPAWN_TIMEOUT_MS },
-    );
-    if (ff.exitCode !== 0) throw new Error(`ffmpeg loudnorm failed: ${new TextDecoder().decode(ff.stderr)}`);
-    return await Bun.file(`${TMP}/${wavName}`).arrayBuffer();
+    let lastErr = null;
+    for (const [name, chain] of FILTER_CHAINS) {
+      const ff = Bun.spawnSync(
+        [bins.ffmpeg, "-y", "-loglevel", "error", "-i", rawName,
+         "-af", chain, "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", wavName],
+        { cwd: TMP, timeout: SPAWN_TIMEOUT_MS },
+      );
+      if (ff.exitCode === 0) {
+        console.log(`stt preprocessing: ${name}`);
+        return await Bun.file(`${TMP}/${wavName}`).arrayBuffer();
+      }
+      lastErr = new Error(`ffmpeg ${name} failed: ${new TextDecoder().decode(ff.stderr)}`);
+      console.warn(`stt preprocessing: ${name} failed, trying next chain`);
+    }
+    throw lastErr; // prepareUpload() logs and falls back to the raw clip
   } finally {
     for (const n of [rawName, wavName]) await Bun.file(`${TMP}/${n}`).delete?.().catch(() => {});
   }
 }
 
-async function transcribeGroq(audioBuf, ext, hint) {
-  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
-  // t0 starts here (not after preprocessing) so the reported `ms` is
-  // comparable to transcribeLocal's, which times its own ffmpeg step too.
-  const t0 = performance.now();
-  // Preprocessing is a best-effort quality boost, not a correctness
-  // requirement — if ffmpeg/ext handling hiccups here, fall back to the
-  // original raw blob rather than failing the whole transcription.
-  let uploadBuf = audioBuf;
-  let uploadName = `clip.${ext}`;
-  try {
-    uploadBuf = await preprocessForSTT(audioBuf, ext);
-    if (bins.ffmpeg) uploadName = "clip.wav";
-  } catch (err) {
-    console.error(`STT preprocessing failed, sending raw audio: ${err}`);
-  }
+const GROQ_STT_MODEL = "whisper-large-v3-turbo";
 
+// One Groq call on an already-prepared upload buffer. Split out of
+// transcribeGroq so transcribeDual can preprocess the clip ONCE and then run
+// the kk and ru passes over the same wav in parallel (ffmpeg is the slow part
+// and the audio is identical for both languages).
+async function groqCall(uploadBuf, uploadName, hint, lang, model = GROQ_STT_MODEL) {
+  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
+  const t0 = performance.now();
   const form = new FormData();
   form.append("file", new Blob([uploadBuf]), uploadName);
-  form.append("model", "whisper-large-v3-turbo");
-  form.append("language", "kk");
+  form.append("model", model);
+  form.append("language", lang);
   form.append("prompt", hint);
   form.append("temperature", "0");
-  form.append("response_format", "json");
+  // verbose_json is what carries per-segment no_speech_prob / avg_logprob —
+  // the numbers lib/stt-pick.js needs to tell "the child said nothing" from
+  // "the child said something I'm unsure about".
+  form.append("response_format", "verbose_json");
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
@@ -114,13 +132,72 @@ async function transcribeGroq(audioBuf, ext, hint) {
     const ms = Math.round(performance.now() - t0);
     const raw = (data.text || "").trim();
     // Whisper occasionally hallucinates into a completely different
-    // language/script on poor audio despite language=kk — treat non-Cyrillic
-    // output as a failed recognition rather than showing garbage.
-    const transcript = isMostlyCyrillic(raw) ? raw : "";
-    return { transcript, ms, engine: "groq" };
+    // language/script on poor audio despite the language hint — treat
+    // non-Cyrillic output as a failed recognition rather than showing garbage.
+    const text = isMostlyCyrillic(raw) ? raw : "";
+    const segments = Array.isArray(data.segments) ? data.segments : [];
+    // No segments at all on an empty result means Whisper heard nothing —
+    // report that as maximum no-speech rather than as a confident silence.
+    const noSpeechProb = segments.length
+      ? Math.max(...segments.map((s) => Number(s.no_speech_prob) || 0))
+      : (text ? 0 : 1);
+    // Absent avg_logprob → null, never 0: 0 is "Whisper was certain", which
+    // would hand a silent clip a free confidence bonus (see confidenceOf).
+    const lps = segments.map((s) => Number(s.avg_logprob)).filter((n) => Number.isFinite(n));
+    const avgLogprob = lps.length ? lps.reduce((a, b) => a + b, 0) / lps.length : null;
+    return { text, lang, noSpeechProb, avgLogprob, ms, engine: "groq" };
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function prepareUpload(audioBuf, ext) {
+  // Preprocessing is a best-effort quality boost, not a correctness
+  // requirement — if ffmpeg/ext handling hiccups here, fall back to the
+  // original raw blob rather than failing the whole transcription.
+  try {
+    const uploadBuf = await preprocessForSTT(audioBuf, ext);
+    return { uploadBuf, uploadName: bins.ffmpeg ? "clip.wav" : `clip.${ext}` };
+  } catch (err) {
+    console.error(`STT preprocessing failed, sending raw audio: ${err}`);
+    return { uploadBuf: audioBuf, uploadName: `clip.${ext}` };
+  }
+}
+
+async function transcribeGroq(audioBuf, ext, hint, lang = "kk", model = GROQ_STT_MODEL) {
+  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
+  // t0 starts before preprocessing so the reported `ms` is comparable to
+  // transcribeLocal's, which times its own ffmpeg step too.
+  const t0 = performance.now();
+  const { uploadBuf, uploadName } = await prepareUpload(audioBuf, ext);
+  const out = await groqCall(uploadBuf, uploadName, hint, lang, model);
+  return { ...out, transcript: out.text, ms: Math.round(performance.now() - t0) };
+}
+
+// Ask Whisper the same clip twice — kk and ru — in parallel, then let
+// lib/stt-pick.js decide which recognition the story should believe. Children
+// here answer in either language (often mixing both inside one sentence), and
+// a single language=kk pass mangles a Russian "три" into Kazakh-shaped noise.
+async function transcribeDual(audioBuf, ext, hint, expected, model = GROQ_STT_MODEL) {
+  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
+  const t0 = performance.now();
+  const { uploadBuf, uploadName } = await prepareUpload(audioBuf, ext);
+  const settled = await Promise.allSettled(
+    ["kk", "ru"].map((lang) => groqCall(uploadBuf, uploadName, hint, lang, model)),
+  );
+  const candidates = settled.filter((s) => s.status === "fulfilled").map((s) => s.value);
+  if (candidates.length === 0) {
+    // Both passes failed → throw so transcribe() can fall back to local
+    // Whisper exactly as it did before this change.
+    throw settled[0].reason;
+  }
+  const picked = pickTranscript(candidates, expected);
+  return {
+    ...picked,
+    candidates,
+    ms: Math.round(performance.now() - t0),
+    engine: "groq",
+  };
 }
 
 // LLM answer classifier (Next Steps #5) — replaces the operator's manual
@@ -137,7 +214,26 @@ async function transcribeGroq(audioBuf, ext, hint) {
 const GROQ_CHAT_MODEL = "openai/gpt-oss-20b";
 const CLASSIFY_TIMEOUT_MS = 4000;
 
-async function classifyAnswer(transcript, questionKk, criterion) {
+async function classifyAnswer(transcript, questionKk, criterion, extra = {}) {
+  const alts = extra.alternatives || [];
+  const forms = extra.expectedForms || [];
+  // The classifier sees BOTH recognitions, not just the picked one: when kk
+  // and ru disagree, one of them is usually the child's actual answer, and a
+  // model reading both can say so where a string comparison cannot.
+  // Read by LANGUAGE TAG, not by position: when one of the two Groq passes
+  // fails or is filtered out as a hallucination, alts[1] is not the ru pass,
+  // and labelling a Kazakh answer «распознавание ru» misleads the model.
+  const byLang = (l) => {
+    const hit = alts.find((a) => a && typeof a === "object" && a.lang === l);
+    return hit ? String(hit.text ?? "") : "";
+  };
+  const plain = alts.filter((a) => typeof a === "string"); // backward compat
+  const kkAlt = byLang("kk") || plain[0] || transcript;
+  const ruAlt = byLang("ru") || plain[1] || "";
+  // Only claim "one of the recognitions is enough" when we actually gave the
+  // model something to check against; with no expected forms and no second
+  // recognition that sentence just invites a guess.
+  const hasExpectation = forms.length > 0 || alts.length > 0;
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CLASSIFY_TIMEOUT_MS);
@@ -163,11 +259,19 @@ async function classifyAnswer(transcript, questionKk, criterion) {
               "суди по смыслу, а не по буквальному совпадению). Верни ТОЛЬКО JSON вида " +
               '{"label": "correct" | "incorrect" | "unclear", "reason": "коротко, по-русски"}. ' +
               '"unclear" — если ответ пустой, невнятный или не по теме вопроса (не значит ' +
-              "«неверно», значит «нужно переспросить»).",
+              "«неверно», значит «нужно переспросить»)." +
+              (hasExpectation
+                ? " Если хотя бы одно из распознаваний содержит ожидаемый ответ — считай его верным. " +
+                  "Исключение — вопросы с выбором варианта: если распознавания указывают на разные " +
+                  "варианты, верни unclear."
+                : ""),
           },
           {
             role: "user",
-            content: `Вопрос героя: ${questionKk}\nКритерий: ${criterion}\nОтвет ребёнка (транскрипт): "${transcript}"`,
+            content:
+              `Вопрос героя: ${questionKk}\nКритерий: ${criterion}\n` +
+              `Ответ ребёнка — распознавание kk: "${kkAlt}"; распознавание ru: "${ruAlt}"\n` +
+              `Ожидаемые формы ответа: ${forms.join(", ") || "—"}`,
           },
         ],
       }),
@@ -185,14 +289,19 @@ async function classifyAnswer(transcript, questionKk, criterion) {
   }
 }
 
-async function transcribe(audioBuf, ext, hint) {
+async function transcribe(audioBuf, ext, hint, expected) {
   try {
-    return await transcribeGroq(audioBuf, ext, hint);
+    return await transcribeDual(audioBuf, ext, hint, expected);
   } catch (err) {
     console.error(`Groq STT failed, falling back to local Whisper: ${err}`);
     try {
       const local = await transcribeLocal(audioBuf, ext);
-      return { ...local, engine: "local" };
+      // Local Whisper is kk-only and reports no confidence numbers — fill the
+      // dual-path shape so the handler and the client stay uniform.
+      return {
+        ...local, engine: "local", lang: "kk", score: 0, confidence: 0,
+        lowConfidence: false, candidates: [{ lang: "kk", text: local.transcript }],
+      };
     } catch (localErr) {
       throw new Error(`${localErr.message}; groq: ${err.message}`, { cause: err });
     }
@@ -269,6 +378,14 @@ async function speak(text, speakerId = HERO_SPEAKER) {
   }
 }
 
+const LAB_PATHS = new Set(["/lab.html", "/lab/stt-pick.js", "/api/lab/transcribe"]);
+
+function isLoopbackRequest(req) {
+  const host = String(req.headers.get("host") || "").toLowerCase();
+  const name = host.replace(/:\d+$/, "").replace(/^\[|\]$/g, "");
+  return name === "localhost" || name === "127.0.0.1" || name === "::1";
+}
+
 Bun.serve({
   port: PORT,
   async fetch(req) {
@@ -306,10 +423,106 @@ Bun.serve({
         const ext = clientExt && /^[a-z0-9]{2,5}$/i.test(clientExt) ? clientExt : "webm";
         const nodeId = typeof form.get("nodeId") === "string" ? form.get("nodeId") : "";
         const brotherName = typeof form.get("brotherName") === "string" ? form.get("brotherName") : "";
+        const trackCount = Number(form.get("trackCount")) || 0;
         const hint = sttHintFor(nodeId, { brotherName });
-        const { transcript, ms, engine } = await transcribe(buf, ext, hint);
-        const { blocked, results } = checkBlocklist(transcript);
-        return Response.json({ transcript, blocked, blockDetails: results, ms, engine });
+        const expected = expectedForms(nodeId, { trackCount, brotherName });
+        const out = await transcribe(buf, ext, hint, expected);
+        // Hallucinated passes ("Субтитры сделал DimaTorzok") never leave the
+        // server: they are not a second opinion for the classifier, and
+        // running the blocklist over them only invents matches.
+        const alternatives = filterHallucinations(
+          (out.candidates || []).map((c) => ({ lang: c.lang, text: c.text })),
+        );
+        const kk = alternatives.find((a) => a.lang === "kk")?.text ?? "";
+        const ru = alternatives.find((a) => a.lang === "ru")?.text ?? "";
+        console.log(
+          `stt kk="${kk}" ru="${ru}" → ${out.lang || "-"} route=${out.route || "-"} score=${out.score ?? 0} conf=${out.confidence ?? 0}`,
+        );
+        // A low-confidence pick is still blocklist-checked (safety never runs
+        // on a subset of what the child might have said) — but per transcript,
+        // never on a joined string: joining lets the last word of one
+        // recognition and the first of the next form a "phrase" nobody said,
+        // and it also hides which transcript actually tripped the list.
+        const checks = [out.transcript, ...alternatives.map((a) => a.text)]
+          .filter((t) => typeof t === "string" && t.trim())
+          .map((t) => checkBlocklist(t));
+        const blocked = checks.some((c) => c.blocked);
+        const firstBlocked = checks.find((c) => c.blocked);
+        return Response.json({
+          transcript: out.transcript || "",
+          lang: out.lang || null,
+          route: out.route ?? null,
+          confidence: out.confidence ?? 0,
+          lowConfidence: !!out.lowConfidence,
+          alternatives,
+          blocked,
+          blockDetails: firstBlocked ? firstBlocked.results : (checks[0]?.results ?? []),
+          ms: out.ms,
+          engine: out.engine,
+        });
+      } catch (err) {
+        console.error(err);
+        return Response.json({ error: String(err) }, { status: 500 });
+      }
+    }
+
+    // The lab is a local tuning tool, not part of the product: it burns Groq
+    // credit per click and exposes an unmetered transcription endpoint. On a
+    // laptop serving the demo over the LAN (phone/tablet as the child's
+    // screen) those routes would otherwise be open to everyone on the
+    // network, so anything that did not arrive as localhost gets a flat 403.
+    if (LAB_PATHS.has(url.pathname) && !isLoopbackRequest(req)) {
+      return new Response("Лаборатория доступна только локально", { status: 403 });
+    }
+
+    // Local-only STT tuning lab (see README «Лаборатория STT»): batch-run
+    // real child recordings through both Whisper models and both languages
+    // and see, per file, what each pass heard and which one the picker took.
+    // Never shipped to Vercel — it exists to tune stt-pick.js against actual
+    // kids' voices instead of guesses.
+    if (url.pathname === "/lab.html" && req.method === "GET") {
+      return new Response(Bun.file(`${ROOT}lab.html`), {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
+    // The page imports the picker as a module so its "did it match?" column
+    // uses exactly the server's phonetic/Levenshtein rules, not a copy.
+    if (url.pathname === "/lab/stt-pick.js" && req.method === "GET") {
+      return new Response(Bun.file(`${ROOT}../lib/stt-pick.js`), {
+        headers: { "Content-Type": "text/javascript; charset=utf-8" },
+      });
+    }
+
+    if (url.pathname === "/api/lab/transcribe" && req.method === "POST") {
+      try {
+        const form = await req.formData();
+        const audio = form.get("audio");
+        if (!audio || typeof audio === "string") {
+          return Response.json({ error: "missing audio field" }, { status: 400 });
+        }
+        const buf = new Uint8Array(await audio.arrayBuffer());
+        const clientExt = audio.name?.split(".").pop();
+        const ext = clientExt && /^[a-z0-9]{2,5}$/i.test(clientExt) ? clientExt : "webm";
+        const nodeId = String(form.get("nodeId") || "");
+        const trackCount = Number(form.get("trackCount")) || 0;
+        const model = form.get("model") === "whisper-large-v3"
+          ? "whisper-large-v3"
+          : GROQ_STT_MODEL;
+        const hint = sttHintFor(nodeId, { brotherName: String(form.get("brotherName") || "") });
+        const expected = expectedForms(nodeId, { trackCount });
+        const out = await transcribeDual(buf, ext, hint, expected, model);
+        const byLang = (l) => out.candidates.find((c) => c.lang === l) || {};
+        return Response.json({
+          model,
+          kk: byLang("kk").text ?? "",
+          ru: byLang("ru").text ?? "",
+          picked: out.transcript,
+          lang: out.lang,
+          score: out.score,
+          confidence: out.confidence,
+          lowConfidence: out.lowConfidence,
+          ms: out.ms,
+        });
       } catch (err) {
         console.error(err);
         return Response.json({ error: String(err) }, { status: 500 });
@@ -318,11 +531,23 @@ Bun.serve({
 
     if (url.pathname === "/api/classify" && req.method === "POST") {
       try {
-        const { transcript, questionKk, criterion } = await req.json();
+        const { transcript, questionKk, criterion, alternatives, expectedForms: expForms } = await req.json();
         if (typeof transcript !== "string" || typeof questionKk !== "string" || typeof criterion !== "string") {
           return Response.json({ error: "missing transcript/questionKk/criterion field" }, { status: 400 });
         }
-        const { label, reason, ms } = await classifyAnswer(transcript, questionKk, criterion);
+        // Caps: this body is sent straight into an LLM prompt, so an oversized
+        // or repeated field is both a cost and a prompt-injection surface. Two
+        // recognitions, a handful of expected forms and one short child answer
+        // is all this endpoint is ever meant to carry.
+        const altsIn = (Array.isArray(alternatives) ? alternatives : []).slice(0, 4).map((a) =>
+          a && typeof a === "object"
+            ? { lang: String(a.lang ?? "").slice(0, 8), text: String(a.text ?? "").slice(0, 300) }
+            : String(a).slice(0, 300),
+        );
+        const { label, reason, ms } = await classifyAnswer(transcript.slice(0, 500), questionKk, criterion, {
+          alternatives: altsIn,
+          expectedForms: (Array.isArray(expForms) ? expForms : []).slice(0, 32).map((s) => String(s).slice(0, 40)),
+        });
         return Response.json({ label, reason, ms });
       } catch (err) {
         console.error(`classify failed (falling back to operator): ${err}`);

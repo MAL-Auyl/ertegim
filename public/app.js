@@ -485,9 +485,22 @@ let vadTurnNodeId = null; // node/brother captured at speech start: renderState 
 let vadTurnBrother = "";
 let vadRecorderGen = 0; // bumped per recorder so a stale onstop can't clobber the next question's buffer
 
+// A child sits further from the laptop than an adult and speaks quieter, on
+// top of whatever the room is doing. The browser's own AEC/NS/AGC chain is
+// far better at that than anything we can do after the fact — and AGC in
+// particular lifts a quiet voice before it ever reaches the encoder, where
+// the server-side loudnorm can only work with what was captured. Mono
+// because Whisper downmixes anyway.
+const MIC_CONSTRAINTS = {
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+  channelCount: 1,
+};
+
 async function ensureMicStream() {
   if (vadStream) return vadStream;
-  vadStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  vadStream = await navigator.mediaDevices.getUserMedia({ audio: MIC_CONSTRAINTS });
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   if (!vadAudioCtx) vadAudioCtx = new AudioCtx(); // may already exist from playDing()
   const source = vadAudioCtx.createMediaStreamSource(vadStream);
@@ -775,6 +788,11 @@ function renderState(id) {
     // the operator buttons call recordAnswer() directly, without the
     // classify path that normally re-sets these.
     pendingRoute = null;
+    // The same reset applies to everything the previous answer left behind:
+    // a stale lastRoute would otherwise decide THIS question's branch.
+    lastAlternatives = [];
+    lastLowConfidence = false;
+    lastRoute = null;
     lastTranscript = "";
     recordingStartedAt = 0;
     nextBtn.style.display = "none";
@@ -871,7 +889,7 @@ parentBtn.addEventListener("click", () => {
 async function startRecording() {
   let stream;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream = await navigator.mediaDevices.getUserMedia({ audio: MIC_CONSTRAINTS });
   } catch (err) {
     const hint = {
       NotFoundError: "микрофон не найден — проверь Параметры Windows → Звук → Ввод",
@@ -973,6 +991,10 @@ async function submitAudio(blob, filename, meta = {}) {
   // advanced to by the time the async onstop fires.
   form.append("nodeId", meta.nodeId ?? (currentId || ""));
   form.append("brotherName", meta.brotherName ?? (brotherName?.kkLower || ""));
+  // The server needs the rolled count to know which number is the right
+  // answer at q_tracks — it is what expectedForms() scores the two
+  // recognitions against.
+  form.append("trackCount", String(trackCount));
   setStage("stt", "running", "");
 
   try {
@@ -982,8 +1004,15 @@ async function submitAudio(blob, filename, meta = {}) {
 
     statusText.textContent = "";
     thinkingDots.hidden = true;
+    lastAlternatives = data.alternatives || [];
+    lastLowConfidence = !!data.lowConfidence;
+    // The route the picker read out of the audio (null when the two
+    // recognitions disagreed — then the story re-asks instead of guessing).
+    lastRoute = data.route ?? null;
     transcriptEl.textContent = data.transcript || "(тишина / не распознано)";
-    metaEl.textContent = `${data.ms} ms · ${data.engine === "groq" ? "Groq" : "локальный Whisper (fallback)"}`;
+    const langBit = data.lang ? ` · ${data.lang} conf ${Number(data.confidence ?? 0).toFixed(2)}` : "";
+    metaEl.textContent =
+      `${data.ms} ms · ${data.engine === "groq" ? "Groq" : "локальный Whisper (fallback)"}${langBit}`;
     setStage("stt", "ok", `${data.ms}ms ${data.engine === "groq" ? "groq" : "local"}`);
 
     if (data.blocked) {
@@ -998,8 +1027,23 @@ async function submitAudio(blob, filename, meta = {}) {
     } else {
       setStage("safety", "ok", "");
       resultEl.classList.add("show", "materialize-in");
-      log(`transcript: "${data.transcript}" (${data.ms}ms)`);
-      classifyAndSuggest(data.transcript);
+      const alts = lastAlternatives.map((a) => `${a.lang}="${a.text}"`).join(" ");
+      log(`transcript: "${data.transcript}" (${data.ms}ms) [${alts}]`);
+      const node = STORY[currentId];
+      if (lastLowConfidence && !data.transcript && node?.kind === "question" && node.criterion) {
+        // Nothing trustworthy came back (silence, a hallucinated subtitle
+        // credit, or two recognitions that both scored zero). Sending that to
+        // the LLM just buys a confident wrong verdict — the story re-asks
+        // gently instead, which is also the right response to a child who is
+        // too quiet or too far from the mic.
+        setStage("classify", "skip", "низкая уверенность STT");
+        showVerdictAndAutoAdvance(
+          { label: "unclear", reason: "тихо/непонятно (STT)" },
+          "🎧 STT",
+        );
+      } else {
+        classifyAndSuggest(data.transcript);
+      }
     }
   } catch (err) {
     // Total STT failure (Groq and local Whisper both down, or no network to
@@ -1085,6 +1129,14 @@ function cancelAiAutoAdvance() {
 
 let pendingRoute = null; // route parsed from the last verdict (branch questions)
 let lastTranscript = "";
+// Both Whisper passes of the last clip, and whether the pick was trustworthy —
+// forwarded to /api/classify so the LLM can judge the kk and ru recognitions
+// together instead of only the one that scored highest.
+let lastAlternatives = [];
+let lastLowConfidence = false;
+// Route decided by lib/stt-pick.js on the server (fork questions). Null means
+// "no clear single route" — including the kk/ru disagreement case.
+let lastRoute = null;
 
 function recordAnswer(verdict, source) {
   Session.answer({
@@ -1142,7 +1194,10 @@ function markReask(source) {
 // For branch questions the LLM is asked to put the route name in `reason`;
 // the local fallback returns it as `route` directly.
 function routeFromVerdict(data) {
+  // Server-side picker first (it saw both recognitions and the expected
+  // forms), then the STT route from this clip, and only then the LLM's prose.
   if (data.route === "river" || data.route === "forest") return data.route;
+  if (lastRoute === "river" || lastRoute === "forest") return lastRoute;
   const r = String(data.reason || "").toLowerCase();
   if (r.includes("river")) return "river";
   if (r.includes("forest")) return "forest";
@@ -1176,6 +1231,16 @@ function classifyCtx() {
   return { trackCount, brotherName: brotherName.kkLower, numKk: NUM_KK, numRu: NUM_RU };
 }
 
+// Client-side twin of lib/stt-pick.js's expectedForms().forms — the same
+// idea, built from the tables classify-local.js already loads, so the
+// classifier is told what a right answer looks like here without the page
+// having to import an ESM module.
+function expectedFormsForNode(nodeId) {
+  if (nodeId === "q_tracks") return NUM_FORMS[trackCount] || [];
+  if (nodeId === "q_fork") return [...ROUTE_KEYWORDS.river, ...ROUTE_KEYWORDS.forest];
+  return [];
+}
+
 async function classifyAndSuggest(transcript) {
   const s = STORY[currentId];
   if (s.kind !== "question" || !s.criterion) return;
@@ -1189,7 +1254,15 @@ async function classifyAndSuggest(transcript) {
     const res = await fetch("/api/classify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ transcript, questionKk: s.kk, criterion: s.criterion }),
+      body: JSON.stringify({
+        transcript,
+        questionKk: s.kk,
+        criterion: s.criterion,
+        // Tagged, not positional: the server labels the prompt lines by
+        // language, and a dropped/failed pass must not shift ru into kk.
+        alternatives: lastAlternatives.map((a) => ({ lang: a.lang ?? null, text: a.text ?? "" })),
+        expectedForms: expectedFormsForNode(currentId),
+      }),
     });
     data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || res.statusText);
