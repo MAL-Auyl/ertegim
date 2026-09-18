@@ -43,6 +43,13 @@
     </select>
   </label>
   <label>trackCount <input type="number" id="trackCount" value="3" min="1" max="5" style="width:60px"></label>
+  <!-- Which Whisper passes to run, in order. "auto" sends no language field
+       at all and lets Whisper detect it; the tie-break in lib/stt-pick.js
+       favours whichever is listed first. A/B «kk,ru» (the old forced
+       behaviour) against «auto,ru» (the default) on real child clips — the
+       forced-Kazakh pass is what was hallucinating «үңі ғыңңқ» on a phone.
+       Default comes from the server's STT_LANGS env var. -->
+  <label>langs <input id="langs" value="__STT_LANGS__" style="width:110px"></label>
   <button id="runTurbo">Run turbo</button>
   <button id="runV3">Run v3</button>
 </div>
@@ -50,7 +57,7 @@
 <table>
   <thead>
     <tr>
-      <th>Файл</th><th>Ожидаем</th><th>kk</th><th>ru</th><th>Выбрано</th>
+      <th>Файл</th><th>Ожидаем</th><th>проход 1</th><th>проход 2</th><th>Выбрано</th>
       <th>lang</th><th>score</th><th>conf</th><th>совпало</th><th>ms</th>
     </tr>
   </thead>
@@ -66,6 +73,7 @@ import { wordsOf, matchesForm } from "/lab/stt-pick.js";
 const filesInput = document.getElementById("files");
 const nodeSel = document.getElementById("node");
 const trackCountEl = document.getElementById("trackCount");
+const langsEl = document.getElementById("langs");
 const rowsEl = document.getElementById("rows");
 const totalsEl = document.getElementById("totals");
 const runTurbo = document.getElementById("runTurbo");
@@ -111,6 +119,12 @@ filesInput.addEventListener("change", () => {
   render();
 });
 
+function passText(p) {
+  if (!p) return "—";
+  const tag = p.requested === p.lang ? p.lang : `${p.requested}→${p.lang || "?"}`;
+  return `[${tag}] ${p.text}`;
+}
+
 async function runAll(model) {
   if (files.length === 0) { totalsEl.textContent = "Сначала выбери файлы."; return; }
   runTurbo.disabled = runV3.disabled = true;
@@ -122,6 +136,7 @@ async function runAll(model) {
       form.append("model", model);
       form.append("nodeId", nodeSel.value);
       form.append("trackCount", trackCountEl.value);
+      form.append("langs", langsEl.value);
       form.append("expected", f.expected);
       const cell = (c) => f.row.querySelector(`.${c}`);
       cell("picked").textContent = "…";
@@ -136,8 +151,11 @@ async function runAll(model) {
       }
       done++;
       totalMs += data.ms || 0;
-      cell("kk").textContent = data.kk;
-      cell("ru").textContent = data.ru;
+      // Tagged «запрошено→распознано: текст», because the whole finding
+      // being checked here is which requested language produced what.
+      const passes = data.passes || [];
+      cell("kk").textContent = passText(passes[0]);
+      cell("ru").textContent = passText(passes[1]);
       cell("picked").textContent = data.lowConfidence ? `${data.picked} (низкая уверенность)` : data.picked;
       cell("lang").textContent = data.lang || "—";
       cell("score").textContent = data.score;

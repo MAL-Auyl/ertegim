@@ -42,7 +42,11 @@ const SPAWN_TIMEOUT_MS = 20000;
 // Whisper is the fallback so the demo still works with zero network/cloud
 // dependency if Groq is unreachable or the key is missing/rate-limited.
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_TIMEOUT_MS = 5000;
+// Raised from 5000: the default model is now the full whisper-large-v3,
+// which is slower than turbo. The demo can afford it — Whisper is not the
+// bottleneck, the TTS/mic turnaround already budgets 8-12 s behind a
+// "think" animation.
+const GROQ_TIMEOUT_MS = Number(process.env.GROQ_TIMEOUT_MS) || 8000;
 
 function isMostlyCyrillic(text) {
   const letters = text.match(/\p{L}/gu) || [];
@@ -99,7 +103,26 @@ async function preprocessForSTT(audioBuf, ext) {
   }
 }
 
-const GROQ_STT_MODEL = "whisper-large-v3-turbo";
+// whisper-large-v3-turbo is faster but noticeably weaker than the full model
+// on lower-resource languages, and on real mobile audio during the pitch week
+// turbo + a forced language=kk confidently hallucinated Kazakh-SHAPED
+// nonsense («үңі ғыңңқ» for a real reply) instead of failing safely — a known
+// failure mode when a model is made to commit to a low-resource language it
+// is genuinely unsure about. The full model plus auto-detect plus the
+// vocabulary prompt behaved.
+const GROQ_STT_MODEL = process.env.GROQ_STT_MODEL || "whisper-large-v3";
+
+// Which passes transcribeDual runs, in order. "auto" means "send no
+// `language` field at all" — Whisper detects it and reports what it picked.
+// Default auto,ru rather than kk,ru: every question in story.js already
+// accepts a Kazakh OR a Russian answer, so there is no reason to force the
+// harder language, and forcing it is exactly what produced the hallucinated
+// Kazakh above. isMostlyCyrillic() still rejects a wrong-script guess.
+// Set STT_LANGS=kk,ru to restore the previous forced-Kazakh behaviour, or
+// STT_LANGS=auto for a single pass. Order matters: lib/stt-pick.js breaks a
+// score tie in favour of the candidate listed first.
+const STT_LANGS = (process.env.STT_LANGS || "auto,ru")
+  .split(",").map((s) => s.trim()).filter(Boolean);
 
 // One Groq call on an already-prepared upload buffer. Split out of
 // transcribeGroq so transcribeDual can preprocess the clip ONCE and then run
@@ -111,7 +134,9 @@ async function groqCall(uploadBuf, uploadName, hint, lang, model = GROQ_STT_MODE
   const form = new FormData();
   form.append("file", new Blob([uploadBuf]), uploadName);
   form.append("model", model);
-  form.append("language", lang);
+  // "auto" = omit the field entirely and let Whisper decide; any other value
+  // forces that language. See STT_LANGS above for why auto is the default.
+  if (lang !== "auto") form.append("language", lang);
   form.append("prompt", hint);
   form.append("temperature", "0");
   // verbose_json is what carries per-segment no_speech_prob / avg_logprob —
@@ -146,7 +171,17 @@ async function groqCall(uploadBuf, uploadName, hint, lang, model = GROQ_STT_MODE
     // would hand a silent clip a free confidence bonus (see confidenceOf).
     const lps = segments.map((s) => Number(s.avg_logprob)).filter((n) => Number.isFinite(n));
     const avgLogprob = lps.length ? lps.reduce((a, b) => a + b, 0) / lps.length : null;
-    return { text, lang, noSpeechProb, avgLogprob, ms, engine: "groq" };
+    // An auto pass is labelled by what Whisper says it heard, so the
+    // operator log and the classifier prompt still show a real language tag
+    // instead of "auto"; `detected` keeps the raw answer for the lab page.
+    const detected = typeof data.language === "string" && data.language ? data.language : null;
+    return {
+      text,
+      lang: lang === "auto" ? (detected || "auto") : lang,
+      requested: lang,
+      detected,
+      noSpeechProb, avgLogprob, ms, engine: "groq",
+    };
   } finally {
     clearTimeout(timer);
   }
@@ -165,7 +200,7 @@ async function prepareUpload(audioBuf, ext) {
   }
 }
 
-async function transcribeGroq(audioBuf, ext, hint, lang = "kk", model = GROQ_STT_MODEL) {
+async function transcribeGroq(audioBuf, ext, hint, lang = "auto", model = GROQ_STT_MODEL) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
   // t0 starts before preprocessing so the reported `ms` is comparable to
   // transcribeLocal's, which times its own ffmpeg step too.
@@ -175,16 +210,17 @@ async function transcribeGroq(audioBuf, ext, hint, lang = "kk", model = GROQ_STT
   return { ...out, transcript: out.text, ms: Math.round(performance.now() - t0) };
 }
 
-// Ask Whisper the same clip twice — kk and ru — in parallel, then let
-// lib/stt-pick.js decide which recognition the story should believe. Children
-// here answer in either language (often mixing both inside one sentence), and
-// a single language=kk pass mangles a Russian "три" into Kazakh-shaped noise.
-async function transcribeDual(audioBuf, ext, hint, expected, model = GROQ_STT_MODEL) {
+// Ask Whisper the same clip once per entry in STT_LANGS, in parallel, then
+// let lib/stt-pick.js decide which recognition the story should believe.
+// Children here answer in either language (often mixing both inside one
+// sentence), and a single forced pass mangles the other language — a Russian
+// "три" comes back as Kazakh-shaped noise and vice versa.
+async function transcribeDual(audioBuf, ext, hint, expected, model = GROQ_STT_MODEL, langs = STT_LANGS) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
   const t0 = performance.now();
   const { uploadBuf, uploadName } = await prepareUpload(audioBuf, ext);
   const settled = await Promise.allSettled(
-    ["kk", "ru"].map((lang) => groqCall(uploadBuf, uploadName, hint, lang, model)),
+    langs.map((lang) => groqCall(uploadBuf, uploadName, hint, lang, model)),
   );
   const candidates = settled.filter((s) => s.status === "fulfilled").map((s) => s.value);
   if (candidates.length === 0) {
@@ -350,10 +386,12 @@ Bun.serve({
         const alternatives = filterHallucinations(
           (out.candidates || []).map((c) => ({ lang: c.lang, text: c.text })),
         );
-        const kk = alternatives.find((a) => a.lang === "kk")?.text ?? "";
-        const ru = alternatives.find((a) => a.lang === "ru")?.text ?? "";
+        // Logged by whatever language tag each pass actually came back with
+        // (an `auto` pass reports Whisper's own detection), not a fixed
+        // kk/ru pair — STT_LANGS is configurable.
+        const heard = alternatives.map((a) => `${a.lang || "?"}="${a.text}"`).join(" ");
         console.log(
-          `stt kk="${kk}" ru="${ru}" → ${out.lang || "-"} route=${out.route || "-"} score=${out.score ?? 0} conf=${out.confidence ?? 0}`,
+          `stt ${heard} → ${out.lang || "-"} route=${out.route || "-"} score=${out.score ?? 0} conf=${out.confidence ?? 0}`,
         );
         // A low-confidence pick is still blocklist-checked (safety never runs
         // on a subset of what the child might have said) — but per transcript,
@@ -398,7 +436,12 @@ Bun.serve({
     // Never shipped to Vercel — it exists to tune stt-pick.js against actual
     // kids' voices instead of guesses.
     if (url.pathname === "/lab.html" && req.method === "GET") {
-      return new Response(Bun.file(`${ROOT}lab.html`), {
+      // The langs box is pre-filled from the server's own STT_LANGS, so the
+      // lab starts from what the product actually runs and the user edits
+      // from there rather than re-typing the default.
+      const html = (await Bun.file(`${ROOT}lab.html`).text())
+        .replace("__STT_LANGS__", STT_LANGS.join(","));
+      return new Response(html, {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
     }
@@ -422,15 +465,32 @@ Bun.serve({
         const ext = clientExt && /^[a-z0-9]{2,5}$/i.test(clientExt) ? clientExt : "webm";
         const nodeId = String(form.get("nodeId") || "");
         const trackCount = Number(form.get("trackCount")) || 0;
-        const model = form.get("model") === "whisper-large-v3"
-          ? "whisper-large-v3"
+        const model = form.get("model") === "whisper-large-v3-turbo"
+          ? "whisper-large-v3-turbo"
           : GROQ_STT_MODEL;
+        // The whole point of the lab is A/B-ing this: kk,ru (the old forced
+        // behaviour) vs auto,ru (the default) vs auto, on real child clips.
+        const langsRaw = String(form.get("langs") || "").trim();
+        const langs = langsRaw
+          ? langsRaw.split(",").map((x) => x.trim()).filter(Boolean).slice(0, 4)
+          : STT_LANGS;
         const hint = sttHintFor(nodeId, { brotherName: String(form.get("brotherName") || "") });
         const expected = expectedForms(nodeId, { trackCount });
-        const out = await transcribeDual(buf, ext, hint, expected, model);
+        const out = await transcribeDual(buf, ext, hint, expected, model, langs);
         const byLang = (l) => out.candidates.find((c) => c.lang === l) || {};
         return Response.json({
           model,
+          langs,
+          // One row per pass, tagged by what was REQUESTED (auto/kk/ru) plus
+          // what Whisper detected — that pairing is the whole finding the
+          // lab exists to check.
+          passes: out.candidates.map((c) => ({
+            requested: c.requested ?? c.lang,
+            lang: c.lang,
+            detected: c.detected ?? null,
+            text: c.text ?? "",
+          })),
+          // Kept for the existing lab columns.
           kk: byLang("kk").text ?? "",
           ru: byLang("ru").text ?? "",
           picked: out.transcript,
