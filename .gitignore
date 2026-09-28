@@ -18,3 +18,4 @@ tools/stt/hf/
 tools/stt/models/
 tools/stt/results/
 tools/stt/*.log
+tools/stt/__pycache__/
