@@ -11,3 +11,10 @@ tools/models/
 tools/voices/
 tools/.venv/
 tools/__pycache__/
+# STT lab (tools/stt): venv, downloaded datasets/models, eval outputs — all reproducible
+tools/stt/.venv/
+tools/stt/data/
+tools/stt/hf/
+tools/stt/models/
+tools/stt/results/
+tools/stt/*.log

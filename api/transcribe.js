@@ -1,7 +1,7 @@
 // Vercel Edge Function — cloud-only counterpart to server/server.js's
 // /api/transcribe route. No native binaries here (Piper/Whisper.cpp/ffmpeg
-// can't run on Vercel Edge), so this is Groq-only: same STT engine that's
-// already primary in the local server, just without the local-Whisper
+// can't run on Vercel Edge), so this is remote-only (Groq, or STT_BASE_URL —
+// see below): same STT engine that's primary in the local server, just without the local-Whisper
 // fallback (nothing to fall back to on a serverless platform) and without
 // the ffmpeg loudnorm preprocessing pass server/server.js applies before
 // sending audio to Groq (no ffmpeg binary available here — the raw browser
@@ -31,6 +31,23 @@ const GROQ_TIMEOUT_MS = Number(process.env.GROQ_TIMEOUT_MS) || 12000;
 // question already accepts a Kazakh OR a Russian answer, so nothing is
 // gained by forcing the harder language. process.env works on Edge.
 const GROQ_STT_MODEL = process.env.GROQ_STT_MODEL || "whisper-large-v3";
+
+// Same switch as server/server.js: STT_BASE_URL points the passes at any
+// OpenAI-compatible endpoint — in production, a GPU box running
+// tools/stt/server.py (Kazakh Whisper). Groq, when a key is set, stays the
+// fallback for when that one machine is unreachable. STT_API_KEY is sent as a
+// bearer token to the custom endpoint (put the GPU server behind one).
+const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+const STT_BASE_URL = (process.env.STT_BASE_URL || GROQ_BASE_URL).replace(/\/+$/, "");
+const STT_IS_GROQ = STT_BASE_URL === GROQ_BASE_URL;
+const STT_PRIMARY = {
+  base: STT_BASE_URL,
+  key: process.env.STT_API_KEY || (STT_IS_GROQ ? GROQ_API_KEY : ""),
+  engine: STT_IS_GROQ ? "groq" : "stt-server",
+};
+const STT_FALLBACK = !STT_IS_GROQ && GROQ_API_KEY
+  ? { base: GROQ_BASE_URL, key: GROQ_API_KEY, engine: "groq" }
+  : null;
 const STT_LANGS = (process.env.STT_LANGS || "auto,ru")
   .split(",").map((s) => s.trim()).filter(Boolean);
 // An empty list (STT_LANGS="") would mean zero passes: Promise.allSettled([])
@@ -45,8 +62,8 @@ function isMostlyCyrillic(text) {
   return cyrillic.length / letters.length >= 0.6;
 }
 
-async function transcribeGroq(audioBuf, ext, hint, lang) {
-  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
+async function transcribeGroq(audioBuf, ext, hint, lang, target = STT_PRIMARY) {
+  if (target.engine === "groq" && !target.key) throw new Error("GROQ_API_KEY not set");
   const form = new FormData();
   form.append("file", new Blob([audioBuf]), `clip.${ext}`);
   form.append("model", GROQ_STT_MODEL);
@@ -62,13 +79,13 @@ async function transcribeGroq(audioBuf, ext, hint, lang) {
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
   try {
     const t0 = Date.now();
-    const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+    const res = await fetch(`${target.base}/audio/transcriptions`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+      headers: target.key ? { Authorization: `Bearer ${target.key}` } : {},
       body: form,
       signal: controller.signal,
     });
-    if (!res.ok) throw new Error(`groq http ${res.status}: ${await res.text()}`);
+    if (!res.ok) throw new Error(`${target.engine} http ${res.status}: ${await res.text()}`);
     const data = await res.json();
     const raw = (data.text || "").trim();
     const text = isMostlyCyrillic(raw) ? raw : "";
@@ -100,14 +117,24 @@ async function transcribeGroq(audioBuf, ext, hint, lang) {
 // native binaries on Edge) and minus the local-Whisper fallback (nothing to
 // fall back to on a serverless platform: if both passes fail, so does the
 // request, and the client drops into its manual/offline path).
-async function transcribeDual(audioBuf, ext, hint, expected) {
+async function transcribeDual(audioBuf, ext, hint, expected, target = STT_PRIMARY) {
   const t0 = Date.now();
   const settled = await Promise.allSettled(
-    STT_LANGS.map((lang) => transcribeGroq(audioBuf, ext, hint, lang)),
+    STT_LANGS.map((lang) => transcribeGroq(audioBuf, ext, hint, lang, target)),
   );
   const candidates = settled.filter((s) => s.status === "fulfilled").map((s) => s.value);
   if (candidates.length === 0) throw settled[0].reason;
-  return { ...pickTranscript(candidates, expected), candidates, ms: Date.now() - t0 };
+  return { ...pickTranscript(candidates, expected), candidates, ms: Date.now() - t0, engine: target.engine };
+}
+
+async function transcribe(audioBuf, ext, hint, expected) {
+  try {
+    return await transcribeDual(audioBuf, ext, hint, expected);
+  } catch (err) {
+    if (!STT_FALLBACK) throw err;
+    console.error(`${STT_PRIMARY.engine} STT failed, falling back to Groq: ${err}`);
+    return await transcribeDual(audioBuf, ext, hint, expected, STT_FALLBACK);
+  }
 }
 
 export default async function handler(request) {
@@ -137,7 +164,7 @@ export default async function handler(request) {
     const trackCount = Number(form.get("trackCount")) || 0;
     const hint = sttHintFor(nodeId, { brotherName });
     const expected = expectedForms(nodeId, { trackCount, brotherName });
-    const out = await transcribeDual(buf, ext, hint, expected);
+    const out = await transcribe(buf, ext, hint, expected);
     // Hallucinated passes are dropped before anything downstream sees them —
     // they are not a second opinion for the classifier and they only invent
     // blocklist matches (same rule as server/server.js).
@@ -166,7 +193,7 @@ export default async function handler(request) {
         blocked,
         blockDetails: firstBlocked ? firstBlocked.results : (checks[0]?.results ?? []),
         ms: out.ms,
-        engine: "groq",
+        engine: out.engine,
       }),
       { headers: { "Content-Type": "application/json" } },
     );
