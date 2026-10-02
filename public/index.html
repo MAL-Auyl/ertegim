@@ -4,138 +4,210 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ертегім</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="design-system.css">
 <style>
-  body { display: flex; flex-direction: column; align-items: center; padding: 32px 20px 60px; }
-  header {
-    width: 100%; max-width: 960px;
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 36px;
-  }
-  .logo { margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
-  .lang-note { font-size: 0.8rem; color: var(--ink-soft); }
+  /* Page layout only — the visual language (sky, scene, shelf cards, big
+     buttons) lives in design-system.css so story.html shares it. */
+  body { display: flex; flex-direction: column; align-items: center; padding: 0 0 72px; }
 
-  .hero-line {
-    max-width: 640px; text-align: center; margin-bottom: 40px;
-    color: var(--ink-soft); font-size: 0.95rem; line-height: 1.6;
-  }
-  .hero-line b { color: var(--ink); }
+  .wrap { width: 100%; max-width: 1040px; padding: 0 var(--space-4); }
 
-  .grid {
-    width: 100%; max-width: 960px;
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-5);
-  }
-  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
-
-  .card {
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    border: 2.5px solid var(--line);
-    background: var(--card-solid);
-    text-decoration: none;
-    color: var(--ink);
-    box-shadow: 0 3px 0 0 var(--line);
-    transition: transform 150ms var(--ease-response), box-shadow 150ms var(--ease-response);
-    display: block;
-    opacity: 0;
-    animation: cardIn 340ms var(--ease-materialize) both;
-  }
-  @keyframes cardIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-  @media (hover: hover) and (pointer: fine) {
-    .card:hover { transform: translateY(-3px); }
-  }
-  .card:active { transform: scale(0.98); }
-  .card.disabled:active { transform: none; }
-  @media (prefers-reduced-motion: reduce) {
-    .card { animation: none; opacity: 1; }
-  }
-
-  .thumb {
-    height: 180px;
-    background: linear-gradient(160deg, #ffd9a8, #ffb27a);
-    display: flex; align-items: center; justify-content: center;
+  /* --- Hero: the fox's forest at dusk, the title on a paper label --- */
+  .hero {
     position: relative;
+    width: 100%;
+    min-height: clamp(520px, 78vh, 720px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    overflow: hidden;
+    isolation: isolate;
   }
-  .thumb svg { width: 110px; height: 110px; filter: drop-shadow(0 6px 12px rgba(46,32,19,0.25)); }
-  .soon-emoji { font-size: 4.5rem; line-height: 1; filter: drop-shadow(0 6px 12px rgba(46,32,19,0.25)); }
-  .thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .thumb img.fullbody { object-fit: contain; padding: 10px; box-sizing: border-box; }
-  .badge {
-    position: absolute; top: 12px; right: 12px;
-    font-size: 0.72rem; font-weight: 800;
-    padding: 4px 10px; border-radius: 20px;
-    background: var(--accent); color: #fff;
+  .hero .scene-sky { position: absolute; inset: 0; z-index: -3; }
+  .hero .scene-forest {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 62%;
+    background: url(/images/bg-fox.png) center bottom / cover no-repeat;
+    z-index: -2;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 28%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 28%);
   }
-  .badge.soon { background: rgba(46,32,19,0.5); color: #fff; }
+  .hero .scene-tint {
+    position: absolute; inset: 0; z-index: -1;
+    background: linear-gradient(180deg, rgba(40, 24, 80, 0.0) 35%, rgba(255, 122, 47, 0.18) 70%, rgba(255, 246, 233, 0.9) 100%);
+  }
+  .hero-cast {
+    position: relative;
+    width: 100%;
+    max-width: 720px;
+    height: clamp(230px, 40vh, 330px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .hero-fox {
+    height: 100%;
+    width: auto;
+    filter: drop-shadow(0 18px 22px rgba(46, 32, 19, 0.35));
+    animation: heroFloat 4.2s ease-in-out infinite;
+    z-index: 2;
+  }
+  .hero-owl, .hero-bear {
+    position: absolute; bottom: 4%;
+    height: 48%;
+    width: auto;
+    filter: drop-shadow(0 12px 16px rgba(46, 32, 19, 0.3));
+    object-fit: contain;
+  }
+  .hero-owl { left: 4%; animation: heroFloat 5s ease-in-out -1.5s infinite; }
+  .hero-bear { right: 2%; height: 60%; animation: heroFloat 5.6s ease-in-out -3s infinite; }
+  @keyframes heroFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .hero-copy {
+    position: relative;
+    margin: -10px 0 0;
+    padding: var(--space-5) var(--space-5) var(--space-6);
+    width: min(100%, 560px);
+    text-align: center;
+    background: var(--card-solid);
+    border: 3px solid var(--ink);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 8px 0 0 var(--ink-shadow), 0 30px 50px -24px rgba(46, 32, 19, 0.45);
+    z-index: 3;
+  }
+  .hero-copy .brand {
+    margin: 0;
+    font-size: clamp(2.4rem, 9vw, 3.6rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--accent-dark);
+    text-shadow: 0 3px 0 rgba(46, 32, 19, 0.12);
+  }
+  .hero-copy .tag { margin: var(--space-2) 0 0; font-size: 1.05rem; font-weight: 800; }
+  .hero-copy .tag-ru { margin: 4px 0 0; color: var(--ink-soft); font-style: italic; font-size: 0.92rem; }
+  .hero-copy .btn-big { margin-top: var(--space-4); }
 
-  .card-body { padding: 16px 18px 20px; }
-  .card-title { font-weight: 800; font-size: 1.02rem; margin-bottom: 6px; letter-spacing: -0.005em; }
-  .card-desc { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.5; }
+  /* --- Shelves --- */
+  .shelf { width: 100%; max-width: 1040px; padding: var(--space-6) var(--space-4) 0; }
+  .section-title {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    margin: 0 0 var(--space-4);
+    font-size: 1.5rem; font-weight: 900; letter-spacing: -0.02em;
+  }
+  .section-title small { font-size: 0.9rem; font-weight: 700; color: var(--ink-soft); }
 
-  .thumb-letter { background: linear-gradient(160deg, #fff3d6, #ffd9a8); gap: 14px; }
-  .letter-big { font-size: 5rem; font-weight: 900; letter-spacing: -0.03em; color: var(--ink); line-height: 1; }
-  .thumb-pic { width: 96px !important; height: 96px !important; object-fit: contain !important; }
+  /* Phone: a horizontal shelf you swipe, like a row of picture books.
+     Wide: a grid. Same cards either way. */
+  .row {
+    display: flex; gap: var(--space-4);
+    overflow-x: auto; scroll-snap-type: x mandatory;
+    padding: 6px 2px 18px; margin: 0 -2px;
+    scrollbar-width: none;
+  }
+  .row::-webkit-scrollbar { display: none; }
+  .row > * { flex: 0 0 min(82vw, 330px); scroll-snap-align: start; }
+  @media (min-width: 760px) {
+    .row { display: grid; grid-template-columns: repeat(3, 1fr); overflow: visible; padding-bottom: 0; }
+    .row > * { flex: initial; }
+  }
 
-  .card.disabled { pointer-events: none; opacity: 0.6; box-shadow: none; }
-  .card.disabled .thumb { background: linear-gradient(160deg, #e4dccb, #d6cbb2); }
-  .card.disabled .thumb svg,
-  .card.disabled .thumb img,
-  .card.disabled .thumb .soon-emoji { filter: grayscale(1) opacity(0.65); }
+  .soon {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-top: var(--space-3);
+    font-size: 0.9rem; color: var(--ink-soft);
+  }
+  .soon-letter {
+    width: 46px; height: 46px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 1.2rem; color: var(--ink-soft);
+    background: var(--card-solid); border: 2.5px dashed var(--line);
+  }
+
+  footer {
+    margin-top: var(--space-7);
+    font-size: 0.82rem; color: var(--ink-soft); text-align: center;
+    padding: 0 var(--space-4);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-fox, .hero-owl, .hero-bear { animation: none; }
+  }
 </style>
 </head>
 <body>
-  <header>
-    <h1 class="logo">🦊 Ертегім</h1>
-    <div class="lang-note">қазақша · дауыспен ойналатын ертегі</div>
-  </header>
+  <section class="hero" aria-label="Ертегім">
+    <div class="scene-sky sky-dusk"><span class="stars"></span><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span></div>
+    <div class="scene-forest"></div>
+    <div class="scene-tint"></div>
+    <div class="hero-cast">
+      <img class="hero-owl blend-owl" src="/images/cover-owl.png" alt="">
+      <img class="hero-fox" src="/images/cover-fox-fullbody.png" alt="Түлкі">
+      <img class="hero-bear" src="/images/cover-bear-fullbody.png" alt="">
+    </div>
+    <div class="hero-copy">
+      <h1 class="brand">Ертегім</h1>
+      <p class="tag">Дауыспен ойналатын ертегі</p>
+      <p class="tag-ru">Ребёнок не смотрит сказку — он в ней участвует: говорит с героем голосом</p>
+      <a class="btn btn-primary btn-big" href="/story.html">▶ Ойнауды бастау</a>
+    </div>
+  </section>
 
-  <div class="hero-line">
-    Ребёнок не смотрит мультфильм — он в нём участвует: говорит с героем голосом,
-    а не жмёт «далее».
-  </div>
+  <section class="shelf">
+    <h2 class="section-title">🦊 Ертегілер <small>Сказки</small></h2>
+    <div class="row">
+      <a class="book theme-dusk" href="/story.html">
+        <div class="book-art"><img src="/images/cover-fox-fullbody.png" alt=""></div>
+        <div class="book-body">
+          <div class="book-title">Түлкі інісін іздейді</div>
+          <div class="book-desc">Лисёнок потерял братика. Посчитай следы, выбери дорогу, помоги войти в тёмную пещеру и позови братика эхом.</div>
+          <span class="btn btn-primary book-cta">▶ Ойнау</span>
+        </div>
+      </a>
+      <a class="book theme-river" href="/story.html?route=river">
+        <div class="book-art"><img class="art-face blend-owl" src="/images/cover-owl.png" alt=""></div>
+        <div class="book-body">
+          <div class="book-title">Үкімен — өзен арқылы</div>
+          <div class="book-desc">Та же сказка: на развилке лисёнок пойдёт к реке, где ждёт совёнок.</div>
+          <span class="btn btn-primary book-cta">▶ Ойнау</span>
+        </div>
+      </a>
+      <a class="book theme-forest" href="/story.html?route=forest">
+        <div class="book-art"><img src="/images/cover-bear-fullbody.png" alt=""></div>
+        <div class="book-body">
+          <div class="book-title">Аюмен — орман арқылы</div>
+          <div class="book-desc">На развилке лисёнок выберет лес, где дорогу покажет медведь.</div>
+          <span class="btn btn-primary book-cta">▶ Ойнау</span>
+        </div>
+      </a>
+    </div>
+  </section>
 
-  <div class="grid">
-    <a class="card" href="/story.html" style="animation-delay:40ms">
-      <div class="thumb"><img class="fullbody" src="/images/cover-fox-fullbody.png" alt="Түлкі"><div class="badge">Играть</div></div>
-      <div class="card-body">
-        <div class="card-title">Түлкі інісін іздейді</div>
-        <div class="card-desc">Лисёнок потерял братика. Посчитай следы, выбери дорогу, помоги ему войти в тёмную пещеру и позови братика эхом.</div>
-      </div>
-    </a>
+  <section class="shelf">
+    <h2 class="section-title">🔤 Әріптер <small>Уроки букв · для особых детей, 3–5 минут</small></h2>
+    <div class="row">
+      <a class="book theme-sun" href="/story.html?lesson=letter-a">
+        <div class="book-art book-art-letter"><span class="letter-big">Аа</span><img class="art-small" src="/images/lesson-a/alma.svg" alt=""></div>
+        <div class="book-body">
+          <div class="book-title">А әрпі — түлкімен</div>
+          <div class="book-desc">Звук «А», слово «алма», выбор картинки (можно показать пальцем), слово «ана». Мягкий режим: длинные паузы, без резких эффектов.</div>
+          <span class="btn btn-primary book-cta">▶ Сабақ</span>
+        </div>
+      </a>
+    </div>
+    <div class="soon">
+      <span class="soon-letter">У</span><span class="soon-letter">О</span><span class="soon-letter">М</span>
+      <span>Келесі әріптер — скоро</span>
+    </div>
+  </section>
 
-    <a class="card" href="/story.html?route=river" style="animation-delay:80ms">
-      <div class="thumb"><img src="/images/cover-owl.png" alt="Үкі"><div class="badge">Играть</div></div>
-      <div class="card-body">
-        <div class="card-title">Үкімен — өзен арқылы</div>
-        <div class="card-desc">Та же сказка: на развилке лисёнок предпочтёт дорогу к реке, где ждёт совёнок.</div>
-      </div>
-    </a>
-
-    <a class="card" href="/story.html?route=forest" style="animation-delay:120ms">
-      <div class="thumb"><img class="fullbody" src="/images/cover-bear-fullbody.png" alt="Аю"><div class="badge">Играть</div></div>
-      <div class="card-body">
-        <div class="card-title">Аюмен — орман арқылы</div>
-        <div class="card-desc">На развилке лисёнок предпочтёт лес, где дорогу покажет медведь.</div>
-      </div>
-    </a>
-
-    <a class="card" href="/story.html?lesson=letter-a" style="animation-delay:160ms">
-      <div class="thumb thumb-letter"><span class="letter-big" aria-hidden="true">Аа</span><img class="thumb-pic" src="/images/lesson-a/alma.svg" alt=""><div class="badge">Сабақ · 3–5 мин</div></div>
-      <div class="card-body">
-        <div class="card-title">А әрпі — түлкімен</div>
-        <div class="card-desc">Короткий урок для особых детей: звук «А», слово «алма», выбор картинки (можно показать пальцем), слово «ана». Мягкий режим включён — длинные паузы, без резких эффектов.</div>
-      </div>
-    </a>
-
-    <a class="card disabled" href="#" style="animation-delay:200ms">
-      <div class="thumb"><span class="soon-emoji" aria-hidden="true">🐰</span><div class="badge soon">Скоро</div></div>
-      <div class="card-body">
-        <div class="card-title">Қоян мен әріптер</div>
-        <div class="card-desc">Следующие буквы — У, О, М — по тому же уроку-шаблону.</div>
-      </div>
-    </a>
-  </div>
+  <footer>🔒 Баланың дауысы сақталмайды — тек сөздер мен көрсеткіштер. Ата-ана есебі — ертегінің соңында.</footer>
 </body>
 </html>

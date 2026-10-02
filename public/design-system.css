@@ -41,6 +41,9 @@
   --radius-sm: 12px;
   --radius-md: 18px;
   --radius-lg: 28px;
+  --radius-xl: 36px;
+  /* The "ink" drop under storybook cards/buttons: a solid offset, not a blur */
+  --ink-shadow: rgba(46, 32, 19, 0.22);
 
   /* --- Motion: bouncy, critically-damped (§4) --- */
   --ease-response: cubic-bezier(0.34, 1.56, 0.64, 1); /* slight overshoot = playful */
@@ -66,6 +69,7 @@
     --danger: #ff6b60;
     --info: #6ba9dd;
     --info-dark: #3b82c4;
+    --ink-shadow: rgba(0, 0, 0, 0.45);
   }
 }
 
@@ -142,6 +146,21 @@ body {
   box-shadow: 0 4px 0 0 var(--accent-dark);
 }
 .btn-primary:active { transform: scale(0.97) translateY(2px); box-shadow: 0 2px 0 0 var(--accent-dark); }
+
+/* The one big call to action a child taps: pill, loud, with a glow — the
+   hero button on the library and the «Бастау» on the story page. */
+.btn-big {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 20px 38px;
+  font-size: 1.25rem;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: 0 6px 0 0 var(--accent-dark), 0 18px 36px -12px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.btn-big:active { transform: scale(0.97) translateY(3px); box-shadow: 0 3px 0 0 var(--accent-dark); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-big:hover { transform: translateY(-2px); box-shadow: 0 8px 0 0 var(--accent-dark), 0 22px 40px -12px color-mix(in srgb, var(--accent) 80%, transparent); }
+}
 
 .btn-ok    { border-color: color-mix(in srgb, var(--ok) 55%, transparent);   color: var(--ok); }
 .btn-warn  { border-color: color-mix(in srgb, var(--warn) 55%, transparent); color: var(--warn); }
@@ -557,31 +576,57 @@ body {
   position: absolute;
   inset: 0;
   z-index: 5;
-  background: var(--card-solid);
-  border-radius: inherit;
+  border-radius: var(--radius-xl);
+  border: 3px solid var(--ink);
+  box-shadow: 0 7px 0 0 var(--ink-shadow), 0 26px 44px -24px rgba(46, 32, 19, 0.5);
+  overflow: hidden;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   text-align: center;
-  padding: var(--space-5);
-  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-5);
 }
+.start-overlay .scene-sky { position: absolute; inset: 0; z-index: -3; }
+.start-forest {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 58%;
+  background: url(/images/bg-fox.png) center bottom / cover no-repeat;
+  z-index: -2;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 30%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 30%);
+}
+.start-tint { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, transparent 40%, rgba(255, 246, 233, 0.75) 100%); }
+.start-cast { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; min-height: 0; padding-top: var(--space-5); }
 .start-cover {
-  max-height: 46%;
-  max-width: 100%;
+  max-height: 100%;
+  height: clamp(180px, 36vh, 300px);
+  width: auto;
+  max-width: 80%;
   object-fit: contain;
-  animation: startCoverIn 340ms var(--ease-materialize) both;
+  filter: drop-shadow(0 16px 20px rgba(46, 32, 19, 0.35));
+  animation: startCoverIn 420ms var(--ease-materialize) both;
 }
 @keyframes startCoverIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  from { opacity: 0; transform: translateY(16px) scale(0.94); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-.start-title { margin: 0; }
+.start-label {
+  position: relative;
+  width: min(100%, 440px);
+  margin-top: -8px;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  background: var(--card-solid);
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 0 0 var(--ink-shadow);
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
+}
+.start-title { margin: 0; font-weight: 900; letter-spacing: -0.02em; }
 .start-subtitle { margin: 0; display: flex; flex-direction: column; gap: 4px; }
-.start-subtitle .kk { font-size: 1rem; font-weight: 700; }
+.start-subtitle .kk { font-size: 1rem; font-weight: 800; }
 .start-subtitle .ru { font-size: 0.82rem; color: var(--ink-soft); font-style: italic; }
-.start-btn { padding: 20px 32px; font-size: 1.1rem; margin-top: var(--space-2); }
+.start-btn { margin-top: var(--space-2); width: 100%; max-width: 320px; }
 @media (prefers-reduced-motion: reduce) {
   .start-cover { animation: none; }
 }
@@ -593,14 +638,27 @@ body {
   align-items: center;
   text-align: center;
   gap: var(--space-3);
-  padding: var(--space-4) 0;
   position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 32%),
+    radial-gradient(circle at 85% 30%, color-mix(in srgb, var(--warn) 24%, transparent), transparent 30%),
+    var(--card-solid);
 }
 .end-screen.show { display: flex; }
-.end-title { margin: 0; }
-.end-line { margin: 0; color: var(--ink-soft); }
-.end-play-btn { padding: 18px 32px; font-size: 1.05rem; margin-top: var(--space-3); width: 100%; max-width: 320px; }
-.end-parent-btn { position: absolute; top: 0; right: 0; padding: 6px 12px; font-size: 0.72rem; }
+.end-screen::before {
+  content: "✦ ✦ ✦";
+  color: var(--warn);
+  font-size: 1.1rem;
+  letter-spacing: 0.6em;
+  margin-bottom: -4px;
+}
+.end-title { margin: 0; font-weight: 900; font-size: clamp(2rem, 8vw, 2.8rem); }
+.end-fox { height: clamp(150px, 30vh, 220px); width: auto; filter: drop-shadow(0 14px 18px rgba(46, 32, 19, 0.3)); animation: endFoxIn 480ms var(--ease-response) both; }
+@keyframes endFoxIn { from { opacity: 0; transform: translateY(14px) scale(0.9); } to { opacity: 1; transform: none; } }
+.end-line { margin: 0; color: var(--ink-soft); font-size: 1.05rem; }
+.end-play-btn { margin-top: var(--space-2); width: 100%; max-width: 320px; padding: 18px 32px; font-size: 1.1rem; border-radius: 999px; }
+.end-parent-btn { position: absolute; top: 10px; right: 10px; padding: 6px 12px; font-size: 0.72rem; }
 .end-screen.show .end-title,
 .end-screen.show .end-line,
 .end-screen.show .end-play-btn,
@@ -608,6 +666,7 @@ body {
   animation: reportItemIn 340ms var(--ease-materialize) both;
 }
 @media (prefers-reduced-motion: reduce) {
+  .end-fox,
   .end-screen.show .end-title,
   .end-screen.show .end-line,
   .end-screen.show .end-play-btn,
@@ -673,7 +732,11 @@ body {
 #pictureOverlay.show { display: flex; }
 /* Two choice cards sit in the upper band of the scene, clear of the fox,
    who stands bottom-centre — so neither card is ever behind him on a phone. */
-#pictureOverlay.two { flex-direction: row; align-items: flex-start; top: 5%; bottom: auto; left: 22%; right: 3%; width: auto; max-width: none; }
+#pictureOverlay.two { flex-direction: row; align-items: flex-start; top: 4%; bottom: auto; left: 46%; right: 3%; width: auto; max-width: none; }
+#pictureOverlay.two .pic-card img { max-height: 76px; }
+/* While two cards are up, the fox steps to the left under the letter so his
+   head is never behind a card (renderLessonOverlays toggles the class). */
+#sceneStage.has-choices #heroStage { left: 24%; height: 56%; }
 .pic-card {
   flex: 1 1 0;
   min-width: 0;
@@ -716,4 +779,117 @@ body.gentle .mic-btn.recording { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   #letterOverlay.chant { animation: none; }
   button.pic-card { transition: none; }
+}
+
+
+/* ============================================================
+   Storybook scene language (library hero, story start/end screens):
+   a dusk sky with stars and soft clouds, and the "picture book" card.
+   ============================================================ */
+
+.scene-sky {
+  background: linear-gradient(180deg, #2b2158 0%, #5c3d7a 28%, #c75d4a 58%, #ffb15c 82%, #ffd9a8 100%);
+  overflow: hidden;
+}
+.scene-sky.sky-day {
+  background: linear-gradient(180deg, #7ec8ff 0%, #bfe6ff 45%, #fff0c9 85%, #ffe3b3 100%);
+}
+.scene-sky .stars {
+  position: absolute; inset: 0 0 45% 0;
+  background-image:
+    radial-gradient(1.6px 1.6px at 12% 22%, #fff 70%, transparent 71%),
+    radial-gradient(1.4px 1.4px at 27% 9%, #fff 70%, transparent 71%),
+    radial-gradient(2px 2px at 41% 31%, #fff8d6 70%, transparent 71%),
+    radial-gradient(1.3px 1.3px at 58% 14%, #fff 70%, transparent 71%),
+    radial-gradient(2.2px 2.2px at 71% 26%, #fff8d6 70%, transparent 71%),
+    radial-gradient(1.5px 1.5px at 85% 8%, #fff 70%, transparent 71%),
+    radial-gradient(1.3px 1.3px at 93% 36%, #fff 70%, transparent 71%),
+    radial-gradient(1.8px 1.8px at 6% 48%, #fff 70%, transparent 71%),
+    radial-gradient(1.4px 1.4px at 48% 52%, #fff 70%, transparent 71%),
+    radial-gradient(1.2px 1.2px at 66% 44%, #fff 70%, transparent 71%);
+  opacity: 0.85;
+  animation: twinkle 3.4s ease-in-out infinite;
+}
+.scene-sky.sky-day .stars { display: none; }
+@keyframes twinkle { 0%, 100% { opacity: 0.85; } 50% { opacity: 0.45; } }
+.scene-sky .cloud {
+  position: absolute;
+  width: 160px; height: 52px;
+  border-radius: 999px;
+  background: rgba(255, 246, 233, 0.55);
+}
+.scene-sky .cloud::before, .scene-sky .cloud::after {
+  content: ""; position: absolute; bottom: 10px;
+  background: inherit; border-radius: 50%;
+}
+.scene-sky .cloud::before { left: 28px; width: 70px; height: 70px; }
+.scene-sky .cloud::after { left: 78px; width: 52px; height: 52px; }
+.scene-sky .cloud.c1 { left: -20px; top: 18%; transform: scale(0.9); animation: drift 38s linear infinite; }
+.scene-sky .cloud.c2 { left: 55%; top: 9%; transform: scale(0.7); opacity: 0.8; animation: drift 52s linear -20s infinite; }
+.scene-sky .cloud.c3 { left: 78%; top: 30%; transform: scale(1.1); opacity: 0.5; animation: drift 64s linear -40s infinite; }
+@keyframes drift { from { translate: -200px 0; } to { translate: 110vw 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .scene-sky .stars, .scene-sky .cloud { animation: none; }
+}
+
+/* --- Picture-book card --- */
+.book {
+  display: flex; flex-direction: column;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 3px solid var(--ink);
+  background: var(--card-solid);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow: 0 7px 0 0 var(--ink-shadow), 0 24px 40px -22px rgba(46, 32, 19, 0.45);
+  transition: transform 160ms var(--ease-response), box-shadow 160ms var(--ease-response);
+}
+@media (hover: hover) and (pointer: fine) {
+  .book:hover { transform: translateY(-4px); box-shadow: 0 11px 0 0 var(--ink-shadow), 0 30px 46px -22px rgba(46, 32, 19, 0.5); }
+}
+.book:active { transform: translateY(3px); box-shadow: 0 3px 0 0 var(--ink-shadow); }
+.book-art {
+  position: relative;
+  height: 230px;
+  display: flex; align-items: flex-end; justify-content: center;
+  overflow: hidden;
+  background: url(/images/bg-fox.png) center 70% / cover no-repeat;
+  border-bottom: 3px solid var(--ink);
+}
+.book-art::before { content: ""; position: absolute; inset: 0; }
+.theme-dusk   .book-art::before { background: linear-gradient(180deg, rgba(92, 61, 122, 0.55), rgba(255, 122, 47, 0.25) 60%, rgba(255, 177, 92, 0) 100%); }
+.theme-river  .book-art::before { background: linear-gradient(180deg, rgba(30, 60, 120, 0.7), rgba(40, 120, 170, 0.35) 65%, rgba(120, 200, 230, 0.1)); }
+.theme-forest .book-art::before { background: linear-gradient(180deg, rgba(20, 50, 30, 0.7), rgba(30, 90, 50, 0.35) 65%, rgba(120, 190, 100, 0.1)); }
+.theme-sun    .book-art { background: linear-gradient(180deg, #fff1bf, #ffd166); }
+.theme-sun    .book-art::before { background: radial-gradient(circle at 50% 120%, rgba(255, 255, 255, 0.7), transparent 60%); }
+.book-art img {
+  position: relative;
+  height: 92%; width: auto; max-width: 90%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 14px rgba(46, 32, 19, 0.35));
+  transition: transform 220ms var(--ease-response);
+}
+.book-art img.art-face { height: 100%; }
+/* cover-owl.png has an opaque white background (the owl is the only cover
+   that wasn't cut out): multiply makes white vanish over any scene while the
+   ink lines stay. */
+.blend-owl { mix-blend-mode: multiply; }
+@media (hover: hover) and (pointer: fine) { .book:hover .book-art img { transform: translateY(-4px) scale(1.03); } }
+.book-art-letter { gap: 14px; align-items: center; }
+.book-art-letter .letter-big {
+  position: relative;
+  font-size: 6rem; font-weight: 900; line-height: 1; letter-spacing: -0.04em;
+  color: var(--ink);
+  text-shadow: 0 5px 0 rgba(255, 255, 255, 0.8);
+}
+.book-art-letter .art-small { height: 46%; }
+.book-body { padding: var(--space-4) var(--space-4) var(--space-5); display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.book-title { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.01em; line-height: 1.2; }
+.book-desc { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.45; flex: 1; }
+.book-cta {
+  display: inline-flex; justify-content: center; align-items: center;
+  margin-top: 6px; padding: 13px 16px; font-size: 1rem; border-radius: 999px;
+}
+@media (prefers-color-scheme: dark) {
+  .book-art-letter .letter-big { color: #2e2013; }
 }

@@ -3,8 +3,11 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ертегім</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="design-system.css">
 <style>
   /* Page-specific layout only — visual language lives in design-system.css */
@@ -12,23 +15,32 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 40px 16px;
+    padding: 12px 12px 40px;
     min-height: 100vh;
   }
   h1 { margin: 0; font: inherit; }
 
-  .panel { width: 100%; max-width: 560px; padding: var(--space-5); }
+  /* The story panel is NOT a dialog box any more: the scene is the page.
+     The panel only sizes things; the stage, the bubble and the end/report
+     sheets carry their own storybook borders. */
+  .panel { width: 100%; max-width: 560px; padding: 0; background: transparent; border: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  /* Before «Бастау» the panel must be tall enough to hold the start scene. */
+  body.pre-start .panel { min-height: min(78vh, 760px); }
 
   #sceneStageWrap {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9;
+    /* Taller on a phone so the hero has room to be big; cinema on wide. */
+    aspect-ratio: 4 / 3.3;
     margin-bottom: var(--space-4);
   }
+  @media (min-width: 560px) { #sceneStageWrap { aspect-ratio: 16 / 10; } }
   #sceneStage {
     position: absolute;
     inset: 0;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
+    border: 3px solid var(--ink);
+    box-shadow: 0 7px 0 0 var(--ink-shadow), 0 26px 44px -24px rgba(46, 32, 19, 0.5);
     overflow: hidden;
     background-size: cover;
     background-position: center;
@@ -44,8 +56,9 @@
     position: absolute;
     left: 50%;
     bottom: 2%;
-    width: 155px;
-    height: 210px;
+    width: clamp(155px, 44%, 240px);
+    height: 70%;
+    max-height: 320px;
     z-index: 2;
     filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25));
     animation: heroBreathe 3.2s ease-in-out infinite;
@@ -61,7 +74,7 @@
       drop-shadow(0 8px 16px rgba(0,0,0,0.25))
       drop-shadow(0 0 calc(6px + var(--amp, 0) * 22px) color-mix(in srgb, var(--accent) 70%, transparent));
   }
-  #heroStage svg { display: block; width: 140px; height: 140px; margin: 35px auto 0; }
+  #heroStage svg { display: block; width: 72%; max-width: 190px; aspect-ratio: 1; height: auto; margin: 14% auto 0; }
   .fox-pose { display: block; width: 100%; height: 100%; object-fit: contain; }
 
   /* Idle motion so the hero never reads as a dead static image, plus a
@@ -185,9 +198,15 @@
   }
   #recordBtn:disabled { opacity: 0.5; cursor: default; animation: none !important; }
 
-  #storyLine { margin-bottom: var(--space-4); margin-top: calc(-1 * var(--space-4)); position: relative; z-index: 2; }
-  #storyLine .speaker { display: block; margin-bottom: var(--space-2); }
-  #storyLine .kk { font-size: 1.55rem; font-weight: 700; line-height: 1.35; }
+  #storyLine { margin: 0 6px var(--space-4); position: relative; z-index: 2; border-width: 3px; border-color: var(--ink); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-5) var(--space-5); box-shadow: 0 6px 0 0 var(--ink-shadow); }
+  #storyLine::after { left: 50%; margin-left: -11px; bottom: -13px; border-color: var(--ink); border-width: 3px; }
+  #storyLine .speaker {
+    display: inline-block; margin: 0 0 var(--space-3); padding: 4px 12px; border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 16%, var(--card-solid)); color: var(--accent-dark);
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  #storyLine .speaker:empty { display: none; }
+  #storyLine .kk { font-size: clamp(1.45rem, 5.2vw, 1.75rem); font-weight: 900; line-height: 1.3; letter-spacing: -0.01em; }
   #storyLine .ru { display: block; margin-top: var(--space-3); color: var(--ink-soft); font-style: italic; font-size: 1rem; }
 
   #nextBtn { width: 100%; padding: 16px; font-size: 1rem; margin-bottom: var(--space-3); }
@@ -274,11 +293,13 @@
   #pipelinePanel .stage.err .stage-dot { background: var(--danger); }
   #pipelinePanel .stage.skip .stage-dot { background: var(--ink-soft); }
 
-  #pinGate { display: none; max-width: 320px; margin: var(--space-2) auto; }
+  .sheet { background: var(--card-solid); border: 3px solid var(--ink); border-radius: var(--radius-xl); box-shadow: 0 7px 0 0 var(--ink-shadow); padding: var(--space-5); }
+  #pinGate { display: none; max-width: 360px; margin: var(--space-4) auto; }
   #pinGate.show { display: flex; }
 
   #reportPanel { display: none; }
   #reportPanel.show { display: block; }
+  #blockedFlash, #status { margin-left: 6px; margin-right: 6px; }
   .report-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-4); }
   .report-date { font-size: 0.78rem; color: var(--ink-soft); }
   .mastery { margin-top: var(--space-5); }
@@ -293,7 +314,7 @@
   #reportAgainBtn { display: block; text-align: center; text-decoration: none; margin-top: var(--space-5); }
 </style>
 </head>
-<body>
+<body class="pre-start">
   <div class="topbar" style="max-width:560px;">
     <div class="topbar-left">
       <a class="topbar-back" href="/" aria-label="Все истории">←</a>
@@ -304,14 +325,21 @@
   <div class="panel glass-panel" style="position:relative;">
     <div id="startOverlay" class="start-overlay">
       <!-- Copy is filled by app.js from ACTIVITIES[...] (story.js): the same
-           page runs the fox tale and the letter lessons (story.html?lesson=letter-a). -->
-      <img id="startCover" class="start-cover" src="/images/cover-fox-fullbody.png" alt="Түлкі">
-      <h2 id="startTitle" class="start-title display">Түлкі інісін іздейді</h2>
-      <p class="start-subtitle">
-        <span id="startSubKk" class="kk">Түлкіге інісін табуға көмектес — дауыспен жауап бер</span>
-        <span id="startSubRu" class="ru">Помоги лисёнку найти братика — отвечай голосом</span>
-      </p>
-      <button id="startBtn" class="btn btn-primary start-btn">▶ Бастау</button>
+           page runs the fox tale and the letter lessons (story.html?lesson=letter-a).
+           Same scene language as the library hero: dusk sky, the forest, the
+           hero standing on the grass, the title on a paper label. -->
+      <div class="scene-sky" id="startSky"><span class="stars"></span><span class="cloud c1"></span><span class="cloud c2"></span></div>
+      <div class="start-forest"></div>
+      <div class="start-tint"></div>
+      <div class="start-cast"><img id="startCover" class="start-cover" src="/images/cover-fox-fullbody.png" alt="Түлкі"></div>
+      <div class="start-label">
+        <h2 id="startTitle" class="start-title display">Түлкі інісін іздейді</h2>
+        <p class="start-subtitle">
+          <span id="startSubKk" class="kk">Түлкіге інісін табуға көмектес — дауыспен жауап бер</span>
+          <span id="startSubRu" class="ru">Помоги лисёнку найти братика — отвечай голосом</span>
+        </p>
+        <button id="startBtn" class="btn btn-primary btn-big start-btn">▶ Бастау</button>
+      </div>
     </div>
     <div id="sceneStageWrap">
       <div id="sceneStage">
@@ -345,14 +373,15 @@
 
     <div id="blockedFlash">⛔ Заблокировано — вне темы</div>
 
-    <div id="endScreen" class="end-screen">
-      <div class="end-title display">Сау бол! 🦊</div>
+    <div id="endScreen" class="end-screen sheet">
+      <div class="end-title display">Сау бол!</div>
+      <img class="end-fox" src="/images/fox-happy.png" alt="">
       <p id="endLine" class="end-line body-text">Інімді тапқаныңа рахмет!</p>
       <button id="playAgainBtn" class="btn btn-primary end-play-btn">🔄 Тағы ойнаймыз</button>
       <button id="parentBtn" class="btn btn-muted end-parent-btn">Ата-анаға</button>
     </div>
 
-    <div id="pinGate" class="pin-gate">
+    <div id="pinGate" class="pin-gate sheet">
       <div class="pin-avatar">🦊</div>
       <div class="display" style="font-size:1.25rem;">Ата-ана профилі</div>
       <div class="body-text" style="color:var(--ink-soft);font-size:0.88rem;margin-top:4px;">
@@ -362,7 +391,7 @@
       <button id="pinSubmitBtn" class="btn btn-primary" style="width:100%;">Кіру</button>
     </div>
 
-    <div id="reportPanel">
+    <div id="reportPanel" class="sheet">
       <div class="report-head">
         <span class="eyebrow">🔒 Балаңыздың есебі</span>
         <span class="report-date" id="reportDate"></span>

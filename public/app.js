@@ -219,6 +219,7 @@ function renderLessonOverlays(s) {
   letterOverlay.classList.toggle("show", !!letter);
   letterOverlay.classList.toggle("chant", !!s.chant);
   letterOverlay.classList.remove("glow");
+  sceneStage.classList.toggle("has-choices", s.kind === "question" && s.mode === "pick" && Array.isArray(s.choices));
   if (s.kind === "question" && s.mode === "pick" && Array.isArray(s.choices)) {
     pictureOverlay.className = "show two";
     pictureOverlay.innerHTML = s.choices.map((c) => pictureCardHTML(c.picture, { kk: c.kk, ru: c.ru, choiceId: c.id })).join("");
@@ -1782,7 +1783,10 @@ document.getElementById("startTitle").textContent = ACTIVITY.title;
 document.getElementById("startSubKk").textContent = ACTIVITY.subtitleKk;
 document.getElementById("startSubRu").textContent = ACTIVITY.subtitleRu;
 document.getElementById("endLine").textContent = ACTIVITY.endLineKk;
-if (ACTIVITY.kind === "lesson") document.title = `Ертегім — ${ACTIVITY.title}`;
+if (ACTIVITY.kind === "lesson") {
+  document.title = `Ертегім — ${ACTIVITY.title}`;
+  document.getElementById("startSky")?.classList.add("sky-day"); // a lesson starts in daylight, not at dusk
+}
 if (ACTIVITY.id !== "story") log(`активность из URL: ${ACTIVITY.id} (${ACTIVITY.kind})`);
 
 // Gentle-mode switch in the operator panel: persisted on this device. A
@@ -1830,6 +1834,7 @@ Object.keys(pipelineStageEls).forEach((id) => setStage(id, "idle", ""));
 const startOverlay = document.getElementById("startOverlay");
 document.getElementById("startBtn").addEventListener("click", () => {
   startOverlay.style.display = "none";
+  document.body.classList.remove("pre-start"); // the panel no longer needs to hold the start scene
   // Ask for the mic up front, inside this same tap, so the permission
   // prompt (and its latency) is out of the way before the first question
   // ever arrives — not fatal if it fails, armVadForQuestion() re-attempts
