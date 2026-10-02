@@ -66,7 +66,7 @@ const foxMouths = {
 
 function foxExtras(pose) {
   if (pose === "happy") {
-    // little raised paw + motion sparkle — animated via CSS (see index.html)
+    // little raised paw + motion sparkle — animated via CSS (see story.html)
     return `<g class="hero-paw-wave"><circle cx="185" cy="90" r="10" fill="${PALETTE.foxCream}" stroke="${PALETTE.ink}" stroke-width="3"/></g>
             <path class="hero-sparkle" d="M195 65 L199 75 L209 77 L199 79 L195 89 L191 79 L181 77 L191 75 Z" fill="#FFD23F"/>`;
   }
@@ -91,7 +91,7 @@ function foxSVG(pose = "idle") {
   const tilt = pose === "confused" ? 8 : 0;
   // happy uses closed-arc eyes already — blinking those would look glitchy,
   // so only round-eye poses get the blink loop. "talk" gets a mouth-flap
-  // loop so speech reads as motion, not a frozen frame (see index.html/CSS).
+  // loop so speech reads as motion, not a frozen frame (see story.html/CSS).
   const eyesClass = pose === "happy" ? "" : "hero-eyes";
   const mouthClass = pose === "talk" ? "hero-mouth-talk" : "";
   return svgWrap(`

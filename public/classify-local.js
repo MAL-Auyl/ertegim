@@ -2,7 +2,7 @@
 // unreachable, so the story still confirms itself instead of stalling.
 // Same word-level fuzzy matching as lib/blocklist-core.js (Levenshtein
 // tolerance scaled to word length). Pure functions, no DOM: loaded as a
-// classic <script> in index.html and require()'d by bun test.
+// classic <script> in story.html and require()'d by bun test.
 
 function levenshtein(a, b) {
   const m = a.length, n = b.length;

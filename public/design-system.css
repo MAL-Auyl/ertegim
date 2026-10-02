@@ -165,7 +165,7 @@ body {
 /* ============================================================
    Shared v2 components — topbar, speech bubble, mic button,
    PIN gate, report stat chips/tags/timeline. Used by index.html,
-   library.html so every screen reads as one product.
+   the library (index.html) so every screen reads as one product.
    ============================================================ */
 
 /* --- Topbar --- */

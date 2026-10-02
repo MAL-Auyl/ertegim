@@ -58,7 +58,7 @@ const playAgainBtn = document.getElementById("playAgainBtn");
 const parentBtn = document.getElementById("parentBtn");
 
 // --- Which activity this page runs ------------------------------------
-// The fox tale by default; ?lesson=<id> (library.html cards) picks a letter
+// The fox tale by default; ?lesson=<id> (cards on the root library page) picks a letter
 // lesson. Both graphs live in one id space (lesson ids are prefixed a_ /
 // q_a_), so every NODES[...] lookup below is the same for either.
 const pageParams = new URLSearchParams(location.search);
@@ -93,7 +93,7 @@ function calmMotion() {
 }
 
 // One background image per "world" + a CSS overlay class per scene look
-// (night / river / forest / cave / dawn / lesson) — see #sceneOverlay in index.html.
+// (night / river / forest / cave / dawn / lesson) — see #sceneOverlay in story.html.
 const SCENES = {
   night: { image: "/images/bg-fox.png", cls: "scene-night" },
   river: { image: "/images/bg-fox.png", cls: "scene-river" },
@@ -1776,7 +1776,7 @@ function startStateForMemory() {
 }
 
 // Start overlay, end screen and tab title follow the activity, so the one
-// page serves the tale and every lesson without a copy of index.html each.
+// page serves the tale and every lesson without a copy of story.html each.
 document.getElementById("startCover").src = ACTIVITY.cover;
 document.getElementById("startTitle").textContent = ACTIVITY.title;
 document.getElementById("startSubKk").textContent = ACTIVITY.subtitleKk;
@@ -1818,7 +1818,7 @@ document.addEventListener("keydown", (e) => {
 const opParams = new URLSearchParams(location.search);
 if (opParams.get("op") === "1" || opParams.get("operator") === "1") setOperatorPanel(true);
 
-// ?route=river|forest lets library.html cards pin which fork the fox takes
+// ?route=river|forest lets the library cards (index.html) pin which fork the fox takes
 // at q_fork when the child's answer doesn't make it clear — anything else
 // (missing, "op", typos) falls back to the existing 50/50 coin flip.
 const routeParam = new URLSearchParams(location.search).get("route");

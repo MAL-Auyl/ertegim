@@ -1,6 +1,6 @@
 // Parent report renderer. Takes the summary Session.finish() produced for
 // this game plus the stored history of previous games and fills the
-// #reportPanel markup in index.html. Pure helpers are exported for tests.
+// #reportPanel markup in story.html. Pure helpers are exported for tests.
 
 const SKILL_META = {
   // fox tale

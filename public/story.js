@@ -454,7 +454,7 @@ const LESSON_A = {
 // starts (first run / replay), which beats are "final" (never cut by the
 // session limit), where the limit jumps to, the skills the report lists and
 // the start-overlay copy. The fox tale is the default; lessons are selected
-// with ?lesson=<id> (see library.html).
+// with ?lesson=<id> (cards on index.html, the library).
 const ACTIVITIES = {
   story: {
     id: "story", kind: "story",
