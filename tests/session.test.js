@@ -37,7 +37,7 @@ describe("summarize", () => {
     expect(s.avgResponseSec).toBeCloseTo((2 + 1 + 1 + 1) / 4, 5); // first attempts only
     expect(s.firstTryCorrect).toBe(2);
     expect(s.questionsTotal).toBe(4);
-    expect(s.skills).toEqual({ count: "first", choice: "first", empathy: "reask", rhyme: "reveal", letter: "skipped" });
+    expect(s.skills).toEqual({ count: "first", choice: "first", empathy: "reask", rhyme: "reveal", letter: "skipped", plus: "skipped", minus: "skipped", write: "skipped" });
     expect(s.route).toBe("river");
     expect(s.moments).toEqual([{ atSec: 5, text_kk: "жолды таңдады: өзен" }]);
   });

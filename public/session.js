@@ -11,7 +11,7 @@ const SESSION_LIMIT_MS = 8 * 60 * 1000;
 const MEMORY_KEY = "ertegim.memory";
 const HISTORY_KEY = "ertegim.sessions";
 const HISTORY_MAX = 30;
-const SKILLS = ["count", "choice", "empathy", "rhyme", "letter"];
+const SKILLS = ["count", "choice", "empathy", "rhyme", "letter", "plus", "minus", "write"];
 
 let raw = null;
 

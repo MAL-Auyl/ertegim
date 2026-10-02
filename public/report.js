@@ -8,7 +8,13 @@ const SKILL_META = {
   empathy: { icon: "💛", name: "Батылдық беру" },
   rhyme: { icon: "🦉", name: "Ұйқас" },
   letter: { icon: "🔤", name: "Әріптер" },
+  plus: { icon: "➕", name: "Қосу" },
+  minus: { icon: "➖", name: "Азайту" },
+  write: { icon: "✏️", name: "Жазу" },
 };
+// The fairy tale always lists its four skills (a route skips one — shown
+// locked). A lesson exercises one skill, so only what was asked is listed.
+const TALE_SKILLS = ["count", "choice", "empathy", "rhyme"];
 
 function fmtSec(sec) {
   return sec == null ? "—" : `${sec.toFixed(1)}с`;
@@ -54,7 +60,9 @@ function renderReport(summary, history, doc = document) {
     ? summary.moments.map((m) => `<div class="timeline-item"><span class="timeline-time">${fmtClock(m.atSec)}</span><span>${esc(m.text_kk)}</span></div>`).join("")
     : `<div class="timeline-item"><span>Ерекше сәттер болған жоқ</span></div>`;
 
-  el(doc, "reportSkills").innerHTML = Object.entries(SKILL_META).map(([skill, meta], i) => {
+  const shown = Object.entries(SKILL_META).filter(([skill]) =>
+    (summary.skills[skill] || "skipped") !== "skipped" || (summary.route && TALE_SKILLS.includes(skill)));
+  el(doc, "reportSkills").innerHTML = shown.map(([skill, meta], i) => {
     const state = summary.skills[skill] || "skipped";
     return `<div class="mastery-row${state === "skipped" ? " locked" : ""}" style="animation-delay:${240 + i * 40}ms">
       <span class="mastery-name">${meta.icon} ${meta.name}</span>
