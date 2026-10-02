@@ -267,8 +267,8 @@ const STORY = {
   la_reask: {
     kind: "narration", speaker: FOX, character: "fox", pose: "confused", bg: "dawn",
     overlay: { letter: "А", apples: 1 },
-    kk: "Мен естімей қалдым. Тағы бір рет, қаттырақ: А — алма!",
-    ru: "Я не расслышал. Ещё раз, погромче: А — алма!",
+    kk: "Тағы бір рет айтшы: А — алма!",
+    ru: "Скажи ещё раз: А — алма!",
     next: "q_letter_a",
   },
   la_reveal: {
@@ -322,8 +322,8 @@ const STORY = {
   lc_reask: {
     kind: "narration", speaker: FOX, character: "fox", pose: "confused", bg: "dawn",
     overlay: { apples: 5 },
-    kk: "Тағы бір рет қарайықшы. Алмаларды бірінен соң бірін санап көр.",
-    ru: "Давай посмотрим ещё раз. Посчитай яблоки по одному.",
+    kk: "Алмаларды тағы бір рет санап көрші.",
+    ru: "Посчитай яблоки ещё раз.",
     next: "q_count5",
   },
   lc_reveal: {
@@ -377,8 +377,8 @@ const STORY = {
   lp_reask: {
     kind: "narration", speaker: FOX, character: "fox", pose: "confused", bg: "dawn",
     overlay: { apples: 2, plus: 1 },
-    kk: "Тағы бір рет қарайықшы. Барлық алманы санап көр.",
-    ru: "Давай посмотрим ещё раз. Посчитай все яблоки.",
+    kk: "Барлық алманы санап көрші.",
+    ru: "Посчитай все яблоки.",
     next: "q_plus",
   },
   lp_reveal: {
@@ -432,8 +432,8 @@ const STORY = {
   lm_reask: {
     kind: "narration", speaker: FOX, character: "fox", pose: "confused", bg: "dawn",
     overlay: { apples: 4, minus: 1 },
-    kk: "Тағы бір рет қарайықшы. Қалған алмаларды санап көр.",
-    ru: "Давай посмотрим ещё раз. Посчитай яблоки, которые остались.",
+    kk: "Қалған алмаларды санап көрші.",
+    ru: "Посчитай яблоки, которые остались.",
     next: "q_minus",
   },
   lm_reveal: {

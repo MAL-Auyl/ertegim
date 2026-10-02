@@ -346,7 +346,9 @@ async function speak(text, speakerId = HERO_SPEAKER) {
   try {
     const proc = Bun.spawnSync(
       [bins.piper, "-m", bins.piperVoice, "-f", rawName, "--speaker", String(speakerId)],
-      { cwd: TMP, stdin: new TextEncoder().encode(text), timeout: SPAWN_TIMEOUT_MS },
+      // PYTHONUTF8: on Windows the Piper CLI otherwise decodes stdin with the
+      // ANSI codepage and speaks mojibake (3x longer gibberish, exit code 0).
+      { cwd: TMP, stdin: new TextEncoder().encode(text), timeout: SPAWN_TIMEOUT_MS, env: { ...process.env, PYTHONUTF8: "1" } },
     );
     if (proc.exitCode !== 0) throw new Error(`piper failed: ${new TextDecoder().decode(proc.stderr)}`);
     let outFile = rawName;

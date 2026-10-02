@@ -1181,7 +1181,14 @@ function renderState(id) {
   storyKk.textContent = s.kk;
   storyRu.textContent = s.ru;
   setHero(s);
-  const speakDone = speakLine(s.kk, audioIdFor(id), { echo: ECHO_IDS.has(id) });
+  // Back at a question after its re-ask line: the re-ask already said what to
+  // do, so the question is shown but NOT spoken a second time — the mic opens
+  // straight away. Hearing the same question twice in a row (ask, re-ask,
+  // ask again) was the slow, boring part of a wrong answer.
+  const repeatAfterReask = s.kind === "question" && activeQuestionId === id && reaskUsed;
+  const speakDone = repeatAfterReask
+    ? speakLine("", null)
+    : speakLine(s.kk, audioIdFor(id), { echo: ECHO_IDS.has(id) });
   const gen = speakGen; // a line started later must win over this one's tail
 
   if (id === "found") Session.moment("інісін тапты");
@@ -1575,7 +1582,7 @@ function advanceFromQuestion(nextId) {
 // misjudges or the call fails/times out (fail-open, see server.js comment
 // above classifyAnswer()).
 let aiAutoAdvanceTimer = null;
-const AI_AUTO_ADVANCE_MS = 2500;
+const AI_AUTO_ADVANCE_MS = 1000;
 
 let narrationAutoAdvanceTimer = null;
 const NARRATION_AUTO_ADVANCE_MS = 500;
