@@ -7,6 +7,7 @@ const SKILL_META = {
   choice: { icon: "🐻", name: "Жол таңдау" },
   empathy: { icon: "💛", name: "Батылдық беру" },
   rhyme: { icon: "🦉", name: "Ұйқас" },
+  letter: { icon: "🔤", name: "Әріптер" },
 };
 
 function fmtSec(sec) {

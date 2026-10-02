@@ -110,6 +110,14 @@ function localClassify(node, transcript, ctx) {
       : { label: "unclear", reason: "число не совпало (локально)" };
   }
 
+  if (node.skill === "letter") {
+    // Lesson node: any word that starts with the letter counts («а», «алма»).
+    const hit = words.some((w) => (node.forms || []).some((f) => phonetic(w).startsWith(phonetic(f))));
+    return hit
+      ? { label: "correct", reason: "буква прозвучала (локально)" }
+      : { label: "unclear", reason: "буква не прозвучала (локально)" };
+  }
+
   if (node.skill === "rhyme") {
     const rhymes = words.some((w) => /(ик|ык)$/.test(phonetic(w)));
     return rhymes

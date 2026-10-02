@@ -167,6 +167,39 @@ function audioIdFor(id) {
   return id;
 }
 
+// --- Lessons (?lesson=letters | ?lesson=count) -------------------------
+// A lesson is a second start point in the same STORY machine (story.js
+// LESSONS). Anything else in ?lesson= is ignored and the fairy tale plays.
+const LESSON = LESSONS[new URLSearchParams(location.search).get("lesson")] || null;
+
+// The count a "count" question expects: fixed on lesson nodes (`count`),
+// rolled per session for the story's tracks.
+function countForNode(id) {
+  return STORY[id]?.count || trackCount;
+}
+
+// What a lesson node shows on the scene: a big letter and/or a row of apples.
+// `slow` lands one apple per ~0.9 s so they appear as the fox counts aloud.
+let lessonOverlay = null;
+function renderLessonOverlay(spec) {
+  if (!lessonOverlay) {
+    lessonOverlay = document.createElement("div");
+    lessonOverlay.id = "lessonOverlay";
+    lessonOverlay.style.cssText =
+      "position:absolute;left:0;right:0;top:6%;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;z-index:3;";
+    document.getElementById("sceneStage").appendChild(lessonOverlay);
+  }
+  if (!spec) { lessonOverlay.innerHTML = ""; return; }
+  const still = prefersReducedMotion();
+  const letter = spec.letter
+    ? `<div style="font:800 clamp(72px,22vw,150px)/1 system-ui,sans-serif;color:#fff;text-shadow:0 6px 18px rgba(46,32,19,.45),0 0 2px #c2410c;">${esc(spec.letter)}</div>`
+    : "";
+  const apples = Array.from({ length: spec.apples || 0 }, (_, i) =>
+    `<span style="font-size:clamp(34px,9vw,58px);filter:drop-shadow(0 4px 8px rgba(46,32,19,.35));` +
+    (still ? "" : `opacity:0;animation:lessonPop 420ms ${i * (spec.slow ? 900 : 160)}ms both;`) + `">🍎</span>`).join("");
+  lessonOverlay.innerHTML = letter + (apples ? `<div style="display:flex;gap:10px;">${apples}</div>` : "");
+}
+
 // --- Child-facing feedback (fire-and-forget) --------------------------
 // Everything below is decoration: it is called for its side effect and
 // never awaited, so a failure (no WebAudio, no GSAP, blocked autoplay)
@@ -930,9 +963,10 @@ let currentRoute = null; // "river" | "forest", set at q_fork
 function renderState(id) {
   // Soft session cap: past the limit, any non-final beat jumps straight to
   // the finale instead of cutting the child off mid-story.
-  if (!FINAL_IDS.has(id) && Session.overLimit()) {
-    log(`лимит сессии (8 мин) → found`);
-    id = "found";
+  const finale = LESSON ? LESSON.done : "found";
+  if (!FINAL_IDS.has(id) && id !== finale && Session.overLimit()) {
+    log(`лимит сессии (8 мин) → ${finale}`);
+    id = finale;
   }
   currentId = id;
   if (id === "q_tracks" && activeQuestionId !== id) rerollTracks();
@@ -947,6 +981,8 @@ function renderState(id) {
   resultEl.classList.remove("show", "materialize-in");
   statusText.textContent = "";
   thinkingDots.hidden = true;
+
+  renderLessonOverlay(s.overlay || null);
 
   if (id === "parent_report") {
     storySpeaker.textContent = "";
@@ -987,6 +1023,8 @@ function renderState(id) {
 
   if (id === "found") Session.moment("інісін тапты");
   if (id === "cave_enter") Session.moment("түлкіге батылдық берді");
+  if (id === "la_ok") Session.moment("А әрпін айтты");
+  if (id === "lc_ok") Session.moment("беске дейін санады");
 
   if (s.kind === "narration") {
     nextBtn.style.display = "block";
@@ -1230,7 +1268,7 @@ async function submitAudio(blob, filename, meta = {}) {
   // The server needs the rolled count to know which number is the right
   // answer at q_tracks — it is what expectedForms() scores the two
   // recognitions against.
-  form.append("trackCount", String(trackCount));
+  form.append("trackCount", String(countForNode(meta.nodeId || currentId)));
   setStage("stt", "running", "");
 
   try {
@@ -1489,7 +1527,7 @@ function showVerdictAndAutoAdvance(data, source) {
 }
 
 function classifyCtx() {
-  return { trackCount, brotherName: brotherName.kkLower, numKk: NUM_KK, numRu: NUM_RU };
+  return { trackCount: countForNode(currentId), brotherName: brotherName.kkLower, numKk: NUM_KK, numRu: NUM_RU };
 }
 
 // Client-side twin of lib/stt-pick.js's expectedForms().forms — the same
@@ -1498,6 +1536,8 @@ function classifyCtx() {
 // having to import an ESM module.
 function expectedFormsForNode(nodeId) {
   if (nodeId === "q_tracks") return NUM_FORMS[trackCount] || [];
+  if (nodeId === "q_count5") return NUM_FORMS[5];
+  if (nodeId === "q_letter_a") return STORY.q_letter_a.forms;
   if (nodeId === "q_fork") return [...ROUTE_KEYWORDS.river, ...ROUTE_KEYWORDS.forest];
   return [];
 }
@@ -1579,6 +1619,7 @@ document.getElementById("btnAdvance").addEventListener("click", () => {
 // renderState() call in the app already runs inside a click handler;
 // this "Бастау" gate makes the first one no exception.
 function startStateForMemory() {
+  if (LESSON) return LESSON.start;
   return Session.memory().runs > 0 ? START_STATE_AGAIN : START_STATE;
 }
 

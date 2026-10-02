@@ -1,5 +1,5 @@
 const { test, expect } = require("bun:test");
-const { STORY, START_STATE, START_STATE_AGAIN, trackLines, echoLines, BROTHER_NAMES, FINAL_IDS } = require("../public/story.js");
+const { STORY, START_STATE, START_STATE_AGAIN, trackLines, echoLines, BROTHER_NAMES, FINAL_IDS, LESSONS } = require("../public/story.js");
 
 const ids = Object.keys(STORY);
 const refs = (n) => [n.next, n.onCorrect, n.onReask, n.onReveal, ...(n.onAnswer ? Object.values(n.onAnswer) : [])].filter(Boolean);
@@ -28,11 +28,11 @@ test("every node has character, pose, bg, speaker", () => {
 
 test("questions have mode/skill/criterion and reask+reveal; exact/open have onCorrect, branch has onAnswer", () => {
   const qs = ids.filter((id) => STORY[id].kind === "question");
-  expect(qs.sort()).toEqual(["q_courage", "q_echo", "q_fork", "q_tracks"]);
+  expect(qs.sort()).toEqual(["q_count5", "q_courage", "q_echo", "q_fork", "q_letter_a", "q_tracks"]);
   for (const id of qs) {
     const n = STORY[id];
     expect(["exact", "open", "branch"]).toContain(n.mode);
-    expect(["count", "choice", "empathy", "rhyme"]).toContain(n.skill);
+    expect(["count", "choice", "empathy", "rhyme", "letter"]).toContain(n.skill);
     expect(n.criterion.length).toBeGreaterThan(10);
     expect(n.onReask).toBeDefined();
     expect(n.onReveal).toBeDefined();
@@ -61,6 +61,33 @@ test("both routes reach found → thanks → parent_report", () => {
   expect(STORY.thanks.next).toBe("parent_report");
   expect(STORY.thanks_again.next).toBe("parent_report");
   expect([...FINAL_IDS].sort()).toEqual(["found", "parent_report", "thanks", "thanks_again"]);
+});
+
+test("lessons are separate: each starts at its own intro and ends in parent_report without entering the tale or the other lesson", () => {
+  expect(Object.keys(LESSONS).sort()).toEqual(["count", "letters"]);
+  const reach = (start) => {
+    const seen = new Set();
+    const stack = [start];
+    while (stack.length) {
+      const id = stack.pop();
+      if (seen.has(id)) continue;
+      seen.add(id);
+      stack.push(...refs(STORY[id]));
+    }
+    return seen;
+  };
+  const prefix = { letters: /^(la_|q_letter_a$)/, count: /^(lc_|q_count5$)/ };
+  for (const [name, l] of Object.entries(LESSONS)) {
+    expect(STORY[l.start].kind).toBe("narration");
+    expect(STORY[l.done].next).toBe("parent_report");
+    const seen = reach(l.start);
+    expect(seen.has("parent_report")).toBe(true);
+    for (const id of seen) if (id !== "parent_report") expect(id).toMatch(prefix[name]);
+  }
+  expect(STORY.la_reask.next).toBe("q_letter_a");
+  expect(STORY.lc_reask.next).toBe("q_count5");
+  expect(STORY.q_count5.count).toBe(5);
+  expect(STORY.q_letter_a.forms).toEqual(["а"]);
 });
 
 test("trackLines builds count text and criterion", () => {

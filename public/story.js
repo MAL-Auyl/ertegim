@@ -231,13 +231,139 @@ const STORY = {
     ru: "Ты помог мне уже второй раз! Я тебя никогда не забуду. До встречи!",
     next: "parent_report",
   },
+  // ---- уроки (index.html?lesson=letters | ?lesson=count) ------------------
+  // Two short, separate paths through the same state machine; the fox is the
+  // teacher. `overlay` is what app.js draws on the scene for the node;
+  // `forms` / `count` are the fixed right answers (nothing is re-rolled).
+
+  // Урок «Әріптер»: буква А. The child repeats «А — алма», not a bare «А»:
+  // one short vowel is exactly what Whisper drops or hallucinates on.
+  la_intro: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "talk", bg: "dawn",
+    kk: "Сәлем! Мен — түлкі. Бүгін біз бірінші әріпті үйренеміз. Кеттік!",
+    ru: "Привет! Я лисёнок. Сегодня мы выучим первую букву. Поехали!",
+    next: "la_show",
+  },
+  la_show: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "talk", bg: "dawn",
+    overlay: { letter: "А", apples: 1 },
+    kk: "Қара, мынау — А әрпі. А! Алма деген сөз А әрпінен басталады.",
+    ru: "Смотри, это буква А. А! Слово «алма» — яблоко — начинается с буквы А.",
+    next: "q_letter_a",
+  },
+  q_letter_a: {
+    kind: "question", mode: "exact", skill: "letter",
+    speaker: FOX, character: "fox", pose: "talk", bg: "dawn",
+    overlay: { letter: "А", apples: 1 },
+    forms: ["а"], // matched as a prefix: «а», «алма», «а-а-а» all count
+    kk: "Енді менімен бірге айтшы: А — алма!",
+    ru: "А теперь скажи вместе со мной: А — алма!",
+    criterion:
+      "Ребёнок учит букву А и должен повторить «А — алма». Верно (correct) — если он произнёс звук/букву «А» " +
+      "или любое слово, начинающееся на «а» (алма, ата, ана, апа, арбуз), на казахском или русском, даже с " +
+      "ошибками распознавания. Молчание или слово не на «а» — unclear.",
+    onCorrect: "la_ok", onReask: "la_reask", onReveal: "la_reveal",
+  },
+  la_reask: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "confused", bg: "dawn",
+    overlay: { letter: "А", apples: 1 },
+    kk: "Мен естімей қалдым. Тағы бір рет, қаттырақ: А — алма!",
+    ru: "Я не расслышал. Ещё раз, погромче: А — алма!",
+    next: "q_letter_a",
+  },
+  la_reveal: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "think", bg: "dawn",
+    overlay: { letter: "А", apples: 1 },
+    kk: "Ештеңе етпейді! Бірге айтайық: А! Алма! Бұл — А әрпі.",
+    ru: "Ничего страшного! Скажем вместе: А! Алма! Это буква А.",
+    next: "la_done",
+  },
+  la_ok: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "happy", bg: "dawn",
+    overlay: { letter: "А", apples: 1 },
+    kk: "Жарайсың! Бұл — А әрпі!",
+    ru: "Молодец! Это буква А!",
+    next: "la_done",
+  },
+  la_done: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "happy", bg: "dawn",
+    overlay: { letter: "А", apples: 1 },
+    kk: "Бүгін сен А әрпін үйрендің. Алма, ата, ана — бәрі А әрпінен басталады. Сау бол!",
+    ru: "Сегодня ты выучил букву А. Алма, ата, ана — всё начинается на А. До встречи!",
+    next: "parent_report",
+  },
+
+  // Урок «Санау»: счёт до пяти на яблоках.
+  lc_intro: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "talk", bg: "dawn",
+    kk: "Сәлем! Мен — түлкі. Бүгін біз беске дейін санауды үйренеміз. Кеттік!",
+    ru: "Привет! Я лисёнок. Сегодня мы научимся считать до пяти. Поехали!",
+    next: "lc_show",
+  },
+  lc_show: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "talk", bg: "dawn",
+    overlay: { apples: 5, slow: true },
+    kk: "Алмаларды бірге санайық! Тыңда: бір, екі, үш, төрт, бес!",
+    ru: "Посчитаем яблоки вместе! Слушай: один, два, три, четыре, пять!",
+    next: "q_count5",
+  },
+  q_count5: {
+    kind: "question", mode: "exact", skill: "count", count: 5,
+    speaker: FOX, character: "fox", pose: "talk", bg: "dawn",
+    overlay: { apples: 5 },
+    kk: "Қара, неше алма бар? Санап көрші!",
+    ru: "Смотри, сколько яблок? Посчитай!",
+    criterion:
+      "Правильный ответ — число пять (5). Засчитывай верным любое произношение этого числа на казахском " +
+      "(«бес») или русском («пять», «5»), в том числе если ребёнок считает вслух и заканчивает на пяти " +
+      "(«бір, екі, үш, төрт, бес»). Другое число, молчание или посторонний ответ — unclear.",
+    onCorrect: "lc_ok", onReask: "lc_reask", onReveal: "lc_reveal",
+  },
+  lc_reask: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "confused", bg: "dawn",
+    overlay: { apples: 5 },
+    kk: "Тағы бір рет қарайықшы. Алмаларды бірінен соң бірін санап көр.",
+    ru: "Давай посмотрим ещё раз. Посчитай яблоки по одному.",
+    next: "q_count5",
+  },
+  lc_reveal: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "think", bg: "dawn",
+    overlay: { apples: 5, slow: true },
+    kk: "Ештеңе етпейді! Бірге санайық: бір, екі, үш, төрт, бес! Бес алма екен!",
+    ru: "Не страшно! Давай посчитаем вместе: один, два, три, четыре, пять! Пять яблок!",
+    next: "lc_done",
+  },
+  lc_ok: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "happy", bg: "dawn",
+    overlay: { apples: 5 },
+    kk: "Дұрыс! Бес алма! Сен өте ақылдысың!",
+    ru: "Правильно! Пять яблок! Ты очень умный!",
+    next: "lc_done",
+  },
+  lc_done: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "happy", bg: "dawn",
+    overlay: { apples: 5 },
+    kk: "Бүгін сен беске дейін санауды үйрендің: бір, екі, үш, төрт, бес. Жарайсың! Сау бол!",
+    ru: "Сегодня ты научился считать до пяти: один, два, три, четыре, пять. Молодец! До встречи!",
+    next: "parent_report",
+  },
+
   parent_report: { kind: "end", speaker: "", kk: "", ru: "" },
 };
 
 const START_STATE = "intro";
 const START_STATE_AGAIN = "intro_again";
 const FINAL_IDS = new Set(["found", "thanks", "thanks_again", "parent_report"]);
+// ?lesson=<key>: each lesson has its own start and its own finale (the node
+// the session cap jumps to instead of the story's `found`).
+const LESSONS = {
+  letters: { start: "la_intro", done: "la_done" },
+  count: { start: "lc_intro", done: "lc_done" },
+};
 
 if (typeof module !== "undefined") {
-  module.exports = { STORY, START_STATE, START_STATE_AGAIN, FINAL_IDS, NUM_KK, NUM_RU, BROTHER_NAMES, trackLines, echoLines };
+  module.exports = {
+    STORY, START_STATE, START_STATE_AGAIN, FINAL_IDS, LESSONS,
+    NUM_KK, NUM_RU, BROTHER_NAMES, trackLines, echoLines,
+  };
 }
