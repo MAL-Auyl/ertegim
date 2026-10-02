@@ -3,11 +3,24 @@
 // #reportPanel markup in index.html. Pure helpers are exported for tests.
 
 const SKILL_META = {
+  // fox tale
   count: { icon: "🦊", name: "Санау" },
   choice: { icon: "🐻", name: "Жол таңдау" },
   empathy: { icon: "💛", name: "Батылдық беру" },
   rhyme: { icon: "🦉", name: "Ұйқас" },
+  // letter lesson «А» (LESSON_A in story.js)
+  sound_a: { icon: "🔤", name: "«А» дыбысы" },
+  word_a: { icon: "🍎", name: "«Алма» сөзі" },
+  pick_a: { icon: "👆", name: "А-ны суреттен тапты" },
+  open_a: { icon: "💛", name: "Ана туралы айтты" },
 };
+
+// Only the rows this session actually had: summarize() keys `skills` by the
+// activity's own list, so a letter lesson never shows the tale's four rows
+// (all "skipped") and the tale never shows the lesson's.
+function skillRows(summary) {
+  return Object.keys(summary.skills || {}).filter((k) => SKILL_META[k]).map((k) => [k, SKILL_META[k]]);
+}
 
 function fmtSec(sec) {
   return sec == null ? "—" : `${sec.toFixed(1)}с`;
@@ -53,7 +66,7 @@ function renderReport(summary, history, doc = document) {
     ? summary.moments.map((m) => `<div class="timeline-item"><span class="timeline-time">${fmtClock(m.atSec)}</span><span>${esc(m.text_kk)}</span></div>`).join("")
     : `<div class="timeline-item"><span>Ерекше сәттер болған жоқ</span></div>`;
 
-  el(doc, "reportSkills").innerHTML = Object.entries(SKILL_META).map(([skill, meta], i) => {
+  el(doc, "reportSkills").innerHTML = skillRows(summary).map(([skill, meta], i) => {
     const state = summary.skills[skill] || "skipped";
     return `<div class="mastery-row${state === "skipped" ? " locked" : ""}" style="animation-delay:${240 + i * 40}ms">
       <span class="mastery-name">${meta.icon} ${meta.name}</span>
@@ -61,6 +74,16 @@ function renderReport(summary, history, doc = document) {
       <span class="skill-state">${skillLabel(state)}</span>
     </div>`;
   }).join("");
+
+  // Picture-card answers (lesson "pick" nodes): shown only when there were
+  // any, as one extra line under the skills — the parent/therapist should
+  // see "understood, pointed, did not say it" as its own fact.
+  const gestureEl = el(doc, "reportGesture");
+  if (gestureEl) {
+    const n = summary.gestureAnswers || 0;
+    gestureEl.style.display = n ? "block" : "none";
+    gestureEl.textContent = n ? `👆 ${n} жауап — сөзбен емес, суретті көрсетіп` : "";
+  }
 
   const rows = history.slice(0, 5);
   el(doc, "reportHistory").innerHTML = rows.map((s) => {
@@ -71,5 +94,5 @@ function renderReport(summary, history, doc = document) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { renderReport, fmtSec, skillLabel, skillPercent, historyRowText, esc };
+  module.exports = { renderReport, fmtSec, skillLabel, skillPercent, historyRowText, esc, skillRows, SKILL_META };
 }

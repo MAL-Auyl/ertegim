@@ -238,6 +238,253 @@ const START_STATE = "intro";
 const START_STATE_AGAIN = "intro_again";
 const FINAL_IDS = new Set(["found", "thanks", "thanks_again", "parent_report"]);
 
+// ---- Урок «А әрпі» (буква А) ---------------------------------------------
+// A 3-5 minute letter lesson for children with speech delay / dysarthria /
+// ASD — mirrors docs/lesson-letter-a.md the same way STORY mirrors
+// docs/story-script.md. Same node kinds as STORY plus:
+//   mode "imitate" : the child repeats a sound/word after the hero. `accept`
+//                    lists the surface forms a 3-7-year-old (and Whisper on
+//                    one) actually produce; `acceptPrefix` accepts any word
+//                    starting with the target sound, because the lesson is
+//                    about the SOUND, not the exact word.
+//   mode "pick"    : two big picture cards on stage; the child says the word
+//                    OR taps the card. `choices` draws the cards, `onAnswer`
+//                    maps the right card(s), `onOther` the wrong-but-not-
+//                    failed ones (the hero corrects gently and asks again
+//                    without spending a re-ask).
+// Every node may carry `letter` (big Аа kept on screen) and `picture`
+// (one non-interactive card beside the hero).
+// The lesson can never be failed: two gentle re-asks, then the hero shows
+// the answer himself and praises the attempt — exactly STORY's ladder.
+const LESSON_A_SOUND_FORMS = ["а", "аа", "ааа", "ах", "аһ", "эа", "ай"];
+const LESSON_A_ALMA_FORMS = ["алма", "ама", "альма", "амма", "аба", "алта", "яблоко", "ябоко", "яблако", "ябко"];
+const LESSON_A_PICK_FORMS = {
+  alma: ["алма", "ама", "альма", "яблоко", "ябоко", "яблако"],
+  dop: ["доп", "топ", "мяч", "мячик", "мяс"],
+};
+const LESSON_A_ANA_FORMS = ["ана", "анам", "анашым", "мама", "мам", "апа", "әже"];
+
+const LESSON_A = {
+  // ---- пролог -----------------------------------------------------------
+  a_intro: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "talk", bg: "lesson", letter: "Аа",
+    kk: "Сәлем! Мен — түлкі. Бүгін мен сені бір әріппен таныстырамын. Ол — ең бірінші әріп!",
+    ru: "Привет! Я лисёнок. Сегодня я познакомлю тебя с одной буквой. Это самая первая буква!",
+    next: "a_show",
+  },
+  a_intro_again: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "talk", bg: "lesson", letter: "Аа",
+    kk: "Сен қайта келдің! Есіңде ме, А әрпі? Бүгін тағы ойнайық!",
+    ru: "Ты вернулся! Помнишь букву А? Давай сегодня поиграем ещё!",
+    next: "a_show",
+  },
+  a_show: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "happy", bg: "lesson", letter: "Аа",
+    kk: "Міне, А әрпі! Қара, қандай үлкен! А-а-а!",
+    ru: "Вот буква А! Смотри, какая большая! А-а-а!",
+    next: "a_mouth",
+  },
+  a_mouth: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "talk", bg: "lesson", letter: "Аа", picture: "mouth",
+    kk: "А дегенде ауызды кең ашамыз. Қара маған: А-а-а!",
+    ru: "Когда говорим А — широко открываем рот. Смотри на меня: А-а-а!",
+    next: "q_a_sound",
+  },
+
+  // ---- звук: имитация -----------------------------------------------------
+  q_a_sound: {
+    kind: "question", mode: "imitate", skill: "sound_a",
+    speaker: FOX, character: "fox", pose: "talk", bg: "lesson", letter: "Аа", picture: "mouth",
+    kk: "Енді сен! Менімен бірге: А-а-а!",
+    ru: "Теперь ты! Вместе со мной: А-а-а!",
+    accept: LESSON_A_SOUND_FORMS, acceptPrefix: ["а", "я"],
+    criterion:
+      "Ребёнок должен произнести протяжный звук [а] («А-а-а»). Засчитывай верным (correct) любой ответ, " +
+      "в котором есть открытый гласный «а»: «а», «аа», «а-а-а», «ах», а также любое слово, начинающееся на " +
+      "«а» или «я» — цель урока звук, не слово. Кашель, тишина, посторонний шум без гласного «а» — unclear.",
+    onCorrect: "a_sound_ok", onReask: "a_sound_reask", onReveal: "a_sound_reveal",
+  },
+  a_sound_reask: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "confused", bg: "lesson", letter: "Аа", picture: "mouth",
+    kk: "Ауызды кеңірек аш. Қолыңды иегіңе қойшы... А-а-а!",
+    ru: "Открой рот пошире. Положи руку на подбородок… А-а-а!",
+    next: "q_a_sound",
+  },
+  a_sound_reveal: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "think", bg: "lesson", letter: "Аа",
+    kk: "А-а-а! Міне, солай! Сен тырыстың — жарайсың!",
+    ru: "А-а-а! Вот так! Ты старался — молодец!",
+    next: "a_words",
+  },
+  a_sound_ok: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "happy", bg: "lesson", letter: "Аа",
+    kk: "Жарайсың! Нағыз А!",
+    ru: "Молодец! Настоящая А!",
+    next: "a_words",
+  },
+
+  // ---- слово: алма --------------------------------------------------------
+  a_words: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "talk", bg: "lesson", letter: "Аа",
+    kk: "А әрпінен басталатын сөздер көп. Мен саған біреуін көрсетейін.",
+    ru: "Слов на букву А много. Я покажу тебе одно.",
+    next: "q_a_alma",
+  },
+  q_a_alma: {
+    kind: "question", mode: "imitate", skill: "word_a",
+    speaker: FOX, character: "fox", pose: "talk", bg: "lesson", letter: "Аа", picture: "alma",
+    kk: "Бұл — алма. Ал-ма. Айтшы: ал-ма!",
+    ru: "Это — яблоко, алма. Ал-ма. Скажи: ал-ма!",
+    accept: LESSON_A_ALMA_FORMS, acceptPrefix: ["а"],
+    criterion:
+      "Ребёнок повторяет слово «алма» (яблоко) по картинке. Засчитывай верным (correct) «алма» и детские " +
+      "искажения («ама», «альма», «амма», «аба»), а также «яблоко»/«ябоко» — ребёнок понял картинку. Любое " +
+      "слово, начинающееся на «а», тоже верно — цель урока звук [а]. Молчание или посторонний ответ — unclear.",
+    onCorrect: "a_alma_ok", onReask: "a_alma_reask", onReveal: "a_alma_reveal",
+  },
+  a_alma_reask: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "confused", bg: "lesson", letter: "Аа", picture: "alma",
+    kk: "Бірге айтайық, ақырын: ал… ма. Ал-ма!",
+    ru: "Скажем вместе, медленно: ал… ма. Ал-ма!",
+    next: "q_a_alma",
+  },
+  a_alma_reveal: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "think", bg: "lesson", letter: "Аа", picture: "alma",
+    kk: "Ал-ма! Алма — А әрпінен басталады. Жарайсың, тырыстың!",
+    ru: "Ал-ма! Алма начинается с А. Молодец, ты старался!",
+    next: "q_a_pick",
+  },
+  a_alma_ok: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "happy", bg: "lesson", letter: "Аа", picture: "alma",
+    kk: "Дұрыс! Алма! Алма — А-дан басталады!",
+    ru: "Правильно! Алма! Алма начинается с А!",
+    next: "q_a_pick",
+  },
+
+  // ---- выбор: где А? ------------------------------------------------------
+  q_a_pick: {
+    kind: "question", mode: "pick", skill: "pick_a",
+    speaker: FOX, character: "fox", pose: "talk", bg: "lesson", letter: "Аа",
+    kk: "Қара: алма және доп. Қайсысы А-дан басталады? Айтшы немесе саусағыңмен көрсет!",
+    ru: "Смотри: яблоко и мяч. Что начинается на А? Скажи или покажи пальчиком!",
+    choices: [
+      { id: "alma", kk: "алма", ru: "яблоко", picture: "alma", forms: LESSON_A_PICK_FORMS.alma },
+      { id: "dop", kk: "доп", ru: "мяч", picture: "dop", forms: LESSON_A_PICK_FORMS.dop },
+    ],
+    criterion:
+      "На экране две картинки: яблоко (алма) и мяч (доп). Ребёнок должен назвать то, что начинается на А. " +
+      'Если он сказал «алма»/«яблоко» — верни label "correct" и reason ровно "alma". Если «доп»/«мяч» — ' +
+      'label "correct" и reason ровно "dop" (герой мягко поправит). Иначе — "unclear".',
+    onAnswer: { alma: "a_pick_ok" }, onOther: { dop: "a_pick_other" },
+    onReask: "a_pick_reask", onReveal: "a_pick_reveal",
+  },
+  a_pick_other: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "confused", bg: "lesson", letter: "Аа", picture: "dop",
+    kk: "Бұл — доп. Д-д-доп. Ал А қайда? Тағы қарашы!",
+    ru: "Это — мяч, доп. Д-д-доп. А где А? Посмотри ещё!",
+    next: "q_a_pick",
+  },
+  a_pick_reask: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "confused", bg: "lesson", letter: "Аа",
+    kk: "Алма қайда? Алманы көрсетші!",
+    ru: "Где алма? Покажи алму!",
+    next: "q_a_pick",
+  },
+  a_pick_reveal: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "think", bg: "lesson", letter: "Аа", picture: "alma",
+    kk: "Міне, алма! А-а-алма! Жарайсың!",
+    ru: "Вот алма! А-а-алма! Молодец!",
+    next: "q_a_ana",
+  },
+  a_pick_ok: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "happy", bg: "lesson", letter: "Аа", picture: "alma",
+    kk: "Дұрыс! Алма — А! Сен таптың!",
+    ru: "Правильно! Алма — А! Ты нашёл!",
+    next: "q_a_ana",
+  },
+
+  // ---- ана: эмоциональная опора ------------------------------------------
+  q_a_ana: {
+    kind: "question", mode: "open", skill: "open_a",
+    speaker: FOX, character: "fox", pose: "talk", bg: "lesson", letter: "Аа", picture: "ana",
+    kk: "Ана деген сөз де А-дан басталады. А-на. Сенің анаң бар ма? Ол туралы бірдеңе айтшы!",
+    ru: "Слово «ана» — мама — тоже начинается с А. А-на. У тебя есть мама? Расскажи что-нибудь о ней!",
+    accept: LESSON_A_ANA_FORMS,
+    criterion:
+      "Лисёнок просит ребёнка сказать что-нибудь про маму («ана»). Это узел эмоционального контакта, не " +
+      "проверка: любая речь — correct, включая одно слово «ана», «мама», «апа», имя. Только тишина или " +
+      "явный шум без слов — unclear. Будь щедрым.",
+    onCorrect: "a_ana_ok", onReask: "a_ana_reask", onReveal: "a_ana_reveal",
+  },
+  a_ana_reask: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "confused", bg: "lesson", letter: "Аа", picture: "ana",
+    kk: "Анаңды қалай атайсың? «Ана»? «Мама»? Айтшы!",
+    ru: "Как ты зовёшь маму? «Ана»? «Мама»? Скажи!",
+    next: "q_a_ana",
+  },
+  a_ana_reveal: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "think", bg: "lesson", letter: "Аа", picture: "ana",
+    kk: "А-на. Мама. Ана бізді сүйеді. Жарайсың!",
+    ru: "А-на. Мама. Мама нас любит. Молодец!",
+    next: "a_chant",
+  },
+  a_ana_ok: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "happy", bg: "lesson", letter: "Аа", picture: "ana",
+    kk: "Қандай жақсы! Ана — А-дан басталады!",
+    ru: "Как хорошо! Ана — на букву А!",
+    next: "a_chant",
+  },
+
+  // ---- песенка и финал ----------------------------------------------------
+  a_chant: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "happy", bg: "lesson", letter: "Аа", chant: true,
+    kk: "А-а-а — алма! А-а-а — ана! А-а-а — аю! А әрпі — ең бірінші әріп!",
+    ru: "А-а-а — алма! А-а-а — ана! А-а-а — аю (медведь)! Буква А — самая первая буква!",
+    next: "a_bye",
+  },
+  a_bye: {
+    kind: "narration", speaker: FOX, character: "fox", pose: "happy", bg: "lesson", letter: "Аа",
+    kk: "Бүгін біз А әрпімен таныстық! Сен керемет тырыстың. Ертең тағы кел, басқа әріп күтіп тұр!",
+    ru: "Сегодня мы познакомились с буквой А! Ты отлично старался. Приходи завтра — ждёт другая буква!",
+    next: "parent_report",
+  },
+};
+
+// Everything app.js needs to run one activity: which graph, where it
+// starts (first run / replay), which beats are "final" (never cut by the
+// session limit), where the limit jumps to, the skills the report lists and
+// the start-overlay copy. The fox tale is the default; lessons are selected
+// with ?lesson=<id> (see library.html).
+const ACTIVITIES = {
+  story: {
+    id: "story", kind: "story",
+    start: START_STATE, startAgain: START_STATE_AGAIN,
+    finalIds: FINAL_IDS, limitTarget: "found",
+    skills: ["count", "choice", "empathy", "rhyme"],
+    gentle: false,
+    title: "Түлкі інісін іздейді",
+    subtitleKk: "Түлкіге інісін табуға көмектес — дауыспен жауап бер",
+    subtitleRu: "Помоги лисёнку найти братика — отвечай голосом",
+    endLineKk: "Інімді тапқаныңа рахмет!",
+    cover: "/images/cover-fox-fullbody.png",
+  },
+  "letter-a": {
+    id: "letter-a", kind: "lesson",
+    start: "a_intro", startAgain: "a_intro_again",
+    finalIds: new Set(["a_chant", "a_bye", "parent_report"]), limitTarget: "a_bye",
+    skills: ["sound_a", "word_a", "pick_a", "open_a"],
+    gentle: true, // lessons always run with the calm profile (longer pauses, no effects)
+    title: "А әрпі",
+    subtitleKk: "Түлкімен бірге А әрпін үйрен — айт немесе суретті көрсет",
+    subtitleRu: "Выучи букву А с лисёнком — говори или показывай картинку",
+    endLineKk: "Бүгін А әрпін үйрендік!",
+    cover: "/images/cover-fox-fullbody.png",
+  },
+};
+
 if (typeof module !== "undefined") {
-  module.exports = { STORY, START_STATE, START_STATE_AGAIN, FINAL_IDS, NUM_KK, NUM_RU, BROTHER_NAMES, trackLines, echoLines };
+  module.exports = {
+    STORY, START_STATE, START_STATE_AGAIN, FINAL_IDS, NUM_KK, NUM_RU, BROTHER_NAMES, trackLines, echoLines,
+    LESSON_A, ACTIVITIES, LESSON_A_SOUND_FORMS, LESSON_A_ALMA_FORMS, LESSON_A_PICK_FORMS, LESSON_A_ANA_FORMS,
+  };
 }

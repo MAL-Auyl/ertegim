@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="ана мен бала">
+  <!-- Mother and child, abstract and warm: two figures, one heart. Shown on
+       q_a_ana — the emotional anchor node of the lesson. -->
+  <circle cx="78" cy="62" r="26" fill="#FFD9A8" stroke="#14181C" stroke-width="6"/>
+  <path d="M40 160 C40 118 58 96 78 96 C98 96 116 118 116 160 Z" fill="#E66A9A" stroke="#14181C" stroke-width="6" stroke-linejoin="round"/>
+  <circle cx="136" cy="104" r="18" fill="#FFD9A8" stroke="#14181C" stroke-width="6"/>
+  <path d="M110 160 C110 132 122 126 136 126 C150 126 162 132 162 160 Z" fill="#5BB85A" stroke="#14181C" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M100 40 C104 30 118 30 118 42 C118 52 100 62 100 62 C100 62 82 52 82 42 C82 30 96 30 100 40 Z" fill="#F0433A" stroke="#14181C" stroke-width="5" stroke-linejoin="round" transform="translate(56 -14) scale(0.8)"/>
+</svg>

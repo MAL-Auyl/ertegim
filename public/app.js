@@ -57,14 +57,50 @@ const endScreen = document.getElementById("endScreen");
 const playAgainBtn = document.getElementById("playAgainBtn");
 const parentBtn = document.getElementById("parentBtn");
 
+// --- Which activity this page runs ------------------------------------
+// The fox tale by default; ?lesson=<id> (library.html cards) picks a letter
+// lesson. Both graphs live in one id space (lesson ids are prefixed a_ /
+// q_a_), so every NODES[...] lookup below is the same for either.
+const pageParams = new URLSearchParams(location.search);
+const ACTIVITY = ACTIVITIES[pageParams.get("lesson")] || ACTIVITIES.story;
+const NODES = { ...STORY, ...LESSON_A };
+
+// --- Gentle mode ----------------------------------------------------------
+// For children with a speech delay / dysarthria / ASD: longer pauses before
+// the mic gives up, one more re-ask before the hero answers himself, and no
+// sparkles/shakes/drift (body.gentle in design-system.css). Switched on by
+// the operator (persisted on this device), by ?mode=gentle, or by any
+// lesson — ACTIVITIES[...].gentle. The field-tuned VAD_* constants below stay
+// the defaults; this is a second profile layered on top, read per call.
+const GENTLE_KEY = "ertegim.gentle";
+const GENTLE_VAD = { silenceMs: 3500, silenceTimeoutMs: 15000, maxRecordMs: 15000, maxReasks: 2 };
+let gentleOperator = false;
+try { gentleOperator = localStorage.getItem(GENTLE_KEY) === "1"; } catch { /* private mode — stays off */ }
+const gentleParam = pageParams.get("mode") === "gentle";
+function gentleMode() {
+  return ACTIVITY.gentle || gentleParam || gentleOperator;
+}
+function vadSilenceMs() { return gentleMode() ? GENTLE_VAD.silenceMs : VAD_SILENCE_MS; }
+function vadSilenceTimeoutMs() { return gentleMode() ? GENTLE_VAD.silenceTimeoutMs : VAD_SILENCE_TIMEOUT_MS; }
+function vadMaxRecordMs() { return gentleMode() ? GENTLE_VAD.maxRecordMs : VAD_MAX_RECORD_MS; }
+function maxReasks() { return gentleMode() ? GENTLE_VAD.maxReasks : 1; }
+function applyGentleClass() {
+  document.body.classList.toggle("gentle", gentleMode());
+}
+// Decoration is skipped under either the OS setting or gentle mode.
+function calmMotion() {
+  return prefersReducedMotion() || gentleMode();
+}
+
 // One background image per "world" + a CSS overlay class per scene look
-// (night / river / forest / cave / dawn) — see #sceneOverlay in index.html.
+// (night / river / forest / cave / dawn / lesson) — see #sceneOverlay in index.html.
 const SCENES = {
   night: { image: "/images/bg-fox.png", cls: "scene-night" },
   river: { image: "/images/bg-fox.png", cls: "scene-river" },
   forest: { image: "/images/bg-fox.png", cls: "scene-forest" },
   cave: { image: "/images/bg-owl.jpg", cls: "scene-cave" },
   dawn: { image: "/images/bg-fox.png", cls: "scene-dawn" },
+  lesson: { image: "/images/bg-fox.png", cls: "scene-lesson" },
 };
 
 // Two stacked overlay layers cross-fade (see .scene-layer in
@@ -91,7 +127,7 @@ function applyScene(bg, nodeId) {
     // near-black for the swap instead of cutting hard.
     const first = currentSceneImage === "";
     currentSceneImage = sc.image;
-    if (first || prefersReducedMotion()) {
+    if (first || calmMotion()) {
       // Reduced motion: swap the image outright, no dip to black.
       sceneStage.style.backgroundImage = `url(${sc.image})`;
       sceneStage.style.opacity = "1";
@@ -150,6 +186,58 @@ function renderTrackOverlay(show) {
   trackOverlay.classList.add("show");
 }
 
+// --- Letter-lesson stage supports (LESSON_A) ---------------------------
+// The big letter (#letterOverlay) and the picture zone (#pictureOverlay).
+// Pictures are hand-drawn SVG cards (public/images/lesson-a/), same flat
+// style as characters.js. A "pick" question renders its `choices` as
+// buttons: tapping one is a full answer (onPictureTap) — the alternative
+// channel for a child who understands but does not (yet) vocalise.
+const letterOverlay = document.getElementById("letterOverlay");
+const pictureOverlay = document.getElementById("pictureOverlay");
+const LESSON_PICTURES = {
+  mouth: { src: "/images/lesson-a/mouth.svg", kk: "А-а-а", ru: "рот широко открыт" },
+  alma: { src: "/images/lesson-a/alma.svg", kk: "алма", ru: "яблоко" },
+  dop: { src: "/images/lesson-a/dop.svg", kk: "доп", ru: "мяч" },
+  ana: { src: "/images/lesson-a/ana.svg", kk: "ана", ru: "мама" },
+};
+
+function pictureCardHTML(picId, { kk, ru, choiceId } = {}) {
+  const pic = LESSON_PICTURES[picId];
+  if (!pic) return "";
+  const word = esc(kk ?? pic.kk);
+  const sub = esc(ru ?? pic.ru);
+  const inner = `<img src="${pic.src}" alt=""><span class="pic-word">${word}</span>${sub ? `<span class="pic-ru">${sub}</span>` : ""}`;
+  return choiceId
+    ? `<button type="button" class="pic-card" data-choice="${esc(choiceId)}" aria-label="${word}">${inner}</button>`
+    : `<div class="pic-card">${inner}</div>`;
+}
+
+function renderLessonOverlays(s) {
+  if (!letterOverlay || !pictureOverlay) return;
+  const letter = s.letter || "";
+  letterOverlay.textContent = letter;
+  letterOverlay.classList.toggle("show", !!letter);
+  letterOverlay.classList.toggle("chant", !!s.chant);
+  letterOverlay.classList.remove("glow");
+  if (s.kind === "question" && s.mode === "pick" && Array.isArray(s.choices)) {
+    pictureOverlay.className = "show two";
+    pictureOverlay.innerHTML = s.choices.map((c) => pictureCardHTML(c.picture, { kk: c.kk, ru: c.ru, choiceId: c.id })).join("");
+  } else if (s.picture) {
+    pictureOverlay.className = "show";
+    pictureOverlay.innerHTML = pictureCardHTML(s.picture);
+  } else {
+    pictureOverlay.className = "";
+    pictureOverlay.innerHTML = "";
+  }
+}
+
+// Soft "yes" on the letter itself — the lesson's replacement for sparkles.
+function glowLetter() {
+  if (!letterOverlay || !letterOverlay.classList.contains("show")) return;
+  letterOverlay.classList.add("glow");
+  setTimeout(() => letterOverlay.classList.remove("glow"), 1400);
+}
+
 let brotherName = BROTHER_NAMES[0];
 function rerollBrotherName() {
   brotherName = BROTHER_NAMES[Math.floor(Math.random() * BROTHER_NAMES.length)];
@@ -176,7 +264,7 @@ function prefersReducedMotion() {
 }
 
 function burstSparkles() {
-  if (!heroStage || prefersReducedMotion() || typeof sparkleVectors !== "function") return;
+  if (!heroStage || calmMotion() || typeof sparkleVectors !== "function") return;
   const count = 10 + Math.floor(Math.random() * 5); // 10..14
   const nodes = sparkleVectors(count).map(({ dx, dy }, i) => {
     const el = document.createElement("span");
@@ -225,7 +313,7 @@ function playDing() {
 // Gentle "I didn't catch that" head-shake — never on the reveal (the reveal
 // line is its own feedback) and never with a sound.
 function heroShake() {
-  if (!heroStage || prefersReducedMotion()) return;
+  if (!heroStage || calmMotion()) return;
   // Shake the .hero-inner wrapper, never .fox-pose (animateFoxPose keeps
   // infinite idle tweens on it — a second rotation tween there fights them and
   // leaves the fox tilted) and never #heroStage itself (its CSS keyframes own
@@ -370,6 +458,17 @@ function settleEcho(echoDone) {
   return echoDone;
 }
 
+// When neither live TTS nor a pre-rendered .wav exists for a line (lesson
+// lines before tools/prerender.py has run, a fresh Vercel deploy), the text
+// is all the child gets — so hold the beat for about as long as the fox
+// would have taken to say it, instead of flashing narration past in 500 ms.
+function readingTimeMs(text) {
+  return Math.min(9000, Math.max(1500, 70 * String(text || "").length));
+}
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 let speakGen = 0; // bumped per line so a late awaitLineEnd/echo can be ignored
 function stopEchoPlayback() {
   cancelPendingEcho();
@@ -429,14 +528,16 @@ async function speakLine(text, stateId, { echo = false } = {}) {
         setStage("tts", "skip", "fallback wav");
         return;
       } catch (fallbackErr) {
-        log(`voice error, fallback also failed: ${fallbackErr.message}`);
+        log(`voice error, fallback also failed: ${fallbackErr.message} — держу реплику ${readingTimeMs(text)}мс текстом`);
         setStage("tts", "err", "live + fallback failed");
+        await sleep(readingTimeMs(text));
         return;
       }
     }
     // Non-fatal — the WoZ operator still has the on-screen text either way.
     log(`voice error (text still shown): ${err.message}`);
     setStage("tts", "err", err.message);
+    await sleep(readingTimeMs(text));
   }
 }
 
@@ -689,7 +790,7 @@ function setHero(node) {
 }
 
 function setHeroPoseOverride(pose) {
-  const node = STORY[currentId] || { character: "fox" };
+  const node = NODES[currentId] || { character: "fox" };
   setHero({ ...node, pose });
 }
 
@@ -836,9 +937,9 @@ function armVadForQuestion() {
   vadSilenceTimer = setTimeout(() => {
     vadSilenceTimer = null;
     if (!vadArmed || vadRecording) return; // question already left, or speech already started
-    log(`VAD: ${VAD_SILENCE_TIMEOUT_MS / 1000}с полной тишины — переспрашиваю автоматически (без ручного клика)`);
+    log(`VAD: ${vadSilenceTimeoutMs() / 1000}с полной тишины — переспрашиваю автоматически (без ручного клика)`);
     markReask("тишина (авто)");
-  }, VAD_SILENCE_TIMEOUT_MS);
+  }, vadSilenceTimeoutMs());
   ensureMicStream()
     .then(() => {
       // Record from the moment the question is armed so the pre-roll buffer
@@ -901,9 +1002,9 @@ function vadLoop() {
   const sinceStart = now - vadSpeechStartedAt;
   const sinceLoud = now - vadLastLoudAt;
 
-  if (sinceStart > VAD_MAX_RECORD_MS) {
+  if (sinceStart > vadMaxRecordMs()) {
     finishVadTurn();
-  } else if (sinceStart > VAD_MIN_SPEECH_MS && sinceLoud > VAD_SILENCE_MS) {
+  } else if (sinceStart > VAD_MIN_SPEECH_MS && sinceLoud > vadSilenceMs()) {
     finishVadTurn();
   }
 }
@@ -911,9 +1012,9 @@ vadFrameId = requestAnimationFrame(vadLoop);
 
 // --- story state ---
 let currentId = null;
-let reaskUsed = false; // per-question: only one re-ask before auto-reveal (design doc "third strike")
+let reaskCount = 0; // per-question re-asks so far; maxReasks() (1, or 2 in gentle mode) before auto-reveal (design doc "third strike")
 // fox_reask/owl_reask loop back into the SAME question id, which used to
-// re-trigger the "reaskUsed = false" reset below on every re-render —
+// re-trigger the "reaskCount = 0" reset below on every re-render —
 // making the second consecutive re-ask (the auto-reveal trigger)
 // unreachable. Only reset when the question is genuinely a new one.
 let activeQuestionId = null;
@@ -930,14 +1031,14 @@ let currentRoute = null; // "river" | "forest", set at q_fork
 function renderState(id) {
   // Soft session cap: past the limit, any non-final beat jumps straight to
   // the finale instead of cutting the child off mid-story.
-  if (!FINAL_IDS.has(id) && Session.overLimit()) {
-    log(`лимит сессии (8 мин) → found`);
-    id = "found";
+  if (!ACTIVITY.finalIds.has(id) && Session.overLimit()) {
+    log(`лимит сессии (8 мин) → ${ACTIVITY.limitTarget}`);
+    id = ACTIVITY.limitTarget;
   }
   currentId = id;
   if (id === "q_tracks" && activeQuestionId !== id) rerollTracks();
   if (id === "q_echo" && activeQuestionId !== id) rerollBrotherName();
-  const s = STORY[id];
+  const s = NODES[id];
 
   cancelAiAutoAdvance();
   cancelNarrationAutoAdvance();
@@ -977,6 +1078,7 @@ function renderState(id) {
   applyScene(s.bg, id);
   heroStage.classList.toggle("pose-happy", s.pose === "happy");
   renderTrackOverlay(id === "q_tracks" || id === "tracks_reask" || id === "tracks_reveal");
+  renderLessonOverlays(s);
 
   storySpeaker.textContent = s.speaker;
   storyKk.textContent = s.kk;
@@ -1014,6 +1116,7 @@ function renderState(id) {
     // the operator buttons call recordAnswer() directly, without the
     // classify path that normally re-sets these.
     pendingRoute = null;
+    pendingChoice = null;
     // The same reset applies to everything the previous answer left behind:
     // a stale lastRoute would otherwise decide THIS question's branch.
     lastAlternatives = [];
@@ -1030,10 +1133,10 @@ function renderState(id) {
     recordBtn.classList.remove("recording");
     uploadRow.style.display = "block";
     if (activeQuestionId !== id) {
-      reaskUsed = false;
+      reaskCount = 0;
       activeQuestionId = id;
     }
-    Session.questionShown(id, s.skill, reaskUsed ? 2 : 1);
+    Session.questionShown(id, s.skill, reaskCount + 1);
     // Arm the mic only once the question has been spoken — otherwise the mic
     // hears the hero's own voice from the speakers and trips the VAD.
     speakDone.then(() => {
@@ -1056,7 +1159,7 @@ nextBtn.addEventListener("click", () => {
   if (storyEnded) return;
   if (!currentId) return;
   cancelNarrationAutoAdvance();
-  const s = STORY[currentId];
+  const s = NODES[currentId];
   if (s.kind !== "narration") return;
   let next = s.next;
   if (currentId === "found" && Session.memory().runs > 0) next = "thanks_again";
@@ -1084,6 +1187,10 @@ pinInput.addEventListener("keydown", (e) => {
 // Shared by the operator's "Сначала" killswitch and the child's "Тағы
 // ойнаймыз" on the end screen — both fully reset state and jump back to
 // the intro (startStateForMemory picks intro vs intro_again by replay count).
+function startSession() {
+  Session.start(Date.now(), { activity: ACTIVITY.id, skills: ACTIVITY.skills });
+}
+
 function restartStory() {
   storyEnded = false;
   try { heroVoice.pause(); heroVoice.currentTime = 0; } catch { /* nothing loaded */ }
@@ -1091,7 +1198,7 @@ function restartStory() {
   activeQuestionId = null;
   currentRoute = null;
   endScreen.classList.remove("show");
-  Session.start();
+  startSession();
   renderState(startStateForMemory());
 }
 
@@ -1277,7 +1384,7 @@ async function submitAudio(blob, filename, meta = {}) {
       resultEl.classList.add("show", "materialize-in");
       const alts = lastAlternatives.map((a) => `${a.lang}="${a.text}"`).join(" ");
       log(`transcript: "${data.transcript}" (${data.ms}ms) [${alts}]`);
-      const node = STORY[currentId];
+      const node = NODES[currentId];
       if (lastLowConfidence && !data.transcript && node?.kind === "question" && node.criterion) {
         // Nothing trustworthy came back (silence, a hallucinated subtitle
         // credit, or two recognitions that both scored zero). Sending that to
@@ -1383,6 +1490,7 @@ function cancelAiAutoAdvance() {
 }
 
 let pendingRoute = null; // route parsed from the last verdict (branch questions)
+let pendingChoice = null; // picture card id from the last verdict or tap ("pick" questions)
 let lastTranscript = "";
 // Both Whisper passes of the last clip, and whether the pick was trustworthy —
 // forwarded to /api/classify so the LLM can judge the kk and ru recognitions
@@ -1406,7 +1514,7 @@ function recordAnswer(verdict, source) {
 
 function markCorrect(source) {
   cancelAiAutoAdvance();
-  const s = STORY[currentId];
+  const s = NODES[currentId];
   if (s.kind !== "question") return;
   log(`${source}: ВЕРНО`);
   // Child-facing "yes!" — a two-note ding now, sparkles AFTER the advance:
@@ -1425,9 +1533,65 @@ function markCorrect(source) {
     burstSparkles();
     return;
   }
+  if (s.mode === "pick") {
+    // The right card named/tapped — or the operator's ✅ with no card known,
+    // which takes the first (only) right answer.
+    const rightIds = Object.keys(s.onAnswer || {});
+    const choice = rightIds.includes(pendingChoice) ? pendingChoice : rightIds[0];
+    glowLetter();
+    advanceFromQuestion(s.onAnswer[choice]);
+    burstSparkles();
+    return;
+  }
+  if (ACTIVITY.kind === "lesson") glowLetter();
   advanceFromQuestion(s.onCorrect);
   burstSparkles();
 }
+
+// "pick" questions only: the child named/tapped a card that is NOT the
+// answer but is a real, on-topic choice (the ball at «where is А?»). The
+// hero corrects gently and asks again — it does not spend a re-ask and does
+// not shake, because the child did answer. Recorded as its own verdict so
+// the report can tell "picked the other one first" from "said nothing".
+function markOther(choice, source) {
+  if (storyEnded) return;
+  cancelAiAutoAdvance();
+  const s = NODES[currentId];
+  if (s.kind !== "question" || s.mode !== "pick") return;
+  const next = s.onOther && s.onOther[choice];
+  if (!next) { markReask(source); return; }
+  log(`${source}: ДРУГОЕ (${choice}) → мягкая поправка`);
+  pendingChoice = choice;
+  recordAnswer("other", source);
+  advanceFromQuestion(next);
+}
+
+// Tap on a picture card (pictureOverlay, "pick" nodes). A full answer in
+// its own right: it disarms the mic for this turn and goes straight to the
+// verdict with no countdown — the child already committed with a finger.
+function onPictureTap(choiceId) {
+  if (storyEnded || !currentId) return;
+  const s = NODES[currentId];
+  if (!s || s.kind !== "question" || s.mode !== "pick" || !choiceId) return;
+  const card = pictureOverlay.querySelector(`[data-choice="${choiceId}"]`);
+  if (card) card.classList.add("picked");
+  pictureOverlay.querySelectorAll("button.pic-card").forEach((b) => { b.disabled = true; });
+  cancelAiAutoAdvance();
+  disarmVad();
+  const choice = (s.choices || []).find((c) => c.id === choiceId);
+  lastTranscript = `👆 ${choice ? choice.kk : choiceId}`;
+  if (!recordingStartedAt) recordingStartedAt = Date.now();
+  pendingChoice = choiceId;
+  log(`сурет: ребёнок нажал «${lastTranscript}»`);
+  // Session source "tap" is what summarize() counts as a gesture answer.
+  if (s.onAnswer && s.onAnswer[choiceId]) markCorrect("tap");
+  else if (s.onOther && s.onOther[choiceId]) markOther(choiceId, "tap");
+  else markReask("tap");
+}
+pictureOverlay?.addEventListener("click", (e) => {
+  const btn = e.target.closest("button.pic-card");
+  if (btn && !btn.disabled) onPictureTap(btn.dataset.choice);
+});
 
 function markReask(source) {
   // A blocked session is terminal: Session.finish() has already run and the
@@ -1437,11 +1601,11 @@ function markReask(source) {
   // advance handler carries.
   if (storyEnded) return;
   cancelAiAutoAdvance();
-  const s = STORY[currentId];
+  const s = NODES[currentId];
   if (s.kind !== "question") return;
-  if (!reaskUsed) {
-    reaskUsed = true;
-    log(`${source}: ПЕРЕСПРОСИТЬ (1-я попытка)`);
+  if (reaskCount < maxReasks()) {
+    reaskCount++;
+    log(`${source}: ПЕРЕСПРОСИТЬ (${reaskCount}-я попытка из ${maxReasks()})`);
     recordAnswer("unclear", source);
     advanceFromQuestion(s.onReask);
     heroShake(); // after the re-render: renderState replaces #heroStage's contents
@@ -1465,16 +1629,37 @@ function routeFromVerdict(data) {
   return null;
 }
 
+// "pick" questions: which card the verdict names. Same precedence as
+// routeFromVerdict — the server-side picker's route tag (lib/stt-pick.js
+// scores q_a_pick as a route-tagged choice), the local classifier's `choice`,
+// then the LLM's prose, which the criterion asks to carry the card id.
+function choiceFromVerdict(data, s) {
+  const ids = [...Object.keys(s.onAnswer || {}), ...Object.keys(s.onOther || {})];
+  for (const cand of [data.choice, data.route, lastRoute]) {
+    if (ids.includes(cand)) return cand;
+  }
+  const r = String(data.reason || "").toLowerCase();
+  return ids.find((id) => r.includes(id)) || null;
+}
+
 function showVerdictAndAutoAdvance(data, source) {
-  const s = STORY[currentId];
+  const s = NODES[currentId];
   pendingRoute = s.mode === "branch" ? routeFromVerdict(data) : null;
   if (s.mode === "branch" && data.label === "correct" && !pendingRoute) {
     data = { ...data, label: "unclear", reason: `${data.reason || ""} (маршрут не распознан)` };
   }
-  const labelText = { correct: "✅ ВЕРНО", incorrect: "❌ НЕВЕРНО", unclear: "🔁 НЕ ПОНЯЛ / ПЕРЕСПРОСИТЬ" }[data.label];
+  pendingChoice = s.mode === "pick" ? choiceFromVerdict(data, s) : null;
+  if (s.mode === "pick" && data.label === "correct") {
+    if (!pendingChoice) data = { ...data, label: "unclear", reason: `${data.reason || ""} (картинка не распознана)` };
+    else if (s.onOther && s.onOther[pendingChoice]) data = { ...data, label: "other" };
+  }
+  const labelText = {
+    correct: "✅ ВЕРНО", incorrect: "❌ НЕВЕРНО", other: "↩ ДРУГАЯ КАРТИНКА / ПОПРАВИТЬ", unclear: "🔁 НЕ ПОНЯЛ / ПЕРЕСПРОСИТЬ",
+  }[data.label];
+  const tag = pendingRoute || pendingChoice;
   aiVerdictEl.className = `ai-verdict show ${data.label}`;
   aiVerdictEl.innerHTML = `
-    <span class="label">${source}: ${labelText}${pendingRoute ? ` → ${pendingRoute}` : ""}</span>
+    <span class="label">${source}: ${labelText}${tag ? ` → ${tag}` : ""}</span>
     <span class="reason">${esc(data.reason || "")}${data.ms ? ` (${data.ms}ms)` : ""}</span>
     <span class="countdown">Авто-переход через ${(AI_AUTO_ADVANCE_MS / 1000).toFixed(1)}с — нажми кнопку, чтобы отменить</span>
   `;
@@ -1484,6 +1669,7 @@ function showVerdictAndAutoAdvance(data, source) {
   aiAutoAdvanceTimer = setTimeout(() => {
     aiAutoAdvanceTimer = null;
     if (data.label === "correct") markCorrect(`${source} (авто)`);
+    else if (data.label === "other") markOther(pendingChoice, `${source} (авто)`);
     else markReask(`${source} (авто)`);
   }, AI_AUTO_ADVANCE_MS);
 }
@@ -1499,6 +1685,11 @@ function classifyCtx() {
 function expectedFormsForNode(nodeId) {
   if (nodeId === "q_tracks") return NUM_FORMS[trackCount] || [];
   if (nodeId === "q_fork") return [...ROUTE_KEYWORDS.river, ...ROUTE_KEYWORDS.forest];
+  // Lesson nodes carry their own accepted forms (story.js `accept` /
+  // `choices[].forms`), so no second table is needed here.
+  const node = NODES[nodeId];
+  if (node?.mode === "pick") return (node.choices || []).flatMap((c) => c.forms || []);
+  if (Array.isArray(node?.accept)) return [...node.accept];
   return [];
 }
 
@@ -1507,7 +1698,7 @@ async function classifyAndSuggest(transcript) {
   // /api/classify response must not paint a verdict, or start an
   // auto-advance countdown, for a question that is no longer on screen.
   const askedId = currentId;
-  const s = STORY[askedId];
+  const s = NODES[askedId];
   if (!s || s.kind !== "question" || !s.criterion) return;
   lastTranscript = transcript;
   aiVerdictEl.className = "ai-verdict show";
@@ -1565,10 +1756,11 @@ document.getElementById("btnAdvance").addEventListener("click", () => {
   if (storyEnded) return;
   if (!currentId) return;
   cancelAiAutoAdvance();
-  const s = STORY[currentId];
+  const s = NODES[currentId];
   if (s.kind !== "question") return;
   log("оператор: ADVANCE (форс, STT-килл-свитч) → как «верно»");
   if (s.mode === "branch") { pendingRoute = pendingRoute || "river"; markCorrect("оператор-advance"); return; }
+  if (s.mode === "pick") { pendingChoice = Object.keys(s.onAnswer || {})[0] || null; markCorrect("оператор-advance"); return; }
   recordAnswer("correct", "оператор-advance");
   advanceFromQuestion(s.onCorrect);
 });
@@ -1579,8 +1771,35 @@ document.getElementById("btnAdvance").addEventListener("click", () => {
 // renderState() call in the app already runs inside a click handler;
 // this "Бастау" gate makes the first one no exception.
 function startStateForMemory() {
-  return Session.memory().runs > 0 ? START_STATE_AGAIN : START_STATE;
+  const played = ACTIVITY.kind === "lesson" ? Session.lessonRuns(ACTIVITY.id) : Session.memory().runs;
+  return played > 0 ? ACTIVITY.startAgain : ACTIVITY.start;
 }
+
+// Start overlay, end screen and tab title follow the activity, so the one
+// page serves the tale and every lesson without a copy of index.html each.
+document.getElementById("startCover").src = ACTIVITY.cover;
+document.getElementById("startTitle").textContent = ACTIVITY.title;
+document.getElementById("startSubKk").textContent = ACTIVITY.subtitleKk;
+document.getElementById("startSubRu").textContent = ACTIVITY.subtitleRu;
+document.getElementById("endLine").textContent = ACTIVITY.endLineKk;
+if (ACTIVITY.kind === "lesson") document.title = `Ертегім — ${ACTIVITY.title}`;
+if (ACTIVITY.id !== "story") log(`активность из URL: ${ACTIVITY.id} (${ACTIVITY.kind})`);
+
+// Gentle-mode switch in the operator panel: persisted on this device. A
+// lesson forces the mode on, so its box reads checked and locked.
+const gentleToggle = document.getElementById("gentleToggle");
+if (gentleToggle) {
+  gentleToggle.checked = gentleMode();
+  gentleToggle.disabled = ACTIVITY.gentle || gentleParam;
+  gentleToggle.addEventListener("change", () => {
+    gentleOperator = gentleToggle.checked;
+    try { localStorage.setItem(GENTLE_KEY, gentleOperator ? "1" : "0"); } catch { /* private mode */ }
+    applyGentleClass();
+    log(`мягкий режим: ${gentleMode() ? "вкл" : "выкл"} (тишина ${vadSilenceMs()}мс, ожидание ${vadSilenceTimeoutMs()}мс, переспросов ${maxReasks()})`);
+  });
+}
+applyGentleClass();
+if (gentleMode()) log(`мягкий режим активен: тишина ${vadSilenceMs()}мс, ожидание ${vadSilenceTimeoutMs()}мс, переспросов ${maxReasks()}, без эффектов`);
 
 // Operator panel: hidden from the child, toggled by the ` key, the ⚙ button
 // or ?op=1 / ?operator=1 for a stage laptop. Both spellings are accepted
@@ -1621,6 +1840,6 @@ document.getElementById("startBtn").addEventListener("click", () => {
   // second or two after the scene does and the hero (plus the little
   // brother, same file) pops in late. Warm it here, in the same tap.
   new Image().src = FOX_POSE_IMAGE.happy;
-  Session.start();
+  startSession();
   renderState(startStateForMemory());
 });

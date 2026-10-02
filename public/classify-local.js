@@ -65,6 +65,56 @@ function fuzzyIncludes(words, target) {
   return words.some((w) => levenshtein(phonetic(w), t) <= tolerance(t.length));
 }
 
+// Stutter / stretch normaliser for the imitation nodes of the letter lessons.
+// A child with a speech delay says «а-а-а», «ал-ал-ма», «тли-тли»; Whisper
+// then writes it with hyphens or doubled syllables. Hyphens go, then any
+// 1-3 letter chunk repeated back to back collapses to one copy, so the
+// fuzzy match sees «ама»/«алма», not «алалма». Only used where the lesson
+// explicitly asks the child to imitate — the story's number/rhyme checks
+// keep their stricter matching.
+function destutter(word) {
+  return String(word || "")
+    .toLowerCase()
+    .replace(/[-–—_]/g, "")
+    .replace(/(.{1,3}?)\1+/g, "$1");
+}
+
+// Twin of lib/stt-pick.js matchesForm(): prefix match for case endings,
+// edit distance for a mangled stem — but a form of 3 phonetic letters or
+// fewer («а», «ах», «доп») gets no slack at all. With tolerance 1 a
+// one-letter target «а» would otherwise match ANY one-letter noise («м»),
+// and the lesson's sound check would pass on a hum.
+function matchesFormStrict(words, form) {
+  const t = phonetic(form);
+  if (!t) return false;
+  return words.some((w) => {
+    const p = phonetic(w);
+    if (t.length <= 3) return p === t || p.startsWith(t);
+    return p.startsWith(t) || levenshtein(p, t) <= tolerance(t.length);
+  });
+}
+
+// mode "imitate": the node itself lists what counts (story.js `accept`), plus
+// optional `acceptPrefix` — any word starting with the target sound passes,
+// because the lesson is about producing the sound, not the vocabulary.
+function matchesImitate(words, node) {
+  const cleaned = words.map(destutter).filter(Boolean);
+  const accept = Array.isArray(node.accept) ? node.accept : [];
+  if (accept.some((form) => matchesFormStrict(cleaned, destutter(form)))) return true;
+  const prefixes = Array.isArray(node.acceptPrefix) ? node.acceptPrefix.map(phonetic) : [];
+  return prefixes.length > 0 && cleaned.some((w) => prefixes.some((p) => p && phonetic(w).startsWith(p)));
+}
+
+// mode "pick": which of the node's picture cards the transcript names. Null
+// when none or more than one is named (ambiguous — the story re-asks).
+function detectChoice(words, node) {
+  const cleaned = words.map(destutter).filter(Boolean);
+  const hits = (node.choices || [])
+    .filter((c) => (c.forms || []).some((form) => matchesFormStrict(cleaned, destutter(form))))
+    .map((c) => c.id);
+  return hits.length === 1 ? hits[0] : null;
+}
+
 // Kazakh + Russian keywords for the fork question. Matched as prefixes so
 // case endings (солға, өзенге, орманға, реку, лесу) don't matter.
 const ROUTE_KEYWORDS = {
@@ -94,7 +144,27 @@ function localClassify(node, transcript, ctx) {
       : { label: "unclear", reason: "направление не распознано (локально)" };
   }
 
+  if (node.mode === "imitate") {
+    return matchesImitate(words, node)
+      ? { label: "correct", reason: "повторил за героем (локально)" }
+      : { label: "unclear", reason: "образец не услышан (локально)" };
+  }
+
+  if (node.mode === "pick") {
+    const choice = detectChoice(words, node);
+    if (!choice) return { label: "unclear", reason: "картинка не названа (локально)" };
+    const isRight = !!(node.onAnswer && node.onAnswer[choice]);
+    return isRight
+      ? { label: "correct", reason: `назвал: ${choice} (локально)`, choice }
+      : { label: "other", reason: `назвал другое: ${choice} (локально)`, choice };
+  }
+
   if (node.mode === "open") {
+    // A lesson's open node may list short emotional words («ана», «мама»)
+    // that the 3-letter noise filter below would otherwise drop.
+    if (Array.isArray(node.accept) && node.accept.some((form) => matchesFormStrict(words.map(destutter), destutter(form)))) {
+      return { label: "correct", reason: "сказал ключевое слово (локально)" };
+    }
     const meaningful = words.filter((w) => w.length >= 3);
     return meaningful.length >= 1
       ? { label: "correct", reason: "ребёнок заговорил (локально)" }
@@ -121,5 +191,5 @@ function localClassify(node, transcript, ctx) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { localClassify, detectRoute, wordsOf, levenshtein, phonetic, NUM_FORMS };
+  module.exports = { localClassify, detectRoute, detectChoice, matchesImitate, destutter, wordsOf, levenshtein, phonetic, NUM_FORMS };
 }

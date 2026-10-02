@@ -73,6 +73,10 @@
   .card-title { font-weight: 800; font-size: 1.02rem; margin-bottom: 6px; letter-spacing: -0.005em; }
   .card-desc { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.5; }
 
+  .thumb-letter { background: linear-gradient(160deg, #fff3d6, #ffd9a8); gap: 14px; }
+  .letter-big { font-size: 5rem; font-weight: 900; letter-spacing: -0.03em; color: var(--ink); line-height: 1; }
+  .thumb-pic { width: 96px !important; height: 96px !important; object-fit: contain !important; }
+
   .card.disabled { pointer-events: none; opacity: 0.6; box-shadow: none; }
   .card.disabled .thumb { background: linear-gradient(160deg, #e4dccb, #d6cbb2); }
   .card.disabled .thumb svg,
@@ -116,11 +120,19 @@
       </div>
     </a>
 
-    <a class="card disabled" href="#" style="animation-delay:160ms">
+    <a class="card" href="/index.html?lesson=letter-a" style="animation-delay:160ms">
+      <div class="thumb thumb-letter"><span class="letter-big" aria-hidden="true">Аа</span><img class="thumb-pic" src="/images/lesson-a/alma.svg" alt=""><div class="badge">Сабақ · 3–5 мин</div></div>
+      <div class="card-body">
+        <div class="card-title">А әрпі — түлкімен</div>
+        <div class="card-desc">Короткий урок для особых детей: звук «А», слово «алма», выбор картинки (можно показать пальцем), слово «ана». Мягкий режим включён — длинные паузы, без резких эффектов.</div>
+      </div>
+    </a>
+
+    <a class="card disabled" href="#" style="animation-delay:200ms">
       <div class="thumb"><span class="soon-emoji" aria-hidden="true">🐰</span><div class="badge soon">Скоро</div></div>
       <div class="card-body">
         <div class="card-title">Қоян мен әріптер</div>
-        <div class="card-desc">Зайчонок помогает выучить первые буквы алфавита.</div>
+        <div class="card-desc">Следующие буквы — У, О, М — по тому же уроку-шаблону.</div>
       </div>
     </a>
   </div>

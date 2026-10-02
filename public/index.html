@@ -190,6 +190,8 @@
   #storyLine .ru { display: block; margin-top: var(--space-3); color: var(--ink-soft); font-style: italic; font-size: 1rem; }
 
   #nextBtn { width: 100%; padding: 16px; font-size: 1rem; margin-bottom: var(--space-3); }
+  .op-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: var(--space-3); cursor: pointer; }
+  .op-toggle input { width: 16px; height: 16px; accent-color: var(--accent); }
 
   #uploadRow { text-align: center; margin-top: var(--space-2); }
   #uploadLabel { font-size: 0.8rem; color: var(--ink-soft); cursor: pointer; text-decoration: underline; }
@@ -239,6 +241,7 @@
   .ai-verdict .label { font-weight: 700; }
   .ai-verdict.correct { border-color: var(--ok, #2e7d32); }
   .ai-verdict.incorrect,
+  .ai-verdict.other,
   .ai-verdict.unclear { border-color: var(--warn, #b26a00); }
   .ai-verdict .reason { display: block; margin-top: 4px; color: var(--ink-soft); font-size: 0.8rem; }
   .ai-verdict .countdown { display: block; margin-top: 6px; color: var(--ink-soft); font-size: 0.75rem; }
@@ -299,11 +302,13 @@
   </div>
   <div class="panel glass-panel" style="position:relative;">
     <div id="startOverlay" class="start-overlay">
-      <img class="start-cover" src="/images/cover-fox-fullbody.png" alt="Түлкі">
-      <h2 class="start-title display">Түлкі інісін іздейді</h2>
+      <!-- Copy is filled by app.js from ACTIVITIES[...] (story.js): the same
+           page runs the fox tale and the letter lessons (?lesson=letter-a). -->
+      <img id="startCover" class="start-cover" src="/images/cover-fox-fullbody.png" alt="Түлкі">
+      <h2 id="startTitle" class="start-title display">Түлкі інісін іздейді</h2>
       <p class="start-subtitle">
-        <span class="kk">Түлкіге інісін табуға көмектес — дауыспен жауап бер</span>
-        <span class="ru">Помоги лисёнку найти братика — отвечай голосом</span>
+        <span id="startSubKk" class="kk">Түлкіге інісін табуға көмектес — дауыспен жауап бер</span>
+        <span id="startSubRu" class="ru">Помоги лисёнку найти братика — отвечай голосом</span>
       </p>
       <button id="startBtn" class="btn btn-primary start-btn">▶ Бастау</button>
     </div>
@@ -312,6 +317,12 @@
         <div id="sceneOverlay" class="scene-layer"></div>
         <div id="sceneOverlayNext" class="scene-layer"></div>
         <div id="trackOverlay"></div>
+        <!-- Letter lesson supports (see renderLessonOverlays in app.js): the
+             big letter always sits in the same corner — a fixed anchor matters
+             for children with ASD — and the picture zone holds either one
+             reference card or the tappable choice cards of a "pick" node. -->
+        <div id="letterOverlay" aria-hidden="true"></div>
+        <div id="pictureOverlay"></div>
         <div id="heroStage"></div>
         <div id="listenCue">Тыңдаймын…</div>
       </div>
@@ -335,7 +346,7 @@
 
     <div id="endScreen" class="end-screen">
       <div class="end-title display">Сау бол! 🦊</div>
-      <p class="end-line body-text">Інімді тапқаныңа рахмет!</p>
+      <p id="endLine" class="end-line body-text">Інімді тапқаныңа рахмет!</p>
       <button id="playAgainBtn" class="btn btn-primary end-play-btn">🔄 Тағы ойнаймыз</button>
       <button id="parentBtn" class="btn btn-muted end-parent-btn">Ата-анаға</button>
     </div>
@@ -373,6 +384,7 @@
       <div class="mastery">
         <div class="mastery-title">Дағдылар бойынша</div>
         <div id="reportSkills"></div>
+        <div id="reportGesture" class="body-text" style="display:none;font-size:0.82rem;color:var(--ink-soft);margin-top:var(--space-2);"></div>
       </div>
       <div class="history">
         <div class="mastery-title">Өткен ойындар</div>
@@ -394,6 +406,9 @@
       <div class="stage" id="stage-tts"><span class="stage-dot"></span><span>TTS</span><span class="stage-detail"></span></div>
     </div>
     <div class="op-title">Управление</div>
+    <label id="gentleRow" class="op-toggle" title="Длиннее паузы (3,5 с тишины, 15 с ожидания), два переспроса вместо одного, без искр и тряски. Для детей с ЗРР/РАС. Сохраняется на устройстве; уроки включают его сами.">
+      <input type="checkbox" id="gentleToggle"> 🕊 Мягкий режим
+    </label>
     <button id="nextBtn" class="btn btn-primary">▶ Далее (override)</button>
     <div id="uploadRow">
       <label id="uploadLabel" for="fileInput">📁 загрузить аудиофайл вместо микрофона</label>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="доп">
+  <!-- Ball: the "not А" card in q_a_pick. Blue so it never reads as a second
+       red apple at a glance. -->
+  <circle cx="100" cy="100" r="76" fill="#3B82E6" stroke="#14181C" stroke-width="7"/>
+  <path d="M100 24 C70 60 70 140 100 176" fill="none" stroke="#14181C" stroke-width="7" stroke-linecap="round"/>
+  <path d="M100 24 C130 60 130 140 100 176" fill="none" stroke="#14181C" stroke-width="7" stroke-linecap="round"/>
+  <path d="M26 100 C60 82 140 82 174 100" fill="none" stroke="#14181C" stroke-width="7" stroke-linecap="round"/>
+  <path d="M50 58 C60 46 74 40 86 38" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.8"/>
+</svg>

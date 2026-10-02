@@ -615,3 +615,105 @@ body {
     animation: none;
   }
 }
+
+/* ---- Letter lessons (LESSON_A in story.js) ---- */
+
+/* Daylight, low-contrast look: a lesson has nothing to be scary about, and
+   children with ASD do better on a calm, bright, unchanging background. */
+.scene-layer.scene-lesson { background: linear-gradient(180deg, rgba(255,246,222,0.72), rgba(255,236,200,0.55)); }
+
+/* The letter stays in the same corner for the whole lesson — never moves,
+   never animates, except a soft pulse during the chant and a glow on a
+   correct answer. One fixed anchor is the point. */
+#letterOverlay {
+  position: absolute;
+  left: 4%;
+  top: 6%;
+  z-index: 3;
+  display: none;
+  padding: 2px 14px 6px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--card-solid) 88%, transparent);
+  border: 3px solid var(--ink);
+  color: var(--ink);
+  font-weight: 900;
+  font-size: clamp(2.6rem, 11vw, 4.6rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  box-shadow: 0 4px 0 0 var(--line);
+  pointer-events: none;
+  transition: box-shadow 260ms var(--ease-materialize), border-color 260ms var(--ease-materialize);
+}
+#letterOverlay.show { display: block; }
+#letterOverlay.glow { border-color: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent); }
+#letterOverlay.chant { animation: letterPulse 1.1s ease-in-out infinite; }
+@keyframes letterPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+/* Picture zone: right of the hero. One reference card (`picture`) or the
+   tappable cards of a "pick" node (`choices`). Cards are big, flat, with
+   the word under them — tapping one IS an answer (see onPictureTap). */
+#pictureOverlay {
+  position: absolute;
+  right: 3%;
+  top: 8%;
+  bottom: 8%;
+  /* Above #heroStage (z 2): the fox is drawn on a 155px canvas that would
+     otherwise sit on top of a card's corner and swallow the tap. */
+  z-index: 4;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  width: 30%;
+  max-width: 190px;
+}
+#pictureOverlay.show { display: flex; }
+/* Two choice cards sit in the upper band of the scene, clear of the fox,
+   who stands bottom-centre — so neither card is ever behind him on a phone. */
+#pictureOverlay.two { flex-direction: row; align-items: flex-start; top: 5%; bottom: auto; left: 22%; right: 3%; width: auto; max-width: none; }
+.pic-card {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px 6px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--card-solid) 92%, transparent);
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 0 var(--line);
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+}
+.pic-card img { width: 100%; max-height: 110px; aspect-ratio: 1; object-fit: contain; display: block; }
+.pic-card .pic-word { font-weight: 800; font-size: 1.05rem; line-height: 1.1; }
+.pic-card .pic-ru { font-size: 0.72rem; color: var(--ink-soft); font-style: italic; }
+button.pic-card { cursor: pointer; transition: transform 120ms var(--ease-response), box-shadow 120ms var(--ease-response); }
+button.pic-card:active { transform: translateY(3px); box-shadow: 0 1px 0 0 var(--line); }
+button.pic-card:disabled { cursor: default; opacity: 0.85; }
+.pic-card.picked { border-color: var(--accent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 35%, transparent); }
+@media (max-width: 480px) {
+  #pictureOverlay { max-width: 120px; }
+  #pictureOverlay.two { max-width: 240px; }
+  .pic-card .pic-word { font-size: 0.9rem; }
+}
+
+/* Gentle mode (app.js gentleMode()): the same stillness prefers-reduced-motion
+   asks for, switched on by the operator or by any lesson, independent of the
+   OS setting — sparkles, shakes, the breathing hero and the drifting
+   background are exactly the stimuli a child with ASD does not need. */
+body.gentle #heroStage, body.gentle .hero-eyes, body.gentle .hero-mouth-talk, body.gentle #sceneStage,
+body.gentle .brother-fox, body.gentle #trackOverlay .track, body.gentle #letterOverlay.chant { animation: none !important; }
+body.gentle .sparkle { display: none; }
+body.gentle .hero-shake { animation: none; }
+body.gentle #heroStage.hero-recording::before { transform: none; }
+body.gentle .mic-btn.recording { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  #letterOverlay.chant { animation: none; }
+  button.pic-card { transition: none; }
+}

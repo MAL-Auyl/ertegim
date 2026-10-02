@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="алма">
+  <!-- Flat, high-contrast picture card for the letter lesson: one object, no
+       background detail, thick ink outline — same picture-book style as
+       characters.js. -->
+  <path d="M104 44 C106 28 118 20 132 18" fill="none" stroke="#14181C" stroke-width="7" stroke-linecap="round"/>
+  <path d="M106 46 C124 26 150 30 154 46 C136 54 116 56 106 46 Z" fill="#5BB85A" stroke="#14181C" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M100 62 C70 40 28 56 26 104 C24 148 60 184 100 176 C140 184 176 148 174 104 C172 56 130 40 100 62 Z" fill="#F0433A" stroke="#14181C" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M56 86 C60 70 72 62 84 60" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.8"/>
+</svg>

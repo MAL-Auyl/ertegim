@@ -48,6 +48,25 @@ describe("summarize", () => {
     expect(s.avgResponseSec).toBeNull();
   });
 
+  test("lesson session: skills come from the activity, tap answers are counted apart", () => {
+    Session.start(1000, { activity: "letter-a", skills: ["sound_a", "word_a", "pick_a", "open_a"] });
+    Session.questionShown("q_a_sound", "sound_a", 1, 1000);
+    Session.answer({ nodeId: "q_a_sound", transcript: "а-а-а", verdict: "correct", source: "ai", answeredAt: 2000 });
+    Session.questionShown("q_a_pick", "pick_a", 1, 3000);
+    Session.answer({ nodeId: "q_a_pick", transcript: "👆 доп", verdict: "other", source: "tap", answeredAt: 4000 });
+    Session.questionShown("q_a_pick", "pick_a", 1, 5000);
+    Session.answer({ nodeId: "q_a_pick", transcript: "👆 алма", verdict: "correct", source: "tap", answeredAt: 6000 });
+    const s = Session.summarize(Session.current());
+    expect(Object.keys(s.skills).sort()).toEqual(["open_a", "pick_a", "sound_a", "word_a"]);
+    expect(s.skills.count).toBeUndefined(); // the tale's rows never appear in a lesson
+    expect(s.skills.sound_a).toBe("first");
+    expect(s.skills.pick_a).toBe("reask"); // picked the other card first
+    expect(s.skills.word_a).toBe("skipped");
+    expect(s.gestureAnswers).toBe(2);
+    expect(s.activity).toBe("letter-a");
+    expect(s.questionsTotal).toBe(2);
+  });
+
   test("shown but never answered (all verdicts null) is 'skipped'", () => {
     Session.questionShown("q_tracks", "count", 1, 1000);
     const s = Session.summarize(Session.current());
@@ -58,7 +77,25 @@ describe("summarize", () => {
 
 describe("memory + history", () => {
   test("first run: runs=0", () => {
-    expect(Session.memory()).toEqual({ runs: 0, lastRoute: null, lastPlayedAt: null });
+    expect(Session.memory()).toEqual({ runs: 0, lastRoute: null, lastPlayedAt: null, lessons: {} });
+  });
+  test("a lesson keeps its own replay counter, separate from the tale's runs", () => {
+    Session.start(1000, { activity: "letter-a", skills: ["sound_a", "word_a"] });
+    Session.finish({ completed: true }, 5000);
+    expect(Session.memory().runs).toBe(0);
+    expect(Session.lessonRuns("letter-a")).toBe(1);
+    expect(Session.lessonRuns("letter-u")).toBe(0);
+    Session.start(6000);
+    Session.finish({ completed: true }, 7000);
+    expect(Session.memory().runs).toBe(1);
+    expect(Session.lessonRuns("letter-a")).toBe(1); // untouched by the tale
+    expect(Session.history()[0].activity).toBe("story");
+    expect(Session.history()[1].activity).toBe("letter-a");
+  });
+  test("legacy memory without `lessons` still reads", () => {
+    Session._storage.setItem("ertegim.memory", JSON.stringify({ runs: 2, lastRoute: "river", lastPlayedAt: null }));
+    expect(Session.memory().runs).toBe(2);
+    expect(Session.lessonRuns("letter-a")).toBe(0);
   });
   test("finish completed increments runs and stores route", () => {
     Session.setRoute("forest");
