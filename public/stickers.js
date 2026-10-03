@@ -44,6 +44,15 @@ function stickerStorage() {
   }
 }
 
+// Per child when profiles.js is loaded (the first profile keeps the legacy key).
+function stickerKey() {
+  try {
+    return typeof Profiles !== "undefined" && Profiles.scopedKey ? Profiles.scopedKey(STICKERS_KEY) : STICKERS_KEY;
+  } catch {
+    return STICKERS_KEY;
+  }
+}
+
 const Stickers = {
   _storage: null,
 
@@ -51,7 +60,7 @@ const Stickers = {
   earned() {
     try {
       const st = stickerStorage();
-      const v = st ? st.getItem(STICKERS_KEY) : null;
+      const v = st ? st.getItem(stickerKey()) : null;
       const obj = v ? JSON.parse(v) : {};
       return obj && typeof obj === "object" && !Array.isArray(obj) ? obj : {};
     } catch {
@@ -76,7 +85,7 @@ const Stickers = {
     if (fresh.length) {
       try {
         const st = stickerStorage();
-        if (st) st.setItem(STICKERS_KEY, JSON.stringify(have));
+        if (st) st.setItem(stickerKey(), JSON.stringify(have));
       } catch {
         // private mode / quota — the sticker still shows this once
       }

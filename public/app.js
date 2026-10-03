@@ -77,13 +77,23 @@ const GENTLE_VAD = { silenceMs: 3500, silenceTimeoutMs: 15000, maxRecordMs: 1500
 let gentleOperator = false;
 try { gentleOperator = localStorage.getItem(GENTLE_KEY) === "1"; } catch { /* private mode — stays off */ }
 const gentleParam = pageParams.get("mode") === "gentle";
+// The active child (profiles.js, set in the therapist's cabinet). Its
+// settings win over the activity/operator defaults wherever they are set;
+// null means "no override".
+const CHILD = typeof Profiles !== "undefined" ? Profiles.active() : null;
+const CHILD_SETTINGS = CHILD ? CHILD.settings : {};
 function gentleMode() {
+  if (CHILD_SETTINGS.gentle === true || CHILD_SETTINGS.gentle === false) return CHILD_SETTINGS.gentle || ACTIVITY.gentle;
   return ACTIVITY.gentle || gentleParam || gentleOperator;
 }
-function vadSilenceMs() { return gentleMode() ? GENTLE_VAD.silenceMs : VAD_SILENCE_MS; }
-function vadSilenceTimeoutMs() { return gentleMode() ? GENTLE_VAD.silenceTimeoutMs : VAD_SILENCE_TIMEOUT_MS; }
-function vadMaxRecordMs() { return gentleMode() ? GENTLE_VAD.maxRecordMs : VAD_MAX_RECORD_MS; }
-function maxReasks() { return gentleMode() ? GENTLE_VAD.maxReasks : 1; }
+function vadSilenceMs() { return CHILD_SETTINGS.silenceMs || (gentleMode() ? GENTLE_VAD.silenceMs : VAD_SILENCE_MS); }
+function vadSilenceTimeoutMs() { return CHILD_SETTINGS.silenceTimeoutMs || (gentleMode() ? GENTLE_VAD.silenceTimeoutMs : VAD_SILENCE_TIMEOUT_MS); }
+function vadMaxRecordMs() {
+  // The cap must outlast one full end-of-phrase silence (tests/vad-config).
+  const base = gentleMode() ? GENTLE_VAD.maxRecordMs : VAD_MAX_RECORD_MS;
+  return Math.max(base, vadSilenceMs() + VAD_MIN_SPEECH_MS + 2000);
+}
+function maxReasks() { return CHILD_SETTINGS.maxReasks || (gentleMode() ? GENTLE_VAD.maxReasks : 1); }
 function applyGentleClass() {
   document.body.classList.toggle("gentle", gentleMode());
 }
@@ -1424,7 +1434,10 @@ function revealStickers(ids) {
 // ойнаймыз" on the end screen — both fully reset state and jump back to
 // the intro (startStateForMemory picks intro vs intro_again by replay count).
 function startSession() {
-  Session.start(Date.now(), { activity: ACTIVITY.id, skills: ACTIVITY.skills });
+  Session.start(Date.now(), {
+    activity: ACTIVITY.id, skills: ACTIVITY.skills,
+    profileId: CHILD ? CHILD.id : null, keepTranscripts: !!CHILD_SETTINGS.keepTranscripts,
+  });
 }
 
 function restartStory() {
@@ -2041,6 +2054,11 @@ if (gentleToggle) {
 }
 applyGentleClass();
 if (gentleMode()) log(`мягкий режим активен: тишина ${vadSilenceMs()}мс, ожидание ${vadSilenceTimeoutMs()}мс, переспросов ${maxReasks()}, без эффектов`);
+if (CHILD) {
+  const childEl = document.getElementById("opChild");
+  if (childEl) childEl.textContent = `${CHILD.name}${CHILD_SETTINGS.keepTranscripts ? " · транскрипты сохраняются" : ""}`;
+  log(`профиль: ${CHILD.name} (${CHILD.id})`);
+}
 
 // Operator panel: hidden from the child, toggled by the ` key, the ⚙ button
 // or ?op=1 / ?operator=1 for a stage laptop. Both spellings are accepted

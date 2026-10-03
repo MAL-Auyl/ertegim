@@ -5,7 +5,12 @@
 //
 // Privacy: full transcripts live only in the in-memory `raw` object for the
 // duration of the game. What gets persisted is the summary (word tags,
-// timings, verdict per skill) — never audio, never whole sentences.
+// timings, verdict per skill) — never audio, never whole sentences — UNLESS
+// the active child profile has `keepTranscripts` on (the therapist's
+// cabinet, profiles.js): then each attempt's transcript is kept too.
+//
+// All keys are scoped per child profile when profiles.js is loaded
+// (Profiles.scopedKey); without it — one device-wide set, as before.
 
 const SESSION_LIMIT_MS = 8 * 60 * 1000;
 const MEMORY_KEY = "ertegim.memory";
@@ -18,9 +23,9 @@ const SKILLS = ["count", "choice", "empathy", "rhyme"];
 
 let raw = null;
 
-function emptyRaw(now, { activity = "story", skills = SKILLS } = {}) {
+function emptyRaw(now, { activity = "story", skills = SKILLS, profileId = null, keepTranscripts = false } = {}) {
   return {
-    startedAt: now, endedAt: null, activity, skills: [...skills],
+    startedAt: now, endedAt: null, activity, skills: [...skills], profileId, keepTranscripts: !!keepTranscripts,
     route: null, blocked: false, completed: false, turns: [], moments: [],
   };
 }
@@ -33,11 +38,19 @@ function safeStorage() {
   }
 }
 
+function scoped(key) {
+  try {
+    return typeof Profiles !== "undefined" && Profiles.scopedKey ? Profiles.scopedKey(key) : key;
+  } catch {
+    return key;
+  }
+}
+
 function readJson(key, fallback) {
   try {
     const st = safeStorage();
     if (!st) return fallback;
-    const v = st.getItem(key);
+    const v = st.getItem(scoped(key));
     return v ? JSON.parse(v) : fallback;
   } catch {
     return fallback;
@@ -47,7 +60,7 @@ function readJson(key, fallback) {
 function writeJson(key, value) {
   try {
     const st = safeStorage();
-    if (st) st.setItem(key, JSON.stringify(value));
+    if (st) st.setItem(scoped(key), JSON.stringify(value));
   } catch {
     // private mode / quota — memory & history just stay off
   }
@@ -91,10 +104,21 @@ function summarize(r) {
   // child understood but did not vocalise — so the report shows it apart.
   const gestureAnswers = r.turns.filter((t) => t.verdict !== null && t.source === "tap").length;
 
+  // Per-attempt detail for the therapist's cabinet — only when the profile
+  // asked for it (Session.keepTranscripts), see the privacy note above.
+  const attempts = r.keepTranscripts
+    ? r.turns.filter((t) => t.verdict !== null).map((t) => ({
+        nodeId: t.nodeId, skill: t.skill, attempt: t.attempt,
+        transcript: t.transcript || "", verdict: t.verdict, source: t.source,
+        responseSec: t.answeredAt != null ? Math.round(((t.answeredAt - t.askedAt) / 1000) * 10) / 10 : null,
+      }))
+    : undefined;
+
   const end = r.endedAt ?? r.startedAt;
   return {
     date: new Date(end).toISOString(),
     activity: r.activity || "story",
+    profileId: r.profileId || null,
     durationSec: Math.round((end - r.startedAt) / 1000),
     route: r.route,
     completed: r.completed,
@@ -106,6 +130,7 @@ function summarize(r) {
     gestureAnswers,
     skills,
     moments: r.moments.map((m) => ({ atSec: Math.round((m.at - r.startedAt) / 1000), text_kk: m.text_kk })),
+    ...(attempts ? { attempts } : {}),
   };
 }
 

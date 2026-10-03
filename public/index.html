@@ -94,6 +94,18 @@
   .hero-copy .tag { margin: var(--space-2) 0 0; font-size: 1.05rem; font-weight: 800; }
   .hero-copy .tag-ru { margin: 4px 0 0; color: var(--ink-soft); font-style: italic; font-size: 0.92rem; }
   .hero-copy .btn-big { margin-top: var(--space-4); }
+  .child-chip {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: var(--space-3);
+    padding: 5px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 800;
+    color: var(--ink-soft); background: var(--paper); border: 2px solid var(--line); text-decoration: none;
+  }
+  .cabinet-link { display: inline-block; margin-top: 8px; color: var(--accent-dark); font-weight: 800; text-decoration: none; }
+  .task-badge {
+    position: absolute; top: 12px; left: 12px; z-index: 1;
+    padding: 5px 11px; border-radius: 999px; font-size: 0.74rem; font-weight: 900;
+    background: var(--warn); color: #fff; border: 2px solid var(--ink); box-shadow: 0 3px 0 0 var(--ink-shadow);
+  }
+  .book.assigned { box-shadow: 0 0 0 4px color-mix(in srgb, var(--warn) 45%, transparent), 0 7px 0 0 var(--ink-shadow); }
 
   /* --- Shelves --- */
   .shelf { width: 100%; max-width: 1040px; padding: var(--space-6) var(--space-4) 0; }
@@ -162,6 +174,7 @@
       <p class="tag">Дауыспен ойналатын ертегі</p>
       <p class="tag-ru">Ребёнок не смотрит сказку — он в ней участвует: говорит с героем голосом</p>
       <a class="btn btn-primary btn-big" href="/story.html">▶ Ойнауды бастау</a>
+      <a class="child-chip" id="childChip" href="/cabinet.html" title="Сменить ребёнка — в кабинете">👧 <span id="childName">—</span></a>
     </div>
   </section>
 
@@ -258,8 +271,28 @@
     <div id="stickerShelf" class="sticker-shelf"></div>
   </section>
 
-  <footer>🔒 Баланың дауысы сақталмайды — тек сөздер мен көрсеткіштер. Ата-ана есебі — ертегінің соңында.</footer>
+  <footer>🔒 Баланың дауысы сақталмайды — тек сөздер мен көрсеткіштер. Ата-ана есебі — ертегінің соңында.<br><a class="cabinet-link" href="/cabinet.html">🩺 Кабинет логопеда / родителя</a></footer>
+  <script src="profiles.js"></script>
   <script src="stickers.js"></script>
+  <script>
+    // Active child and today's assigned activities (set in the cabinet).
+    (function () {
+      const child = Profiles.active();
+      document.getElementById("childName").textContent = child.name;
+      const assigned = new Set(child.settings.assigned || []);
+      if (!assigned.size) return;
+      document.querySelectorAll("a.book").forEach((card) => {
+        const u = new URL(card.getAttribute("href"), location.origin);
+        const id = u.searchParams.get("lesson") || (u.pathname === "/story.html" && !u.searchParams.get("route") ? "story" : null);
+        if (id && assigned.has(id)) {
+          const b = document.createElement("span");
+          b.className = "task-badge"; b.textContent = "⭐ Бүгінгі тапсырма";
+          card.querySelector(".book-art").appendChild(b);
+          card.classList.add("assigned");
+        }
+      });
+    })();
+  </script>
   <script>
     // The collection: every sticker in the catalogue, earned ones in colour,
     // the rest as a dashed slot with the hint of how to get it.

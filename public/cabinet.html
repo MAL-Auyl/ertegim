@@ -1,0 +1,209 @@
+<!doctype html>
+<!-- Therapist's / parent's cabinet: children on this device, per-child
+     settings, session history with attempt transcripts, trends, print/PDF
+     and JSON export. Reads the same localStorage the game writes. -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ертегім — кабинет</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="design-system.css">
+<style>
+  body { display: flex; flex-direction: column; align-items: center; padding: 12px 12px 60px; }
+  .wrap { width: 100%; max-width: 920px; }
+  .topbar { max-width: 920px; }
+
+  .sheet { background: var(--card-solid); border: 3px solid var(--ink); border-radius: var(--radius-xl); box-shadow: 0 7px 0 0 var(--ink-shadow); padding: var(--space-5); margin-top: var(--space-4); }
+  h2 { margin: 0 0 var(--space-3); font-size: 1.2rem; font-weight: 900; letter-spacing: -0.01em; }
+  h2 small { font-size: 0.8rem; font-weight: 700; color: var(--ink-soft); margin-left: 8px; }
+  .muted { color: var(--ink-soft); font-size: 0.88rem; }
+
+  /* PIN gate */
+  #pinGate { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 420px; margin: var(--space-6) auto 0; }
+  #pinGate[hidden] { display: none; }
+  .pin-fox { height: 140px; width: auto; filter: drop-shadow(0 10px 12px rgba(46, 32, 19, 0.28)); }
+  #pinForm { display: flex; flex-direction: column; align-items: center; width: 100%; }
+  .pin-input { font-size: 1.5rem; font-weight: 900; letter-spacing: 0.45em; border-width: 2.5px; border-color: var(--ink); max-width: 240px; }
+
+  /* child tabs */
+  .child-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--space-4); }
+  .child-tab {
+    padding: 10px 16px; border-radius: 999px; font: inherit; font-weight: 800; cursor: pointer;
+    background: var(--card-solid); color: var(--ink); border: 2.5px solid var(--line); box-shadow: 0 3px 0 0 var(--line);
+  }
+  .child-tab.active { background: var(--accent); color: #fff; border-color: var(--accent-dark); box-shadow: 0 3px 0 0 var(--accent-dark); }
+  .child-tab.add { border-style: dashed; color: var(--ink-soft); box-shadow: none; }
+
+  /* settings form */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3) var(--space-4); }
+  @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; font-weight: 800; color: var(--ink-soft); }
+  .field input, .field select, .field textarea {
+    font: inherit; font-weight: 700; color: var(--ink); padding: 10px 12px;
+    border: 2px solid var(--line); border-radius: var(--radius-sm); background: var(--paper);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .field .hint { font-weight: 600; color: var(--ink-soft); font-size: 0.74rem; }
+  .field.wide { grid-column: 1 / -1; }
+  .check { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 0.92rem; color: var(--ink); }
+  .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .assign-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 16px; }
+  .assign { display: flex; align-items: center; gap: 6px; font-size: 0.88rem; font-weight: 700; }
+  .assign input { accent-color: var(--warn); width: 16px; height: 16px; }
+  .form-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: var(--space-4); }
+  .form-actions .btn { padding: 12px 18px; font-size: 0.95rem; border-radius: 999px; }
+  #saved { color: var(--ok); font-weight: 800; }
+
+  /* stats + trends */
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+  @media (max-width: 640px) { .stat-row { grid-template-columns: 1fr 1fr; } }
+  .stat { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--space-3) 6px; border-radius: var(--radius-md); border: 2.5px solid var(--ink); box-shadow: 0 4px 0 0 var(--ink-shadow); text-align: center; background: color-mix(in srgb, var(--accent) 12%, var(--card-solid)); }
+  .stat-num { font-size: 1.3rem; font-weight: 900; letter-spacing: -0.02em; }
+  .stat-label { font-size: 0.68rem; font-weight: 700; color: var(--ink-soft); }
+  .trend-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-top: var(--space-4); }
+  @media (max-width: 640px) { .trend-grid2 { grid-template-columns: 1fr; } }
+  .trend-box { border: 2px solid var(--line); border-radius: var(--radius-md); padding: var(--space-3); background: var(--paper); }
+  .trend-box h3 { margin: 0 0 6px; font-size: 0.86rem; font-weight: 900; }
+  .trend { width: 100%; height: auto; display: block; }
+  .trend-grid { stroke: var(--line); stroke-width: 1; }
+  .trend-label { font: 800 12px "Nunito", system-ui, sans-serif; fill: var(--ink); }
+  .trend-empty { font: 700 12px "Nunito", system-ui, sans-serif; fill: var(--ink-soft); }
+  #stTrend { margin-top: var(--space-3); font-weight: 800; }
+
+  /* sessions */
+  .session { border: 2px solid var(--line); border-radius: var(--radius-md); background: var(--paper); margin-bottom: 10px; overflow: hidden; }
+  .session summary { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 12px 14px; cursor: pointer; font-weight: 800; font-size: 0.9rem; list-style: none; }
+  .session summary::-webkit-details-marker { display: none; }
+  .session summary::before { content: "▸"; color: var(--ink-soft); }
+  .session[open] summary::before { content: "▾"; }
+  .s-date { color: var(--ink-soft); }
+  .s-act { flex: 1 1 200px; }
+  .s-stat { font-variant-numeric: tabular-nums; }
+  .s-body { padding: 0 14px 14px; font-size: 0.88rem; }
+  .s-skills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 800; border: 1.5px solid var(--line); background: var(--card-solid); color: var(--ink-soft); }
+  .tag-first, .tag-correct { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
+  .tag-reask, .tag-unclear, .tag-other { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+  .tag-reveal { color: var(--info-dark); border-color: color-mix(in srgb, var(--info) 50%, transparent); }
+  .tag-off { opacity: 0.5; }
+  .table-wrap { overflow-x: auto; margin-top: 8px; -webkit-overflow-scrolling: touch; }
+  table.attempts { width: 100%; min-width: 520px; border-collapse: collapse; font-size: 0.84rem; }
+  table.attempts th, table.attempts td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+  table.attempts th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); border-top: none; }
+  table.attempts td.tr { font-weight: 800; }
+
+  .tools { display: flex; flex-wrap: wrap; gap: 10px; }
+  .tools .btn { padding: 12px 18px; font-size: 0.95rem; border-radius: 999px; }
+  #printTitle { display: none; }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    .topbar, #pinGate, .child-tabs, .tools, #childForm, .form-actions, .no-print { display: none !important; }
+    #printTitle { display: block; font-size: 1.3rem; font-weight: 900; margin: 0 0 12px; }
+    .sheet { border: 1px solid #999; box-shadow: none; border-radius: 8px; break-inside: avoid; margin-top: 10px; }
+    .session { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <a class="topbar-back" href="/" aria-label="На главную">←</a>
+      <h1 class="topbar-logo">🩺 Кабинет</h1>
+    </div>
+    <span class="muted">Ертегім · только на этом устройстве</span>
+  </div>
+
+  <div class="wrap">
+    <div id="pinGate" class="sheet">
+      <img class="pin-fox" src="/images/fox-think.png" alt="">
+      <div class="display" style="font-size:1.3rem;">Для взрослых</div>
+      <p class="muted" style="margin:4px 0 0;">Кабинет логопеда и родителя: дети, настройки, история занятий.</p>
+      <form id="pinForm">
+        <input id="pinInput" class="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="•  •  •  •" aria-label="PIN-код" autocomplete="off">
+        <button type="submit" class="btn btn-primary btn-big" style="width:100%;max-width:300px;">Войти</button>
+      </form>
+    </div>
+
+    <div id="cabinet" hidden>
+      <div id="printTitle"></div>
+      <div class="child-tabs" id="childTabs"></div>
+
+      <section class="sheet">
+        <h2>📈 Динамика <small>по всем занятиям этого ребёнка</small></h2>
+        <div class="stat-row">
+          <div class="stat"><span class="stat-num" id="stSessions">0</span><span class="stat-label" id="stSessionsLabel">занятий</span></div>
+          <div class="stat"><span class="stat-num" id="stFirst">—</span><span class="stat-label">с первого раза</span></div>
+          <div class="stat"><span class="stat-num" id="stAvg">—</span><span class="stat-label">время реакции</span></div>
+          <div class="stat"><span class="stat-num" id="stWords">0</span><span class="stat-label">разных слов</span></div>
+        </div>
+        <div class="trend-grid2">
+          <div class="trend-box"><h3>Ответы с первого раза, % по занятиям</h3><div id="trendFirst"></div></div>
+          <div class="trend-box"><h3>Среднее время реакции, с</h3><div id="trendAvg"></div></div>
+        </div>
+        <p id="stTrend" class="muted"></p>
+      </section>
+
+      <section class="sheet">
+        <h2>📖 Занятия <small>последние 30; раскройте, чтобы увидеть попытки</small></h2>
+        <div id="sessions"></div>
+        <p class="muted">Наклейки: <span id="stickers"></span></p>
+        <div class="tools no-print">
+          <button type="button" class="btn btn-primary" id="printBtn">🖨 Печать / сохранить в PDF</button>
+          <button type="button" class="btn" id="exportJson">⬇ Экспорт JSON</button>
+        </div>
+      </section>
+
+      <section class="sheet no-print">
+        <h2>⚙️ Ребёнок и настройки <small>действуют на все занятия этого ребёнка</small></h2>
+        <form id="childForm">
+          <div class="form-grid">
+            <label class="field">Имя <input id="fName" required maxlength="40"></label>
+            <label class="field">Возраст <input id="fAge" type="number" min="1" max="12" step="1"></label>
+            <label class="field wide">Заметки <span class="hint">диагноз, что отрабатываем, на что обратить внимание — только для вас</span><textarea id="fNotes" rows="2" maxlength="500"></textarea></label>
+            <label class="field">Мягкий режим
+              <select id="fGentle">
+                <option value="auto">как у занятия (уроки — включён, сказка — выключен)</option>
+                <option value="on">всегда включён</option>
+                <option value="off">всегда выключен</option>
+              </select>
+              <span class="hint">длиннее паузы, без резких эффектов — для ЗРР, РАС</span>
+            </label>
+            <label class="field">Переспросов до подсказки героя
+              <select id="fReasks">
+                <option value="">по умолчанию (1, в мягком — 2)</option>
+                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+              </select>
+            </label>
+            <label class="field">Пауза в конце фразы, мс <input id="fSilence" type="number" min="500" max="10000" step="100" placeholder="1700 / 3500"><span class="hint">сколько тишины считать концом ответа</span></label>
+            <label class="field">Ожидание ответа, мс <input id="fTimeout" type="number" min="3000" max="60000" step="500" placeholder="8000 / 15000"><span class="hint">полная тишина → герой переспрашивает</span></label>
+            <div class="field wide">
+              <label class="check"><input type="checkbox" id="fTranscripts"> Сохранять транскрипты попыток</label>
+              <span class="hint">Текст каждого ответа (без звука) останется в истории на этом устройстве — для разбора с логопедом. По умолчанию выключено.</span>
+            </div>
+            <div class="field wide">Задание на сегодня <span class="hint">отмеченные занятия выделяются на главном экране</span>
+              <div class="assign-list" id="assignedList"></div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+            <span id="saved" hidden>Сохранено</span>
+            <span style="flex:1"></span>
+            <button type="button" class="btn btn-muted" id="deleteChild">🗑 Удалить профиль</button>
+          </div>
+        </form>
+      </section>
+
+      <p class="muted no-print" style="margin-top:var(--space-4)">🔒 Всё хранится в браузере этого устройства. Звук ребёнка не записывается и не сохраняется. Экспорт JSON и печать — единственный способ забрать данные отсюда.</p>
+    </div>
+  </div>
+
+  <script src="profiles.js"></script>
+  <script src="session.js"></script>
+  <script src="stickers.js"></script>
+  <script src="cabinet.js"></script>
+</body>
+</html>

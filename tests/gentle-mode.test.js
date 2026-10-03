@@ -60,7 +60,7 @@ test("the page runs one ACTIVITY over the merged node table", () => {
   expect(SRC).not.toMatch(/\bSTORY\[/); // every id lookup goes through NODES
   expect(SRC).toContain("ACTIVITIES[pageParams.get(\"lesson\")] || ACTIVITIES.story");
   expect(SRC).toContain("ACTIVITY.finalIds.has(id)");
-  expect(SRC).toContain("Session.start(Date.now(), { activity: ACTIVITY.id, skills: ACTIVITY.skills })");
+  expect(SRC).toMatch(/Session\.start\(Date\.now\(\), \{\s*activity: ACTIVITY\.id, skills: ACTIVITY\.skills,/);
 });
 
 test("a tapped picture card is a full answer with source \"tap\" and no mic", () => {

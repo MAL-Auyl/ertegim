@@ -214,6 +214,8 @@
   #nextBtn { width: 100%; padding: 16px; font-size: 1rem; margin-bottom: var(--space-3); }
   .op-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: var(--space-3); cursor: pointer; }
   .op-toggle input { width: 16px; height: 16px; accent-color: var(--accent); }
+  .op-child { font-size: 0.8rem; color: var(--ink-soft); margin-bottom: var(--space-2); }
+  .op-child a { color: var(--accent-dark); }
 
   #uploadRow { text-align: center; margin-top: var(--space-2); }
   #uploadLabel { font-size: 0.8rem; color: var(--ink-soft); cursor: pointer; text-decoration: underline; }
@@ -436,7 +438,7 @@
         <div id="reportHistoryEmpty" class="body-text" style="font-size:0.85rem;color:var(--ink-soft);">Бұл — бірінші ойын. Келесі жолы салыстыруға болады.</div>
       </div>
 
-      <div class="privacy-note" style="animation-delay:340ms">🔒 <span><b>Бұл ақпарат тек осы құрылғыда сақталады.</b> Баланың дауысы жазылмайды — тек сөздер мен көрсеткіштер.</span></div>
+      <div class="privacy-note" style="animation-delay:340ms">🔒 <span id="privacyText"><b>Бұл ақпарат тек осы құрылғыда сақталады.</b> Баланың дауысы жазылмайды — тек сөздер мен көрсеткіштер.</span></div>
       <a id="reportAgainBtn" class="btn btn-primary btn-big" href="/" style="animation-delay:360ms">🔄 Тағы бір ертегі</a>
     </div>
   </div>
@@ -451,6 +453,7 @@
       <div class="stage" id="stage-tts"><span class="stage-dot"></span><span>TTS</span><span class="stage-detail"></span></div>
     </div>
     <div class="op-title">Управление</div>
+    <div class="op-child">👧 <span id="opChild">—</span> · <a href="/cabinet.html">кабинет</a></div>
     <label id="gentleRow" class="op-toggle" title="Длиннее паузы (3,5 с тишины, 15 с ожидания), два переспроса вместо одного, без искр и тряски. Для детей с ЗРР/РАС. Сохраняется на устройстве; уроки включают его сами.">
       <input type="checkbox" id="gentleToggle"> 🕊 Мягкий режим
     </label>
@@ -489,6 +492,7 @@
   <script src="story.js"></script>
   <script src="characters.js"></script>
   <script src="classify-local.js"></script>
+  <script src="profiles.js"></script>
   <script src="session.js"></script>
   <script src="stickers.js"></script>
   <script src="report.js"></script>
