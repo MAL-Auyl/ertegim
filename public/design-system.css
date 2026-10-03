@@ -893,3 +893,95 @@ body.gentle .mic-btn.recording { animation: none; }
 @media (prefers-color-scheme: dark) {
   .book-art-letter .letter-big { color: #2e2013; }
 }
+
+
+/* ============================================================
+   Parent report v3 — a child's "achievement diary", not a dashboard:
+   the fox says how it went, skills are stickers with stars, moments are
+   a dotted timeline. Same ink borders and offset shadows as the rest.
+   ============================================================ */
+
+.report { padding: var(--space-5) var(--space-4) var(--space-5); }
+.report .report-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); }
+.pill {
+  display: inline-block; padding: 4px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--card-solid));
+  color: var(--accent-dark); font-size: 0.78rem; font-weight: 800;
+}
+
+.report-fox { display: flex; align-items: flex-end; gap: var(--space-2); margin-bottom: var(--space-5); }
+.report-fox-img { height: 96px; width: auto; flex: 0 0 auto; filter: drop-shadow(0 8px 10px rgba(46, 32, 19, 0.28)); }
+.report-bubble { flex: 1; font-size: 1.02rem; font-weight: 700; line-height: 1.4; padding: var(--space-3) var(--space-4); border-width: 3px; border-color: var(--ink); box-shadow: 0 4px 0 0 var(--ink-shadow); }
+.report-bubble::after { left: -1px; bottom: 18px; transform: rotate(135deg); border-color: var(--ink); border-width: 3px; }
+
+/* Three stats side by side even on a phone: a glance, not a scroll. */
+.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin-bottom: var(--space-5); }
+.stat {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: var(--space-3) 6px var(--space-3);
+  border-radius: var(--radius-md);
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 4px 0 0 var(--ink-shadow);
+  text-align: center;
+}
+.stat-icon { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; background: rgba(255, 255, 255, 0.7); border: 2px solid var(--ink); margin-bottom: 4px; }
+.stat-num { font-size: 1.55rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1; }
+.stat-label { font-size: 0.68rem; font-weight: 700; color: var(--ink-soft); line-height: 1.15; }
+.stat-blue   { background: color-mix(in srgb, var(--info) 18%, var(--card-solid)); }
+.stat-blue   .stat-num { color: var(--info-dark); }
+.stat-orange { background: color-mix(in srgb, var(--accent) 18%, var(--card-solid)); }
+.stat-orange .stat-num { color: var(--accent-dark); }
+.stat-green  { background: color-mix(in srgb, var(--ok) 18%, var(--card-solid)); }
+.stat-green  .stat-num { color: var(--ok); }
+
+.report-section { margin-bottom: var(--space-5); }
+.section-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 1.05rem; font-weight: 900; margin-bottom: var(--space-3); }
+.section-head small { font-size: 0.72rem; font-weight: 700; color: var(--ink-soft); }
+
+/* Skill stickers: 2 per row, big icon in a circle, name, stars, state pill */
+.sticker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.sticker {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: var(--space-4) var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 2.5px solid var(--ink);
+  background: var(--card-solid);
+  box-shadow: 0 5px 0 0 var(--ink-shadow);
+  text-align: center;
+}
+.sticker.first  { background: color-mix(in srgb, var(--ok) 14%, var(--card-solid)); }
+.sticker.reask  { background: color-mix(in srgb, var(--warn) 16%, var(--card-solid)); }
+.sticker.reveal { background: color-mix(in srgb, var(--info) 14%, var(--card-solid)); }
+.sticker.skipped { opacity: 0.55; box-shadow: none; border-style: dashed; }
+.sticker-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.7rem; background: rgba(255, 255, 255, 0.75); border: 2.5px solid var(--ink); }
+.sticker-name { font-size: 0.92rem; font-weight: 800; line-height: 1.15; }
+.sticker-stars { font-size: 1.1rem; letter-spacing: 0.08em; color: var(--warn); line-height: 1; }
+.sticker-stars .off { color: var(--line); }
+.sticker-state { font-size: 0.7rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.75); border: 1.5px solid var(--line); color: var(--ink-soft); }
+.sticker.first .sticker-state { color: var(--ok); }
+.sticker.reask .sticker-state { color: var(--warn); }
+.sticker.reveal .sticker-state { color: var(--info-dark); }
+.gesture-note { margin-top: var(--space-3); font-size: 0.84rem; color: var(--ink-soft); padding: 8px 12px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--info) 10%, var(--card-solid)); border: 1.5px dashed color-mix(in srgb, var(--info) 40%, transparent); }
+
+.report .word-tag { font-size: 0.9rem; font-weight: 700; padding: 6px 13px; border: 2px solid var(--ink); background: color-mix(in srgb, var(--accent) 12%, var(--card-solid)); box-shadow: 0 2px 0 0 var(--ink-shadow); }
+
+/* Dotted timeline */
+.report .timeline { position: relative; padding-left: 26px; gap: 10px; }
+.report .timeline::before { content: ""; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 3px; border-radius: 2px; background: var(--line); }
+.report .timeline-item { position: relative; font-size: 0.92rem; font-weight: 700; }
+.report .timeline-item::before { content: ""; position: absolute; left: -24px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2.5px solid var(--ink); box-sizing: border-box; }
+.report .timeline-time { font-size: 0.78rem; font-weight: 800; color: var(--accent-dark); min-width: 44px; }
+
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+.history-row {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center;
+  padding: 10px 14px; border-radius: var(--radius-md);
+  border: 2px solid var(--line); background: var(--card-solid);
+  font-size: 0.88rem; font-weight: 700;
+}
+.history-row span:first-child { color: var(--ink-soft); }
+.history-row .h-stars { color: var(--warn); letter-spacing: 0.05em; }
+
+/* PIN gate: the thinking fox guards the parent's page */
+.pin-fox { height: 150px; width: auto; filter: drop-shadow(0 10px 12px rgba(46, 32, 19, 0.28)); margin-bottom: var(--space-3); }
+.pin-gate .pin-input { font-size: 1.5rem; font-weight: 900; letter-spacing: 0.45em; border-width: 2.5px; border-color: var(--ink); max-width: 260px; }

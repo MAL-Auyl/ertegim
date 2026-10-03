@@ -34,6 +34,31 @@ function skillLabel(state) {
   return { first: "бірден", reask: "қайта сұрап", reveal: "көмекпен" }[state] || "өтпеді";
 }
 
+// Stars for the sticker: 3 — answered first time, 2 — after a re-ask,
+// 1 — the hero had to show the answer, 0 — the question never came up.
+function skillStars(state) {
+  return { first: 3, reask: 2, reveal: 1 }[state] || 0;
+}
+function starsHTML(n, total = 3) {
+  let out = "";
+  for (let i = 0; i < total; i++) out += i < n ? "★" : `<span class="off">★</span>`;
+  return out;
+}
+
+// One sentence the fox says to the parent, built from the real numbers —
+// the diary's headline, before any chart.
+function summaryLine(summary) {
+  const words = summary.words.length;
+  const total = summary.questionsTotal || 0;
+  const first = summary.firstTryCorrect || 0;
+  if (summary.blocked) return "Бүгін ойын ерте аяқталды. Келесі жолы тағы байқап көрейік!";
+  if (total === 0) return "Бүгін біз әлі сөйлесе алмадық — келесі жолы міндетті түрде!";
+  const w = words ? `Мен ${words} сөз естідім! ` : "";
+  if (first === total) return `${w}Барлық ${total} сұраққа бірден жауап бердің — жарайсың!`;
+  if (first === 0) return `${w}Бірге ${total} сұрақты өттік — әр жолы мен көмектестім. Тағы ойнайық!`;
+  return `${w}${total} сұрақтың ${first}-іне бірден жауап бердің. Жарайсың!`;
+}
+
 function fmtClock(sec) {
   const m = Math.floor(sec / 60), s = sec % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
@@ -45,6 +70,8 @@ function historyRowText(s) {
     acc: `${s.firstTryCorrect}/${s.questionsTotal}`,
     avg: fmtSec(s.avgResponseSec),
     flag: s.blocked ? "⛔" : s.completed ? "" : "…",
+    // first-try share as 0..3 stars, same scale as the stickers
+    stars: s.questionsTotal ? Math.round((s.firstTryCorrect / s.questionsTotal) * 3) : 0,
   };
 }
 
@@ -66,12 +93,16 @@ function renderReport(summary, history, doc = document) {
     ? summary.moments.map((m) => `<div class="timeline-item"><span class="timeline-time">${fmtClock(m.atSec)}</span><span>${esc(m.text_kk)}</span></div>`).join("")
     : `<div class="timeline-item"><span>Ерекше сәттер болған жоқ</span></div>`;
 
+  const summaryEl = el(doc, "reportSummary");
+  if (summaryEl) summaryEl.textContent = summaryLine(summary);
+
   el(doc, "reportSkills").innerHTML = skillRows(summary).map(([skill, meta], i) => {
     const state = summary.skills[skill] || "skipped";
-    return `<div class="mastery-row${state === "skipped" ? " locked" : ""}" style="animation-delay:${240 + i * 40}ms">
-      <span class="mastery-name">${meta.icon} ${meta.name}</span>
-      <div class="mastery-bar"><div class="mastery-fill" style="width:${skillPercent(state)}%"></div></div>
-      <span class="skill-state">${skillLabel(state)}</span>
+    return `<div class="sticker ${state}" style="animation-delay:${240 + i * 40}ms">
+      <span class="sticker-icon">${meta.icon}</span>
+      <span class="sticker-name">${meta.name}</span>
+      <span class="sticker-stars" aria-label="${skillStars(state)} из 3">${starsHTML(skillStars(state))}</span>
+      <span class="sticker-state">${skillLabel(state)}</span>
     </div>`;
   }).join("");
 
@@ -88,11 +119,11 @@ function renderReport(summary, history, doc = document) {
   const rows = history.slice(0, 5);
   el(doc, "reportHistory").innerHTML = rows.map((s) => {
     const r = historyRowText(s);
-    return `<div class="history-row"><span>${r.date} ${r.flag}</span><span>🎯 ${r.acc}</span><span>⚡ ${r.avg}</span></div>`;
+    return `<div class="history-row"><span>${r.date} ${r.flag}</span><span class="h-stars">${starsHTML(r.stars)}</span><span>⚡ ${r.avg}</span></div>`;
   }).join("");
   el(doc, "reportHistoryEmpty").style.display = rows.length ? "none" : "block";
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { renderReport, fmtSec, skillLabel, skillPercent, historyRowText, esc, skillRows, SKILL_META };
+  module.exports = { renderReport, fmtSec, skillLabel, skillPercent, skillStars, starsHTML, summaryLine, historyRowText, esc, skillRows, SKILL_META };
 }

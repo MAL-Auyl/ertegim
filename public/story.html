@@ -163,24 +163,26 @@
   }
   @media (prefers-reduced-motion: reduce) {
     #heroStage, .hero-eyes, .hero-mouth-talk, #sceneStage, .dots span, .brother-fox { animation: none !important; }
-    .chip, .info-card, .mastery-row, .privacy-note, #reportAgainBtn { animation: none !important; opacity: 1 !important; transform: none !important; }
+    .stat, .sticker, .report-section, .report-fox, .privacy-note, #reportAgainBtn { animation: none !important; opacity: 1 !important; transform: none !important; }
   }
 
   /* Report screen is a rare, once-per-session moment (end of story) — the
      one place in this app where a little delight earns its keep (see
      emil-design-eng: "rare/first-time -> can add delight"). Cards cascade
      in instead of appearing as one flat block. */
-  #reportPanel .chip,
-  #reportPanel .info-card,
-  #reportPanel .mastery-row,
+  #reportPanel .stat,
+  #reportPanel .sticker,
+  #reportPanel .report-section,
+  #reportPanel .report-fox,
   #reportPanel .privacy-note,
   #reportPanel #reportAgainBtn {
     opacity: 0;
     transform: translateY(8px);
   }
-  #reportPanel.show .chip,
-  #reportPanel.show .info-card,
-  #reportPanel.show .mastery-row,
+  #reportPanel.show .stat,
+  #reportPanel.show .sticker,
+  #reportPanel.show .report-section,
+  #reportPanel.show .report-fox,
   #reportPanel.show .privacy-note,
   #reportPanel.show #reportAgainBtn {
     animation: reportItemIn 340ms var(--ease-materialize) both;
@@ -300,18 +302,7 @@
   #reportPanel { display: none; }
   #reportPanel.show { display: block; }
   #blockedFlash, #status { margin-left: 6px; margin-right: 6px; }
-  .report-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-4); }
-  .report-date { font-size: 0.78rem; color: var(--ink-soft); }
-  .mastery { margin-top: var(--space-5); }
-  .mastery-title { font-size: 0.75rem; font-weight: 700; margin-bottom: var(--space-3); color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
-  .mastery-row { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
-  .mastery-name { flex: 0 0 148px; font-size: 0.85rem; }
-  .mastery-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
-  .mastery-fill { height: 100%; background: var(--accent); border-radius: 4px; }
-  .mastery-row.locked .mastery-name { opacity: 0.5; }
-  .mastery-row.locked .mastery-bar { opacity: 0.35; }
-  .mastery-soon { font-size: 0.68rem; color: var(--ink-soft); flex: 0 0 auto; }
-  #reportAgainBtn { display: block; text-align: center; text-decoration: none; margin-top: var(--space-5); }
+  #reportAgainBtn { display: flex; width: 100%; max-width: none; text-align: center; text-decoration: none; margin-top: var(--space-5); }
 </style>
 </head>
 <body class="pre-start">
@@ -382,47 +373,58 @@
     </div>
 
     <div id="pinGate" class="pin-gate sheet">
-      <div class="pin-avatar">🦊</div>
-      <div class="display" style="font-size:1.25rem;">Ата-ана профилі</div>
-      <div class="body-text" style="color:var(--ink-soft);font-size:0.88rem;margin-top:4px;">
-        Баланың дамуы туралы ақпаратты көріңіз
+      <img class="pin-fox" src="/images/fox-think.png" alt="">
+      <div class="display" style="font-size:1.35rem;">Ата-ана профилі</div>
+      <div class="body-text" style="color:var(--ink-soft);font-size:0.9rem;margin-top:4px;">
+        Баланың дамуы туралы есеп — тек ересектерге
       </div>
-      <input id="pinInput" class="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="•  •  •  •  PIN-код енгізіңіз">
-      <button id="pinSubmitBtn" class="btn btn-primary" style="width:100%;">Кіру</button>
+      <input id="pinInput" class="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="•  •  •  •" aria-label="PIN-код">
+      <button id="pinSubmitBtn" class="btn btn-primary btn-big" style="width:100%;max-width:320px;">Кіру</button>
     </div>
 
-    <div id="reportPanel" class="sheet">
+    <div id="reportPanel" class="sheet report">
       <div class="report-head">
         <span class="eyebrow">🔒 Балаңыздың есебі</span>
-        <span class="report-date" id="reportDate"></span>
+        <span class="report-date pill" id="reportDate"></span>
       </div>
-      <div class="chip-grid">
-        <div class="chip chip-blue" style="animation-delay:40ms"><div class="chip-icon">💬</div><div class="chip-num" id="reportWords">0</div><div class="chip-label">сөз қолданды</div></div>
-        <div class="chip chip-orange" style="animation-delay:80ms"><div class="chip-icon">⚡</div><div class="chip-num" id="reportAvg">—</div><div class="chip-label">орташа жауап</div></div>
-        <div class="chip chip-green" style="animation-delay:120ms"><div class="chip-icon">🎯</div><div class="chip-num" id="reportAcc">0/0</div><div class="chip-label">бірден дұрыс</div></div>
+
+      <!-- The fox tells the parent how it went — one sentence built from the
+           real numbers (report.js summaryLine), in a speech bubble. -->
+      <div class="report-fox">
+        <img src="/images/fox-happy.png" alt="" class="report-fox-img">
+        <div class="speech-bubble report-bubble"><span id="reportSummary"></span></div>
       </div>
-      <div class="info-grid">
-        <div class="info-card" style="animation-delay:160ms">
-          <div class="info-title">Қолданған сөздер</div>
-          <div class="word-tags" id="reportTags"></div>
-        </div>
-        <div class="info-card" style="animation-delay:200ms">
-          <div class="info-title">Маңызды сәттер</div>
-          <div class="timeline" id="reportTimeline"></div>
-        </div>
+
+      <div class="stat-row">
+        <div class="stat stat-blue" style="animation-delay:40ms"><span class="stat-icon">💬</span><span class="stat-num" id="reportWords">0</span><span class="stat-label">сөз</span></div>
+        <div class="stat stat-orange" style="animation-delay:80ms"><span class="stat-icon">⚡</span><span class="stat-num" id="reportAvg">—</span><span class="stat-label">орташа жауап</span></div>
+        <div class="stat stat-green" style="animation-delay:120ms"><span class="stat-icon">🎯</span><span class="stat-num" id="reportAcc">0/0</span><span class="stat-label">бірден дұрыс</span></div>
       </div>
-      <div class="mastery">
-        <div class="mastery-title">Дағдылар бойынша</div>
-        <div id="reportSkills"></div>
-        <div id="reportGesture" class="body-text" style="display:none;font-size:0.82rem;color:var(--ink-soft);margin-top:var(--space-2);"></div>
+
+      <div class="report-section">
+        <div class="section-head">⭐ Дағдылар <small>Бірден — 3 жұлдыз, қайта сұрап — 2, көмекпен — 1</small></div>
+        <div id="reportSkills" class="sticker-grid"></div>
+        <div id="reportGesture" class="gesture-note" style="display:none;"></div>
       </div>
-      <div class="history">
-        <div class="mastery-title">Өткен ойындар</div>
-        <div id="reportHistory"></div>
-        <div id="reportHistoryEmpty" class="body-text" style="font-size:0.82rem;color:var(--ink-soft);">Бұл — бірінші ойын.</div>
+
+      <div class="report-section">
+        <div class="section-head">💬 Айтқан сөздері</div>
+        <div class="word-tags" id="reportTags"></div>
       </div>
+
+      <div class="report-section">
+        <div class="section-head">✨ Маңызды сәттер</div>
+        <div class="timeline" id="reportTimeline"></div>
+      </div>
+
+      <div class="report-section">
+        <div class="section-head">📖 Өткен ойындар</div>
+        <div id="reportHistory" class="history-list"></div>
+        <div id="reportHistoryEmpty" class="body-text" style="font-size:0.85rem;color:var(--ink-soft);">Бұл — бірінші ойын. Келесі жолы салыстыруға болады.</div>
+      </div>
+
       <div class="privacy-note" style="animation-delay:340ms">🔒 <span><b>Бұл ақпарат тек осы құрылғыда сақталады.</b> Баланың дауысы жазылмайды — тек сөздер мен көрсеткіштер.</span></div>
-      <a id="reportAgainBtn" class="btn btn-primary" href="/" style="animation-delay:360ms">🔄 Тағы бір ертегі</a>
+      <a id="reportAgainBtn" class="btn btn-primary btn-big" href="/" style="animation-delay:360ms">🔄 Тағы бір ертегі</a>
     </div>
   </div>
 
