@@ -368,6 +368,11 @@
       <div class="end-title display">Сау бол!</div>
       <img class="end-fox" src="/images/fox-happy.png" alt="">
       <p id="endLine" class="end-line body-text">Інімді тапқаныңа рахмет!</p>
+      <!-- New stickers earned by this run (app.js revealStickers); hidden when none. -->
+      <div id="endStickers" class="end-stickers" hidden>
+        <div class="end-stickers-title">🎉 Жаңа жапсырма!</div>
+        <div id="endStickerRow" class="end-sticker-row"></div>
+      </div>
       <button id="playAgainBtn" class="btn btn-primary end-play-btn">🔄 Тағы ойнаймыз</button>
       <button id="parentBtn" class="btn btn-muted end-parent-btn">Ата-анаға</button>
     </div>
@@ -477,6 +482,7 @@
   <script src="characters.js"></script>
   <script src="classify-local.js"></script>
   <script src="session.js"></script>
+  <script src="stickers.js"></script>
   <script src="report.js"></script>
   <script src="preroll.js"></script>
   <script src="app.js"></script>

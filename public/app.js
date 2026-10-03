@@ -1066,6 +1066,7 @@ function renderState(id) {
     pinGate.classList.remove("show", "materialize-in");
     pinInput.value = "";
     lastSummary = Session.finish({ completed: true });
+    revealStickers(Stickers.award(stickersFor(ACTIVITY.id, lastSummary)));
     endScreen.classList.add("show");
     log(`→ ${id}: балаға арналған соңғы экран (PIN жасырын)`);
     return;
@@ -1184,6 +1185,23 @@ pinSubmitBtn.addEventListener("click", unlockReport);
 pinInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") unlockReport();
 });
+
+// New stickers from this run pop in on the end screen, one after another.
+// Earlier-earned ones are not repeated here — the library shelf shows the
+// whole collection.
+function revealStickers(ids) {
+  const box = document.getElementById("endStickers");
+  const row = document.getElementById("endStickerRow");
+  if (!box || !row) return;
+  row.innerHTML = (ids || []).map((id, i) => {
+    const m = STICKER_CATALOG[id];
+    return `<div class="sticker-badge pop${m.blend ? " blend" : ""}" style="animation-delay:${320 + i * 220}ms">
+      <img src="${m.img}" alt=""><span class="sticker-badge-name">${esc(m.kk)}</span>
+    </div>`;
+  }).join("");
+  box.hidden = !ids || ids.length === 0;
+  if (ids && ids.length) log(`жапсырма: ${ids.join(", ")}`);
+}
 
 // Shared by the operator's "Сначала" killswitch and the child's "Тағы
 // ойнаймыз" on the end screen — both fully reset state and jump back to

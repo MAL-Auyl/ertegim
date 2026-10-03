@@ -985,3 +985,49 @@ body.gentle .mic-btn.recording { animation: none; }
 /* PIN gate: the thinking fox guards the parent's page */
 .pin-fox { height: 150px; width: auto; filter: drop-shadow(0 10px 12px rgba(46, 32, 19, 0.28)); margin-bottom: var(--space-3); }
 .pin-gate .pin-input { font-size: 1.5rem; font-weight: 900; letter-spacing: 0.45em; border-width: 2.5px; border-color: var(--ink); max-width: 260px; }
+
+
+/* ============================================================
+   Stickers (stickers.js): round badges with the ink outline. Earned —
+   colour; locked — dashed slot, greyed art, a hint underneath. The end
+   screen pops the new ones in with a little bounce.
+   ============================================================ */
+
+.sticker-badge {
+  width: 104px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  text-align: center;
+}
+.sticker-badge img {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  object-fit: contain;
+  padding: 10px;
+  background: radial-gradient(circle at 50% 35%, #fff 0%, #ffe9c7 100%);
+  border: 3px solid var(--ink);
+  box-shadow: 0 5px 0 0 var(--ink-shadow);
+}
+.sticker-badge.blend img { background: #fff; }
+.sticker-badge.blend img { mix-blend-mode: normal; }
+.sticker-badge-name { font-size: 0.78rem; font-weight: 800; line-height: 1.15; }
+.sticker-badge-hint { font-size: 0.66rem; color: var(--ink-soft); line-height: 1.2; }
+.sticker-badge.locked img {
+  filter: grayscale(1) opacity(0.45);
+  background: var(--paper);
+  border-style: dashed;
+  box-shadow: none;
+}
+.sticker-badge.locked .sticker-badge-name { color: var(--ink-soft); }
+
+.end-stickers { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+.end-stickers[hidden] { display: none; }
+.end-stickers-title { font-weight: 900; font-size: 1.05rem; color: var(--accent-dark); }
+.end-sticker-row { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; }
+.sticker-badge.pop { animation: stickerPop 520ms var(--ease-response) both; }
+@keyframes stickerPop {
+  0% { opacity: 0; transform: scale(0.3) rotate(-12deg); }
+  70% { opacity: 1; transform: scale(1.12) rotate(3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@media (prefers-reduced-motion: reduce) { .sticker-badge.pop { animation: none; } }
+body.gentle .sticker-badge.pop { animation: fade-in 260ms ease both; }

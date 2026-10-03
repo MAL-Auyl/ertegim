@@ -119,6 +119,11 @@
     .row > * { flex: initial; }
   }
 
+  .sticker-shelf { display: flex; gap: var(--space-3); flex-wrap: wrap; justify-content: flex-start; }
+  .sticker-shelf .sticker-badge { animation: cardIn 340ms var(--ease-materialize) both; }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { .sticker-shelf .sticker-badge { animation: none; } }
+
   .soon {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
     margin-top: var(--space-3);
@@ -208,6 +213,27 @@
     </div>
   </section>
 
+  <section class="shelf">
+    <h2 class="section-title">🏅 Жапсырмалар <small id="stickerCount"></small></h2>
+    <div id="stickerShelf" class="sticker-shelf"></div>
+  </section>
+
   <footer>🔒 Баланың дауысы сақталмайды — тек сөздер мен көрсеткіштер. Ата-ана есебі — ертегінің соңында.</footer>
+  <script src="stickers.js"></script>
+  <script>
+    // The collection: every sticker in the catalogue, earned ones in colour,
+    // the rest as a dashed slot with the hint of how to get it.
+    (function () {
+      const shelf = Stickers.shelf();
+      const earned = shelf.filter((s) => s.earnedAt).length;
+      document.getElementById("stickerCount").textContent = `${earned} / ${shelf.length}`;
+      document.getElementById("stickerShelf").innerHTML = shelf.map((s, i) => `
+        <div class="sticker-badge${s.earnedAt ? "" : " locked"}${s.blend ? " blend" : ""}" style="animation-delay:${i * 60}ms" title="${s.ru}">
+          <img src="${s.img}" alt="">
+          <span class="sticker-badge-name">${s.kk}</span>
+          ${s.earnedAt ? "" : `<span class="sticker-badge-hint">${s.hint_kk}</span>`}
+        </div>`).join("");
+    })();
+  </script>
 </body>
 </html>
