@@ -56,8 +56,11 @@ tools/.venv/bin/pip install -r tools/requirements.txt
 tools/.venv/bin/python tools/prerender.py
 ```
 
-Скачает голос Piper в `tools/voices/` и озвучит все реплики истории в `public/audio/`.
-`--force` — переозвучить всё заново; `--only id1,id2` — только перечисленные реплики.
+Скачает голос Piper в `tools/voices/` (с HuggingFace; если он недоступен в вашей сети — тот же
+голос берётся из GitHub-релиза `rhasspy/piper v0.0.2`) и озвучит все реплики истории **и уроков**
+в `public/audio/`. `--force` — переозвучить всё заново; `--only id1,id2` — только перечисленные
+реплики. Реплики уроков (`a_*`, `q_a_*`) рендерятся медленнее (`LESSON_LENGTH_SCALE`), как
+просит `docs/lesson-letter-a.md`.
 
 ## Тесты
 
