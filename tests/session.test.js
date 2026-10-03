@@ -111,14 +111,14 @@ describe("memory + history", () => {
     expect(Session.memory().runs).toBe(0);
     expect(Session.history()[0].blocked).toBe(true);
   });
-  test("history capped at 30, newest first", () => {
-    for (let i = 0; i < 35; i++) {
+  test("history capped at 100, newest first", () => {
+    for (let i = 0; i < 105; i++) {
       Session.start(i * 1000);
       Session.finish({ completed: true }, i * 1000 + 500);
     }
     const h = Session.history();
-    expect(h.length).toBe(30);
-    expect(new Date(h[0].date).getTime()).toBe(34000 + 500);
+    expect(h.length).toBe(100);
+    expect(new Date(h[0].date).getTime()).toBe(104000 + 500);
   });
   test("storage unavailable → memory silently empty", () => {
     Session._storage = { getItem: () => { throw new Error("no"); }, setItem: () => { throw new Error("no"); } };

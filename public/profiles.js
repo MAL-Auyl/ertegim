@@ -131,6 +131,13 @@ const Profiles = {
     if (patch.age !== undefined) p.age = Number.isFinite(patch.age) ? patch.age : null;
     if (patch.notes !== undefined) p.notes = String(patch.notes || "").slice(0, 500);
     if (patch.settings !== undefined) p.settings = normalizeSettings({ ...normalizeSettings(p.settings), ...patch.settings });
+    // Homework bridge (homework.js): the plan this child follows, the
+    // therapist-side id the plan came from (linkedId, on the home device) and
+    // the home-side id results were imported from (remoteId, on the
+    // therapist's device). Stored as given — homework.js normalizes plans.
+    if (patch.homework !== undefined) p.homework = patch.homework && typeof patch.homework === "object" ? patch.homework : null;
+    if (patch.linkedId !== undefined) p.linkedId = typeof patch.linkedId === "string" ? patch.linkedId.slice(0, 40) : null;
+    if (patch.remoteId !== undefined) p.remoteId = typeof patch.remoteId === "string" ? patch.remoteId.slice(0, 40) : null;
     writeState(s);
     return { ...p, settings: normalizeSettings(p.settings) };
   },
