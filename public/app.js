@@ -1422,7 +1422,7 @@ function revealStickers(ids) {
   if (!box || !row) return;
   row.innerHTML = (ids || []).map((id, i) => {
     const m = STICKER_CATALOG[id];
-    return `<div class="sticker-badge pop${m.blend ? " blend" : ""}" style="animation-delay:${320 + i * 220}ms">
+    return `<div class="sticker-badge pop" style="animation-delay:${320 + i * 220}ms">
       <img src="${m.img}" alt=""><span class="sticker-badge-name">${esc(m.kk)}</span>
     </div>`;
   }).join("");
