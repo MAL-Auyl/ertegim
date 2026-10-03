@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="ауыз кең ашық">
+  <!-- Articulation pictogram for [а]: a face with the mouth wide open. Used
+       beside the fox on a_mouth / q_a_sound so the child sees the shape, not
+       just hears it (speech therapists' standard visual support). -->
+  <circle cx="100" cy="100" r="80" fill="#FFD9A8" stroke="#14181C" stroke-width="7"/>
+  <circle cx="72" cy="80" r="9" fill="#14181C"/>
+  <circle cx="128" cy="80" r="9" fill="#14181C"/>
+  <path d="M60 72 C66 62 78 60 86 66" fill="none" stroke="#14181C" stroke-width="5" stroke-linecap="round"/>
+  <path d="M114 66 C122 60 134 62 140 72" fill="none" stroke="#14181C" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="100" cy="132" rx="30" ry="26" fill="#14181C"/>
+  <ellipse cx="100" cy="140" rx="18" ry="12" fill="#D9534F"/>
+  <path d="M78 118 C88 112 112 112 122 118" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="жұлдыз">
+  <!-- The "all first-try" sticker: a chunky gold star, same ink outline as
+       the lesson cards. -->
+  <path d="M100 18 L124 72 L183 78 L139 118 L152 177 L100 147 L48 177 L61 118 L17 78 L76 72 Z" fill="#FFD23F" stroke="#14181C" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M100 48 L113 78 L146 81 L121 103 L128 136 L100 119 Z" fill="#FFF3B0" opacity="0.8"/>
+  <circle cx="84" cy="96" r="7" fill="#14181C"/>
+  <circle cx="116" cy="96" r="7" fill="#14181C"/>
+  <path d="M84 118 C92 128 108 128 116 118" fill="none" stroke="#14181C" stroke-width="6" stroke-linecap="round"/>
+</svg>

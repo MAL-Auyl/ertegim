@@ -9,7 +9,7 @@ Usage:
   python3 -m venv tools/.venv && tools/.venv/bin/pip install -r tools/requirements.txt
   tools/.venv/bin/python tools/prerender.py [--force] [--only intro,q_tracks]
 """
-import argparse, json, os, subprocess, tempfile, urllib.request
+import argparse, json, os, subprocess, tarfile, tempfile, urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -17,8 +17,16 @@ OUT_DIR = ROOT / "public" / "audio"
 VOICES = ROOT / "tools" / "voices"
 VOICE_NAME = "kk_KZ-issai-high"
 VOICE_URL = f"https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/kk/kk_KZ/issai/high/{VOICE_NAME}"
+# The same checkpoint shipped in piper's own v0.0.2 release (old file names,
+# no kk_KZ prefix) — used when huggingface.co is unreachable (corporate /
+# cloud proxies often block it; GitHub release assets usually pass).
+VOICE_FALLBACK_URL = "https://github.com/rhasspy/piper/releases/download/v0.0.2/voice-kk-issai-high.tar.gz"
+VOICE_FALLBACK_NAME = "kk-issai-high"
 SPEAKER = 3
 PITCH = 1.4
+# Letter-lesson lines (a_* / q_a_*) are read a little slower: a child with a
+# speech delay needs the pause between syllables (docs/lesson-letter-a.md).
+LESSON_LENGTH_SCALE = 1.15
 _piper_win = ROOT / "tools" / ".venv" / "Scripts" / "piper.exe"
 PIPER_BIN = _piper_win if _piper_win.exists() else ROOT / "tools" / ".venv" / "bin" / "piper"
 
@@ -30,11 +38,28 @@ def ensure_voice() -> Path:
     VOICES.mkdir(parents=True, exist_ok=True)
     onnx = VOICES / f"{VOICE_NAME}.onnx"
     cfg = VOICES / f"{VOICE_NAME}.onnx.json"
-    for dst, url in ((onnx, VOICE_URL + ".onnx"), (cfg, VOICE_URL + ".onnx.json")):
-        if not dst.exists():
-            print(f"downloading {url}")
-            urllib.request.urlretrieve(url, dst)
-    return onnx
+    fb_onnx = VOICES / f"{VOICE_FALLBACK_NAME}.onnx"
+    if fb_onnx.exists() and not onnx.exists():
+        return fb_onnx
+    try:
+        for dst, url in ((onnx, VOICE_URL + ".onnx"), (cfg, VOICE_URL + ".onnx.json")):
+            if not dst.exists():
+                print(f"downloading {url}")
+                urllib.request.urlretrieve(url, dst)
+        return onnx
+    except Exception as err:  # noqa: BLE001 — any network failure → try the release tarball
+        print(f"huggingface unavailable ({err}); falling back to {VOICE_FALLBACK_URL}")
+        for stray in (onnx, cfg):
+            if stray.exists() and stray.stat().st_size == 0:
+                stray.unlink()
+        tgz = VOICES / "voice.tar.gz"
+        urllib.request.urlretrieve(VOICE_FALLBACK_URL, tgz)
+        with tarfile.open(tgz) as tar:
+            tar.extractall(VOICES)
+        tgz.unlink()
+        if not fb_onnx.exists():
+            raise RuntimeError("fallback voice archive did not contain the .onnx model")
+        return fb_onnx
 
 
 def ffmpeg_bin() -> str:
@@ -47,12 +72,19 @@ def lines() -> dict:
     return json.loads(res.stdout)
 
 
+def is_lesson_line(audio_id: str) -> bool:
+    return audio_id.startswith("a_") or audio_id.startswith("q_a_")
+
+
 def render(audio_id: str, text: str, voice: Path, ffmpeg: str) -> None:
     out = OUT_DIR / f"{audio_id}.wav"
+    cmd = [str(PIPER_BIN), "-m", str(voice), "-f", "{raw}", "--speaker", str(SPEAKER)]
+    if is_lesson_line(audio_id):
+        cmd += ["--length-scale", str(LESSON_LENGTH_SCALE)]
     with tempfile.TemporaryDirectory() as tmp:
         raw = Path(tmp) / "raw.wav"
         subprocess.run(
-            [str(PIPER_BIN), "-m", str(voice), "-f", str(raw), "--speaker", str(SPEAKER)],
+            [c.replace("{raw}", str(raw)) for c in cmd],
             input=text.encode("utf-8"), check=True,
             # Piper is a Python CLI: on Windows it decodes stdin with the ANSI
             # codepage unless told otherwise, and then "speaks" mojibake —

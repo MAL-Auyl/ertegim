@@ -13,4 +13,9 @@ test("stt hints per node", async () => {
   expect(sttHintFor("intro")).toBe(DEFAULT_HINT);
   expect(sttHintFor(undefined)).toBe(DEFAULT_HINT);
   expect(sttHintFor("q_echo", { brotherName: "<script>" })).not.toContain("<");
+  // letter lesson «А»
+  expect(sttHintFor("q_a_sound")).toContain("а-а-а");
+  expect(sttHintFor("q_a_alma")).toContain("алма");
+  expect(sttHintFor("q_a_pick")).toContain("доп");
+  expect(sttHintFor("q_a_ana")).toContain("ана");
 });

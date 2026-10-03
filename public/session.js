@@ -5,18 +5,29 @@
 //
 // Privacy: full transcripts live only in the in-memory `raw` object for the
 // duration of the game. What gets persisted is the summary (word tags,
-// timings, verdict per skill) — never audio, never whole sentences.
+// timings, verdict per skill) — never audio, never whole sentences — UNLESS
+// the active child profile has `keepTranscripts` on (the therapist's
+// cabinet, profiles.js): then each attempt's transcript is kept too.
+//
+// All keys are scoped per child profile when profiles.js is loaded
+// (Profiles.scopedKey); without it — one device-wide set, as before.
 
 const SESSION_LIMIT_MS = 8 * 60 * 1000;
 const MEMORY_KEY = "ertegim.memory";
 const HISTORY_KEY = "ertegim.sessions";
 const HISTORY_MAX = 30;
-const SKILLS = ["count", "choice", "empathy", "rhyme", "letter", "plus", "minus", "write"];
+// Skills of the fox tale — the default when Session.start() is given no
+// activity. A lesson passes its own list (see ACTIVITIES in story.js), so
+// the report never shows the tale's rows for a letter lesson or vice versa.
+const SKILLS = ["count", "choice", "empathy", "rhyme"];
 
 let raw = null;
 
-function emptyRaw(now) {
-  return { startedAt: now, endedAt: null, route: null, blocked: false, completed: false, turns: [], moments: [] };
+function emptyRaw(now, { activity = "story", skills = SKILLS, profileId = null, keepTranscripts = false } = {}) {
+  return {
+    startedAt: now, endedAt: null, activity, skills: [...skills], profileId, keepTranscripts: !!keepTranscripts,
+    route: null, blocked: false, completed: false, turns: [], moments: [],
+  };
 }
 
 function safeStorage() {
@@ -27,11 +38,19 @@ function safeStorage() {
   }
 }
 
+function scoped(key) {
+  try {
+    return typeof Profiles !== "undefined" && Profiles.scopedKey ? Profiles.scopedKey(key) : key;
+  } catch {
+    return key;
+  }
+}
+
 function readJson(key, fallback) {
   try {
     const st = safeStorage();
     if (!st) return fallback;
-    const v = st.getItem(key);
+    const v = st.getItem(scoped(key));
     return v ? JSON.parse(v) : fallback;
   } catch {
     return fallback;
@@ -41,7 +60,7 @@ function readJson(key, fallback) {
 function writeJson(key, value) {
   try {
     const st = safeStorage();
-    if (st) st.setItem(key, JSON.stringify(value));
+    if (st) st.setItem(scoped(key), JSON.stringify(value));
   } catch {
     // private mode / quota — memory & history just stay off
   }
@@ -66,8 +85,9 @@ function summarize(r) {
     ? firstAttempts.reduce((acc, t) => acc + (t.answeredAt - t.askedAt) / 1000, 0) / firstAttempts.length
     : null;
 
+  const skillList = Array.isArray(r.skills) && r.skills.length ? r.skills : SKILLS;
   const skills = {};
-  for (const skill of SKILLS) {
+  for (const skill of skillList) {
     const turns = r.turns.filter((t) => t.skill === skill);
     if (turns.length === 0) { skills[skill] = "skipped"; continue; }
     const answered = turns.filter((t) => t.verdict !== null);
@@ -77,12 +97,28 @@ function summarize(r) {
     skills[skill] = turns.some((t) => t.verdict === "reveal") ? "reveal" : "reask";
   }
 
-  const askedSkills = SKILLS.filter((s) => skills[s] !== "skipped");
+  const askedSkills = skillList.filter((s) => skills[s] !== "skipped");
   const firstTryCorrect = askedSkills.filter((s) => skills[s] === "first").length;
+  // Answers given by tapping a picture card instead of speaking (lesson
+  // "pick" nodes). A speech therapist reads this as a separate signal — the
+  // child understood but did not vocalise — so the report shows it apart.
+  const gestureAnswers = r.turns.filter((t) => t.verdict !== null && t.source === "tap").length;
+
+  // Per-attempt detail for the therapist's cabinet — only when the profile
+  // asked for it (Session.keepTranscripts), see the privacy note above.
+  const attempts = r.keepTranscripts
+    ? r.turns.filter((t) => t.verdict !== null).map((t) => ({
+        nodeId: t.nodeId, skill: t.skill, attempt: t.attempt,
+        transcript: t.transcript || "", verdict: t.verdict, source: t.source,
+        responseSec: t.answeredAt != null ? Math.round(((t.answeredAt - t.askedAt) / 1000) * 10) / 10 : null,
+      }))
+    : undefined;
 
   const end = r.endedAt ?? r.startedAt;
   return {
     date: new Date(end).toISOString(),
+    activity: r.activity || "story",
+    profileId: r.profileId || null,
     durationSec: Math.round((end - r.startedAt) / 1000),
     route: r.route,
     completed: r.completed,
@@ -91,16 +127,18 @@ function summarize(r) {
     avgResponseSec,
     firstTryCorrect,
     questionsTotal: askedSkills.length,
+    gestureAnswers,
     skills,
     moments: r.moments.map((m) => ({ atSec: Math.round((m.at - r.startedAt) / 1000), text_kk: m.text_kk })),
+    ...(attempts ? { attempts } : {}),
   };
 }
 
 const Session = {
   _storage: null,
 
-  start(now = Date.now()) {
-    raw = emptyRaw(now);
+  start(now = Date.now(), opts = {}) {
+    raw = emptyRaw(now, opts);
   },
 
   current() {
@@ -137,9 +175,19 @@ const Session = {
 
   summarize,
 
+  // `runs`/`lastRoute` are the fox tale's memory (intro vs intro_again).
+  // Lessons keep their own counters under `lessons[<id>]` so a child who has
+  // played the tale is still greeted as new by a lesson, and vice versa.
   memory() {
     const m = readJson(MEMORY_KEY, null);
-    return m && typeof m.runs === "number" ? m : { runs: 0, lastRoute: null, lastPlayedAt: null };
+    const base = m && typeof m.runs === "number" ? m : { runs: 0, lastRoute: null, lastPlayedAt: null };
+    if (!base.lessons || typeof base.lessons !== "object") base.lessons = {};
+    return base;
+  },
+
+  lessonRuns(lessonId) {
+    const l = this.memory().lessons[lessonId];
+    return l && typeof l.runs === "number" ? l.runs : 0;
   },
 
   history() {
@@ -155,7 +203,13 @@ const Session = {
 
     if (r.completed) {
       const m = this.memory();
-      writeJson(MEMORY_KEY, { runs: m.runs + 1, lastRoute: r.route, lastPlayedAt: summary.date });
+      if (r.activity && r.activity !== "story") {
+        const prev = this.lessonRuns(r.activity);
+        m.lessons[r.activity] = { runs: prev + 1, lastPlayedAt: summary.date };
+        writeJson(MEMORY_KEY, m);
+      } else {
+        writeJson(MEMORY_KEY, { ...m, runs: m.runs + 1, lastRoute: r.route, lastPlayedAt: summary.date });
+      }
     }
     const history = [summary, ...this.history()].slice(0, HISTORY_MAX);
     writeJson(HISTORY_KEY, history);

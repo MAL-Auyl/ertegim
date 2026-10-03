@@ -1,20 +1,30 @@
 // Parent report renderer. Takes the summary Session.finish() produced for
 // this game plus the stored history of previous games and fills the
-// #reportPanel markup in index.html. Pure helpers are exported for tests.
+// #reportPanel markup in story.html. Pure helpers are exported for tests.
 
 const SKILL_META = {
+  // fox tale
   count: { icon: "🦊", name: "Санау" },
   choice: { icon: "🐻", name: "Жол таңдау" },
   empathy: { icon: "💛", name: "Батылдық беру" },
   rhyme: { icon: "🦉", name: "Ұйқас" },
+  // letter lesson «А» (LESSON_A in story.js)
+  sound_a: { icon: "🔤", name: "«А» дыбысы" },
+  word_a: { icon: "🍎", name: "«Алма» сөзі" },
+  pick_a: { icon: "👆", name: "А-ны суреттен тапты" },
+  open_a: { icon: "💛", name: "Ана туралы айтты" },
   letter: { icon: "🔤", name: "Әріптер" },
   plus: { icon: "➕", name: "Қосу" },
   minus: { icon: "➖", name: "Азайту" },
   write: { icon: "✏️", name: "Жазу" },
 };
-// The fairy tale always lists its four skills (a route skips one — shown
-// locked). A lesson exercises one skill, so only what was asked is listed.
-const TALE_SKILLS = ["count", "choice", "empathy", "rhyme"];
+
+// Only the rows this session actually had: summarize() keys `skills` by the
+// activity's own list, so a letter lesson never shows the tale's four rows
+// (all "skipped") and the tale never shows the lesson's.
+function skillRows(summary) {
+  return Object.keys(summary.skills || {}).filter((k) => SKILL_META[k]).map((k) => [k, SKILL_META[k]]);
+}
 
 function fmtSec(sec) {
   return sec == null ? "—" : `${sec.toFixed(1)}с`;
@@ -28,6 +38,31 @@ function skillLabel(state) {
   return { first: "бірден", reask: "қайта сұрап", reveal: "көмекпен" }[state] || "өтпеді";
 }
 
+// Stars for the sticker: 3 — answered first time, 2 — after a re-ask,
+// 1 — the hero had to show the answer, 0 — the question never came up.
+function skillStars(state) {
+  return { first: 3, reask: 2, reveal: 1 }[state] || 0;
+}
+function starsHTML(n, total = 3) {
+  let out = "";
+  for (let i = 0; i < total; i++) out += i < n ? "★" : `<span class="off">★</span>`;
+  return out;
+}
+
+// One sentence the fox says to the parent, built from the real numbers —
+// the diary's headline, before any chart.
+function summaryLine(summary) {
+  const words = summary.words.length;
+  const total = summary.questionsTotal || 0;
+  const first = summary.firstTryCorrect || 0;
+  if (summary.blocked) return "Бүгін ойын ерте аяқталды. Келесі жолы тағы байқап көрейік!";
+  if (total === 0) return "Бүгін біз әлі сөйлесе алмадық — келесі жолы міндетті түрде!";
+  const w = words ? `Мен ${words} сөз естідім! ` : "";
+  if (first === total) return `${w}Барлық ${total} сұраққа бірден жауап бердің — жарайсың!`;
+  if (first === 0) return `${w}Бірге ${total} сұрақты өттік — әр жолы мен көмектестім. Тағы ойнайық!`;
+  return `${w}${total} сұрақтың ${first}-іне бірден жауап бердің. Жарайсың!`;
+}
+
 function fmtClock(sec) {
   const m = Math.floor(sec / 60), s = sec % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
@@ -39,6 +74,8 @@ function historyRowText(s) {
     acc: `${s.firstTryCorrect}/${s.questionsTotal}`,
     avg: fmtSec(s.avgResponseSec),
     flag: s.blocked ? "⛔" : s.completed ? "" : "…",
+    // first-try share as 0..3 stars, same scale as the stickers
+    stars: s.questionsTotal ? Math.round((s.firstTryCorrect / s.questionsTotal) * 3) : 0,
   };
 }
 
@@ -60,25 +97,37 @@ function renderReport(summary, history, doc = document) {
     ? summary.moments.map((m) => `<div class="timeline-item"><span class="timeline-time">${fmtClock(m.atSec)}</span><span>${esc(m.text_kk)}</span></div>`).join("")
     : `<div class="timeline-item"><span>Ерекше сәттер болған жоқ</span></div>`;
 
-  const shown = Object.entries(SKILL_META).filter(([skill]) =>
-    (summary.skills[skill] || "skipped") !== "skipped" || (summary.route && TALE_SKILLS.includes(skill)));
-  el(doc, "reportSkills").innerHTML = shown.map(([skill, meta], i) => {
+  const summaryEl = el(doc, "reportSummary");
+  if (summaryEl) summaryEl.textContent = summaryLine(summary);
+
+  el(doc, "reportSkills").innerHTML = skillRows(summary).map(([skill, meta], i) => {
     const state = summary.skills[skill] || "skipped";
-    return `<div class="mastery-row${state === "skipped" ? " locked" : ""}" style="animation-delay:${240 + i * 40}ms">
-      <span class="mastery-name">${meta.icon} ${meta.name}</span>
-      <div class="mastery-bar"><div class="mastery-fill" style="width:${skillPercent(state)}%"></div></div>
-      <span class="skill-state">${skillLabel(state)}</span>
+    return `<div class="sticker ${state}" style="animation-delay:${240 + i * 40}ms">
+      <span class="sticker-icon">${meta.icon}</span>
+      <span class="sticker-name">${meta.name}</span>
+      <span class="sticker-stars" aria-label="${skillStars(state)} из 3">${starsHTML(skillStars(state))}</span>
+      <span class="sticker-state">${skillLabel(state)}</span>
     </div>`;
   }).join("");
+
+  // Picture-card answers (lesson "pick" nodes): shown only when there were
+  // any, as one extra line under the skills — the parent/therapist should
+  // see "understood, pointed, did not say it" as its own fact.
+  const gestureEl = el(doc, "reportGesture");
+  if (gestureEl) {
+    const n = summary.gestureAnswers || 0;
+    gestureEl.style.display = n ? "block" : "none";
+    gestureEl.textContent = n ? `👆 ${n} жауап — сөзбен емес, суретті көрсетіп` : "";
+  }
 
   const rows = history.slice(0, 5);
   el(doc, "reportHistory").innerHTML = rows.map((s) => {
     const r = historyRowText(s);
-    return `<div class="history-row"><span>${r.date} ${r.flag}</span><span>🎯 ${r.acc}</span><span>⚡ ${r.avg}</span></div>`;
+    return `<div class="history-row"><span>${r.date} ${r.flag}</span><span class="h-stars">${starsHTML(r.stars)}</span><span>⚡ ${r.avg}</span></div>`;
   }).join("");
   el(doc, "reportHistoryEmpty").style.display = rows.length ? "none" : "block";
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { renderReport, fmtSec, skillLabel, skillPercent, historyRowText, esc };
+  module.exports = { renderReport, fmtSec, skillLabel, skillPercent, skillStars, starsHTML, summaryLine, historyRowText, esc, skillRows, SKILL_META };
 }

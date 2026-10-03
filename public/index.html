@@ -1,437 +1,312 @@
 <!doctype html>
+<!-- Root page: the library (story / lesson picker). The tale itself is story.html.
+     kk copy not yet reviewed by a native speaker -->
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ертегім</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="design-system.css">
 <style>
-  /* Page-specific layout only — visual language lives in design-system.css */
-  body {
+  /* Page layout only — the visual language (sky, scene, shelf cards, big
+     buttons) lives in design-system.css so story.html shares it. */
+  body { display: flex; flex-direction: column; align-items: center; padding: 0 0 72px; }
+
+  .wrap { width: 100%; max-width: 1040px; padding: 0 var(--space-4); }
+
+  /* --- Hero: the fox's forest at dusk, the title on a paper label --- */
+  .hero {
+    position: relative;
+    width: 100%;
+    min-height: clamp(520px, 78vh, 720px);
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 40px 16px;
-    min-height: 100vh;
+    justify-content: flex-end;
+    overflow: hidden;
+    isolation: isolate;
   }
-  h1 { margin: 0; font: inherit; }
-
-  .panel { width: 100%; max-width: 560px; padding: var(--space-5); }
-
-  #sceneStageWrap {
+  .hero .scene-sky { position: absolute; inset: 0; z-index: -3; }
+  .hero .scene-forest {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 62%;
+    background: url(/images/bg-fox.png) center bottom / cover no-repeat;
+    z-index: -2;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 28%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 28%);
+  }
+  .hero .scene-tint {
+    position: absolute; inset: 0; z-index: -1;
+    background: linear-gradient(180deg, rgba(40, 24, 80, 0.0) 35%, rgba(255, 122, 47, 0.18) 70%, rgba(255, 246, 233, 0.9) 100%);
+  }
+  .hero-cast {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9;
-    margin-bottom: var(--space-4);
+    max-width: 720px;
+    height: clamp(230px, 40vh, 330px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
   }
-  #sceneStage {
-    position: absolute;
-    inset: 0;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    background-size: cover;
-    background-position: center;
-    background-color: var(--card-solid);
-    /* The background IMAGE swap (fox meadow <-> owl cave) can't cross-fade on
-       one element, so applyScene() dips the whole stage to 0.15 for 300ms
-       around the swap instead of letting it cut. */
-    transition: opacity 300ms ease;
-  }
-  #sceneStageWrap.hidden { display: none; }
-
-  #heroStage {
-    position: absolute;
-    left: 50%;
-    bottom: 2%;
-    width: 155px;
-    height: 210px;
+  .hero-fox {
+    height: 100%;
+    width: auto;
+    filter: drop-shadow(0 18px 22px rgba(46, 32, 19, 0.35));
+    animation: heroFloat 4.2s ease-in-out infinite;
     z-index: 2;
-    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25));
-    animation: heroBreathe 3.2s ease-in-out infinite;
   }
-  /* Local, network-free reaction to mic amplitude while the VAD turn-taking
-     loop is armed/listening (see app.js). --amp is written every animation
-     frame straight from the analyser, so this must stay off the `transform`
-     property (heroBreathe already owns that) — a second `filter` layer on
-     top of the static drop-shadow avoids fighting it. */
-  #heroStage.hero-listening {
-    --amp: 0;
-    filter:
-      drop-shadow(0 8px 16px rgba(0,0,0,0.25))
-      drop-shadow(0 0 calc(6px + var(--amp, 0) * 22px) color-mix(in srgb, var(--accent) 70%, transparent));
+  .hero-owl, .hero-bear {
+    position: absolute; bottom: 4%;
+    height: 48%;
+    width: auto;
+    filter: drop-shadow(0 12px 16px rgba(46, 32, 19, 0.3));
+    object-fit: contain;
   }
-  #heroStage svg { display: block; width: 140px; height: 140px; margin: 35px auto 0; }
-  .fox-pose { display: block; width: 100%; height: 100%; object-fit: contain; }
-
-  /* Idle motion so the hero never reads as a dead static image, plus a
-     slow Ken Burns drift on the background — cheap wins for a 3-7yo
-     audience's attention span, no new art needed. */
-  @keyframes heroBreathe {
-    0%, 100% { transform: translateX(-50%) scale(1); }
-    50% { transform: translateX(-50%) scale(1.035); }
-  }
-  .hero-eyes {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: heroBlink 4.5s ease-in-out infinite;
-  }
-  @keyframes heroBlink {
-    0%, 92%, 100% { transform: scaleY(1); }
-    95% { transform: scaleY(0.12); }
-  }
-  .hero-mouth-talk {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: heroTalkFlap 0.32s ease-in-out infinite;
-  }
-  @keyframes heroTalkFlap {
-    0%, 100% { transform: scaleY(1); }
-    50% { transform: scaleY(0.55); }
-  }
-  #sceneStage {
-    animation: kenBurns 18s ease-in-out infinite alternate;
-  }
-  @keyframes kenBurns {
-    0% { background-position: 50% 50%; background-size: 105%; }
-    100% { background-position: 55% 45%; background-size: 118%; }
-  }
-
-  #heroStage.pose-happy { animation-name: heroBounce; }
-  @keyframes heroBounce {
-    0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
-    30% { transform: translateX(-50%) translateY(-14px) scale(1.05); }
-    50% { transform: translateX(-50%) translateY(0) scale(0.98); }
-    70% { transform: translateX(-50%) translateY(-6px) scale(1.02); }
-  }
-  .hero-paw-wave {
-    transform-box: fill-box;
-    transform-origin: bottom center;
-    animation: pawWave 0.5s ease-in-out infinite;
-  }
-  @keyframes pawWave {
-    0%, 100% { transform: rotate(-12deg); }
-    50% { transform: rotate(12deg); }
-  }
-  .hero-sparkle {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: sparkleTwinkle 0.6s ease-in-out infinite;
-  }
-  @keyframes sparkleTwinkle {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(0.6); opacity: 0.5; }
-  }
-  .hero-think-bubble {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: bubbleFloat 2.4s ease-in-out infinite;
-  }
-  .hero-think-bubble-2 { animation-delay: 0.4s; }
-  @keyframes bubbleFloat {
+  .hero-owl { left: 4%; animation: heroFloat 5s ease-in-out -1.5s infinite; }
+  .hero-bear { right: 2%; height: 60%; animation: heroFloat 5.6s ease-in-out -3s infinite; }
+  @keyframes heroFloat {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
+    50% { transform: translateY(-8px); }
   }
-
-  .dots { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
-  /* `display` on the class beats the UA's [hidden] rule, so the JS
-     `thinkingDots.hidden = true` never took — the "думает" dots stayed lit
-     on every screen, report included. */
-  .dots[hidden] { display: none; }
-  .dots span {
-    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
-    animation: dotBounce 1s infinite ease-in-out;
-  }
-  .dots span:nth-child(2) { animation-delay: 0.15s; }
-  .dots span:nth-child(3) { animation-delay: 0.3s; }
-  @keyframes dotBounce {
-    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-    40% { transform: scale(1); opacity: 1; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    #heroStage, .hero-eyes, .hero-mouth-talk, #sceneStage, .dots span, .brother-fox { animation: none !important; }
-    .chip, .info-card, .mastery-row, .privacy-note, #reportAgainBtn { animation: none !important; opacity: 1 !important; transform: none !important; }
-  }
-
-  /* Report screen is a rare, once-per-session moment (end of story) — the
-     one place in this app where a little delight earns its keep (see
-     emil-design-eng: "rare/first-time -> can add delight"). Cards cascade
-     in instead of appearing as one flat block. */
-  #reportPanel .chip,
-  #reportPanel .info-card,
-  #reportPanel .mastery-row,
-  #reportPanel .privacy-note,
-  #reportPanel #reportAgainBtn {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  #reportPanel.show .chip,
-  #reportPanel.show .info-card,
-  #reportPanel.show .mastery-row,
-  #reportPanel.show .privacy-note,
-  #reportPanel.show #reportAgainBtn {
-    animation: reportItemIn 340ms var(--ease-materialize) both;
-  }
-  @keyframes reportItemIn {
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  #micOverlay {
-    position: absolute;
-    left: 50%;
-    bottom: 14px;
-    transform: translateX(-50%);
+  .hero-copy {
+    position: relative;
+    margin: -10px 0 0;
+    padding: var(--space-5) var(--space-5) var(--space-6);
+    width: min(100%, 560px);
+    text-align: center;
+    background: var(--card-solid);
+    border: 3px solid var(--ink);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 8px 0 0 var(--ink-shadow), 0 30px 50px -24px rgba(46, 32, 19, 0.45);
     z-index: 3;
   }
-  #recordBtn:disabled { opacity: 0.5; cursor: default; animation: none !important; }
-
-  #storyLine { margin-bottom: var(--space-4); margin-top: calc(-1 * var(--space-4)); position: relative; z-index: 2; }
-  #storyLine .speaker { display: block; margin-bottom: var(--space-2); }
-  #storyLine .kk { font-size: 1.55rem; font-weight: 700; line-height: 1.35; }
-  #storyLine .ru { display: block; margin-top: var(--space-3); color: var(--ink-soft); font-style: italic; font-size: 1rem; }
-
-  #nextBtn { width: 100%; padding: 16px; font-size: 1rem; margin-bottom: var(--space-3); }
-
-  #uploadRow { text-align: center; margin-top: var(--space-2); }
-  #uploadLabel { font-size: 0.8rem; color: var(--ink-soft); cursor: pointer; text-decoration: underline; }
-  #uploadLabel:hover { color: var(--ink); }
-  #fileInput { display: none; }
-
-  #status { text-align: center; margin: var(--space-3) 0 0; color: var(--ink-soft); font-size: 0.85rem; min-height: 1.2em; }
-
-  #blockedFlash {
-    display: none;
-    background: var(--danger);
-    color: #fff;
-    text-align: center;
-    font-size: 1.4rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    padding: 26px;
-    border-radius: var(--radius-lg);
-    margin-top: var(--space-4);
-    box-shadow: 0 16px 40px -16px color-mix(in srgb, var(--danger) 70%, transparent);
+  .hero-copy .brand {
+    margin: 0;
+    font-size: clamp(2.4rem, 9vw, 3.6rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--accent-dark);
+    text-shadow: 0 3px 0 rgba(46, 32, 19, 0.12);
   }
-  #blockedFlash.show { display: block; }
-
-  #result { margin-top: var(--space-4); display: none; }
-  #result.show { display: block; }
-
-  #transcript {
-    background: color-mix(in srgb, var(--card-solid) 60%, transparent);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    padding: var(--space-4);
-    min-height: 3em;
+  .hero-copy .tag { margin: var(--space-2) 0 0; font-size: 1.05rem; font-weight: 800; }
+  .hero-copy .tag-ru { margin: 4px 0 0; color: var(--ink-soft); font-style: italic; font-size: 0.92rem; }
+  .hero-copy .btn-big { margin-top: var(--space-4); }
+  .child-chip {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: var(--space-3);
+    padding: 5px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 800;
+    color: var(--ink-soft); background: var(--paper); border: 2px solid var(--line); text-decoration: none;
   }
-  #meta { margin-top: var(--space-2); }
-  audio { width: 100%; margin-top: var(--space-3); height: 32px; }
+  .cabinet-link { display: inline-block; margin-top: 8px; color: var(--accent-dark); font-weight: 800; text-decoration: none; }
+  .task-badge {
+    position: absolute; top: 12px; left: 12px; z-index: 1;
+    padding: 5px 11px; border-radius: 999px; font-size: 0.74rem; font-weight: 900;
+    background: var(--warn); color: #fff; border: 2px solid var(--ink); box-shadow: 0 3px 0 0 var(--ink-shadow);
+  }
+  .book.assigned { box-shadow: 0 0 0 4px color-mix(in srgb, var(--warn) 45%, transparent), 0 7px 0 0 var(--ink-shadow); }
 
-  .ai-verdict {
-    display: none;
+  /* --- Shelves --- */
+  .shelf { width: 100%; max-width: 1040px; padding: var(--space-6) var(--space-4) 0; }
+  .section-title {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    margin: 0 0 var(--space-4);
+    font-size: 1.5rem; font-weight: 900; letter-spacing: -0.02em;
+  }
+  .section-title small { font-size: 0.9rem; font-weight: 700; color: var(--ink-soft); }
+
+  /* Phone: a horizontal shelf you swipe, like a row of picture books.
+     Wide: a grid. Same cards either way. */
+  .row {
+    display: flex; gap: var(--space-4);
+    overflow-x: auto; scroll-snap-type: x mandatory;
+    padding: 6px 2px 18px; margin: 0 -2px;
+    scrollbar-width: none;
+  }
+  .row::-webkit-scrollbar { display: none; }
+  .row > * { flex: 0 0 min(82vw, 330px); scroll-snap-align: start; }
+  @media (min-width: 760px) {
+    .row { display: grid; grid-template-columns: repeat(3, 1fr); overflow: visible; padding-bottom: 0; }
+    .row > * { flex: initial; }
+  }
+
+  .sticker-shelf { display: flex; gap: var(--space-3); flex-wrap: wrap; justify-content: flex-start; }
+  .sticker-shelf .sticker-badge { animation: cardIn 340ms var(--ease-materialize) both; }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { .sticker-shelf .sticker-badge { animation: none; } }
+
+  .soon {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
     margin-top: var(--space-3);
-    padding: var(--space-3);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--line);
-    background: color-mix(in srgb, var(--card-solid) 60%, transparent);
-    font-size: 0.85rem;
+    font-size: 0.9rem; color: var(--ink-soft);
   }
-  .ai-verdict.show { display: block; }
-  .ai-verdict .label { font-weight: 700; }
-  .ai-verdict.correct { border-color: var(--ok, #2e7d32); }
-  .ai-verdict.incorrect,
-  .ai-verdict.unclear { border-color: var(--warn, #b26a00); }
-  .ai-verdict .reason { display: block; margin-top: 4px; color: var(--ink-soft); font-size: 0.8rem; }
-  .ai-verdict .countdown { display: block; margin-top: 6px; color: var(--ink-soft); font-size: 0.75rem; }
-
-  .actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
-  .actions .btn { flex: 1; padding: 13px 8px; font-size: 0.88rem; }
-
-  #resetRow { width: 100%; max-width: 560px; display: flex; justify-content: flex-end; margin-top: var(--space-3); }
-  #resetBtn { padding: 8px 14px; font-size: 0.78rem; }
-
-  #log { margin-top: 20px; width: 100%; max-width: 560px; }
-  #log div { padding: 5px 0; border-top: 1px solid var(--line); }
-
-  /* Dev-лог пайплайна (IDEA.md P2): каждый шаг STT→safety→LLM→TTS видно как
-     живой статус на экране оператора, а не только текстом в общем логе
-     ниже — на репетиции сразу видно, на каком шаге застряло. */
-  #pipelinePanel { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; max-width: 560px; margin-bottom: 10px; }
-  #pipelinePanel .stage {
-    display: flex; align-items: center; gap: 6px;
-    padding: 4px 10px; border-radius: 999px;
-    border: 1px solid var(--line);
-    background: color-mix(in srgb, var(--card-solid) 60%, transparent);
-    font-size: 0.72rem;
+  .soon-letter {
+    width: 46px; height: 46px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 1.2rem; color: var(--ink-soft);
+    background: var(--card-solid); border: 2.5px dashed var(--line);
   }
-  #pipelinePanel .stage-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-soft); flex: 0 0 auto; }
-  #pipelinePanel .stage-detail { color: var(--ink-soft); min-width: 1ch; }
-  #pipelinePanel .stage.running .stage-dot { background: #f2c14e; animation: dotBounce 0.8s infinite ease-in-out; }
-  #pipelinePanel .stage.ok .stage-dot { background: #3fae5c; }
-  #pipelinePanel .stage.err .stage-dot { background: var(--danger); }
-  #pipelinePanel .stage.skip .stage-dot { background: var(--ink-soft); }
 
-  #pinGate { display: none; max-width: 320px; margin: var(--space-2) auto; }
-  #pinGate.show { display: flex; }
+  footer {
+    margin-top: var(--space-7);
+    font-size: 0.82rem; color: var(--ink-soft); text-align: center;
+    padding: 0 var(--space-4);
+  }
 
-  #reportPanel { display: none; }
-  #reportPanel.show { display: block; }
-  .report-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-4); }
-  .report-date { font-size: 0.78rem; color: var(--ink-soft); }
-  .mastery { margin-top: var(--space-5); }
-  .mastery-title { font-size: 0.75rem; font-weight: 700; margin-bottom: var(--space-3); color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
-  .mastery-row { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
-  .mastery-name { flex: 0 0 148px; font-size: 0.85rem; }
-  .mastery-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
-  .mastery-fill { height: 100%; background: var(--accent); border-radius: 4px; }
-  .mastery-row.locked .mastery-name { opacity: 0.5; }
-  .mastery-row.locked .mastery-bar { opacity: 0.35; }
-  .mastery-soon { font-size: 0.68rem; color: var(--ink-soft); flex: 0 0 auto; }
-  #reportAgainBtn { display: block; text-align: center; text-decoration: none; margin-top: var(--space-5); }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-fox, .hero-owl, .hero-bear { animation: none; }
+  }
 </style>
 </head>
 <body>
-  <div class="topbar" style="max-width:560px;">
-    <div class="topbar-left">
-      <a class="topbar-back" href="/library.html" aria-label="Все истории">←</a>
-      <h1 class="topbar-logo">🦊 Ертегім</h1>
+  <section class="hero" aria-label="Ертегім">
+    <div class="scene-sky sky-dusk"><span class="stars"></span><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span></div>
+    <div class="scene-forest"></div>
+    <div class="scene-tint"></div>
+    <div class="hero-cast">
+      <img class="hero-owl blend-owl" src="/images/cover-owl.png" alt="">
+      <img class="hero-fox" src="/images/cover-fox-fullbody.png" alt="Түлкі">
+      <img class="hero-bear" src="/images/cover-bear-fullbody.png" alt="">
     </div>
-    <button id="operatorToggle" class="topbar-icon" title="Оператор (клавиша `)" aria-label="Панель оператора">⚙</button>
-  </div>
-  <div class="panel glass-panel" style="position:relative;">
-    <div id="startOverlay" class="start-overlay">
-      <img class="start-cover" src="/images/cover-fox-fullbody.png" alt="Түлкі">
-      <h2 class="start-title display">Түлкі інісін іздейді</h2>
-      <p class="start-subtitle">
-        <span class="kk">Түлкіге інісін табуға көмектес — дауыспен жауап бер</span>
-        <span class="ru">Помоги лисёнку найти братика — отвечай голосом</span>
-      </p>
-      <button id="startBtn" class="btn btn-primary start-btn">▶ Бастау</button>
+    <div class="hero-copy">
+      <h1 class="brand">Ертегім</h1>
+      <p class="tag">Дауыспен ойналатын ертегі</p>
+      <p class="tag-ru">Ребёнок не смотрит сказку — он в ней участвует: говорит с героем голосом</p>
+      <a class="btn btn-primary btn-big" href="/story.html">▶ Ойнауды бастау</a>
+      <a class="child-chip" id="childChip" href="/cabinet.html" title="Сменить ребёнка — в кабинете">👧 <span id="childName">—</span></a>
     </div>
-    <div id="sceneStageWrap">
-      <div id="sceneStage">
-        <div id="sceneOverlay" class="scene-layer"></div>
-        <div id="sceneOverlayNext" class="scene-layer"></div>
-        <div id="trackOverlay"></div>
-        <div id="heroStage"></div>
-        <div id="listenCue">Тыңдаймын…</div>
-      </div>
-      <div id="micOverlay">
-        <button id="recordBtn" class="mic-btn" title="Записать ответ">🎙</button>
-      </div>
-    </div>
-    <audio id="heroVoice" style="display:none"></audio>
-    <!-- Echo beat (q_echo/echo_*): the same line replayed quieter and slower
-         right after the hero finishes — see scheduleEcho() in app.js. -->
-    <audio id="heroEcho" style="display:none"></audio>
-    <div id="storyLine" class="speech-bubble">
-      <span id="storySpeaker" class="speaker eyebrow"></span>
-      <div id="storyKk" class="kk"></div>
-      <span id="storyRu" class="ru"></span>
-    </div>
+  </section>
 
-    <div id="status"><span id="statusText"></span><span class="dots" id="thinkingDots" hidden><span></span><span></span><span></span></span></div>
-
-    <div id="blockedFlash">⛔ Заблокировано — вне темы</div>
-
-    <div id="endScreen" class="end-screen">
-      <div class="end-title display">Сау бол! 🦊</div>
-      <p class="end-line body-text">Інімді тапқаныңа рахмет!</p>
-      <button id="playAgainBtn" class="btn btn-primary end-play-btn">🔄 Тағы ойнаймыз</button>
-      <button id="parentBtn" class="btn btn-muted end-parent-btn">Ата-анаға</button>
-    </div>
-
-    <div id="pinGate" class="pin-gate">
-      <div class="pin-avatar">🦊</div>
-      <div class="display" style="font-size:1.25rem;">Ата-ана профилі</div>
-      <div class="body-text" style="color:var(--ink-soft);font-size:0.88rem;margin-top:4px;">
-        Баланың дамуы туралы ақпаратты көріңіз
-      </div>
-      <input id="pinInput" class="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="•  •  •  •  PIN-код енгізіңіз">
-      <button id="pinSubmitBtn" class="btn btn-primary" style="width:100%;">Кіру</button>
-    </div>
-
-    <div id="reportPanel">
-      <div class="report-head">
-        <span class="eyebrow">🔒 Балаңыздың есебі</span>
-        <span class="report-date" id="reportDate"></span>
-      </div>
-      <div class="chip-grid">
-        <div class="chip chip-blue" style="animation-delay:40ms"><div class="chip-icon">💬</div><div class="chip-num" id="reportWords">0</div><div class="chip-label">сөз қолданды</div></div>
-        <div class="chip chip-orange" style="animation-delay:80ms"><div class="chip-icon">⚡</div><div class="chip-num" id="reportAvg">—</div><div class="chip-label">орташа жауап</div></div>
-        <div class="chip chip-green" style="animation-delay:120ms"><div class="chip-icon">🎯</div><div class="chip-num" id="reportAcc">0/0</div><div class="chip-label">бірден дұрыс</div></div>
-      </div>
-      <div class="info-grid">
-        <div class="info-card" style="animation-delay:160ms">
-          <div class="info-title">Қолданған сөздер</div>
-          <div class="word-tags" id="reportTags"></div>
+  <section class="shelf">
+    <h2 class="section-title">🦊 Ертегілер <small>Сказки</small></h2>
+    <div class="row">
+      <a class="book theme-dusk" href="/story.html">
+        <div class="book-art"><img src="/images/cover-fox-fullbody.png" alt=""></div>
+        <div class="book-body">
+          <div class="book-title">Түлкі інісін іздейді</div>
+          <div class="book-desc">Лисёнок потерял братика. Посчитай следы, выбери дорогу, помоги войти в тёмную пещеру и позови братика эхом.</div>
+          <span class="btn btn-primary book-cta">▶ Ойнау</span>
         </div>
-        <div class="info-card" style="animation-delay:200ms">
-          <div class="info-title">Маңызды сәттер</div>
-          <div class="timeline" id="reportTimeline"></div>
+      </a>
+      <a class="book theme-river" href="/story.html?route=river">
+        <div class="book-art"><img class="art-face blend-owl" src="/images/cover-owl.png" alt=""></div>
+        <div class="book-body">
+          <div class="book-title">Үкімен — өзен арқылы</div>
+          <div class="book-desc">Та же сказка: на развилке лисёнок пойдёт к реке, где ждёт совёнок.</div>
+          <span class="btn btn-primary book-cta">▶ Ойнау</span>
         </div>
-      </div>
-      <div class="mastery">
-        <div class="mastery-title">Дағдылар бойынша</div>
-        <div id="reportSkills"></div>
-      </div>
-      <div class="history">
-        <div class="mastery-title">Өткен ойындар</div>
-        <div id="reportHistory"></div>
-        <div id="reportHistoryEmpty" class="body-text" style="font-size:0.82rem;color:var(--ink-soft);">Бұл — бірінші ойын.</div>
-      </div>
-      <div class="privacy-note" style="animation-delay:340ms">🔒 <span><b>Бұл ақпарат тек осы құрылғыда сақталады.</b> Баланың дауысы жазылмайды — тек сөздер мен көрсеткіштер.</span></div>
-      <a id="reportAgainBtn" class="btn btn-primary" href="/library.html" style="animation-delay:360ms">🔄 Тағы бір ертегі</a>
+      </a>
+      <a class="book theme-forest" href="/story.html?route=forest">
+        <div class="book-art"><img src="/images/cover-bear-fullbody.png" alt=""></div>
+        <div class="book-body">
+          <div class="book-title">Аюмен — орман арқылы</div>
+          <div class="book-desc">На развилке лисёнок выберет лес, где дорогу покажет медведь.</div>
+          <span class="btn btn-primary book-cta">▶ Ойнау</span>
+        </div>
+      </a>
     </div>
-  </div>
+  </section>
 
-  <aside id="operatorPanel" class="glass-panel panel mono" aria-label="Панель оператора">
-    <div class="op-title">Пайплайн</div>
-    <div id="pipelinePanel">
-      <div class="stage" id="stage-mic"><span class="stage-dot"></span><span>MIC</span><span class="stage-detail"></span></div>
-      <div class="stage" id="stage-stt"><span class="stage-dot"></span><span>STT</span><span class="stage-detail"></span></div>
-      <div class="stage" id="stage-safety"><span class="stage-dot"></span><span>SAFETY</span><span class="stage-detail"></span></div>
-      <div class="stage" id="stage-classify"><span class="stage-dot"></span><span>LLM</span><span class="stage-detail"></span></div>
-      <div class="stage" id="stage-tts"><span class="stage-dot"></span><span>TTS</span><span class="stage-detail"></span></div>
+  <section class="shelf">
+    <h2 class="section-title">🔤 Сабақтар <small>Уроки: буквы, счёт, письмо · 3–5 минут</small></h2>
+    <div class="row">
+      <a class="book theme-sun" href="/story.html?lesson=letter-a">
+        <div class="book-art book-art-letter"><span class="letter-big">Аа</span><img class="art-small" src="/images/lesson-a/alma.svg" alt=""></div>
+        <div class="book-body">
+          <div class="book-title">А әрпі — түлкімен</div>
+          <div class="book-desc">Для особых детей: звук «А», слово «алма», выбор картинки (можно показать пальцем), слово «ана». Мягкий режим.</div>
+          <span class="btn btn-primary book-cta">▶ Сабақ</span>
+        </div>
+      </a>
+      <a class="book theme-sun" href="/story.html?lesson=letters">
+        <div class="book-art book-art-letter"><span class="letter-big">А</span><span class="art-emoji" aria-hidden="true">🔤</span></div>
+        <div class="book-body">
+          <div class="book-title">Әріптер: А</div>
+          <div class="book-desc">Лисёнок показывает букву «А» — малыш повторяет: «А — алма».</div>
+          <span class="btn btn-primary book-cta">▶ Сабақ</span>
+        </div>
+      </a>
+      <a class="book theme-forest" href="/story.html?lesson=count">
+        <div class="book-art book-art-letter"><span class="art-emoji big" aria-hidden="true">🍎🍎🍎🍎🍎</span></div>
+        <div class="book-body">
+          <div class="book-title">Санау: беске дейін</div>
+          <div class="book-desc">Считаем яблоки вместе с лисёнком: бір, екі, үш, төрт, бес.</div>
+          <span class="btn btn-primary book-cta">▶ Сабақ</span>
+        </div>
+      </a>
+      <a class="book theme-dusk" href="/story.html?lesson=plus">
+        <div class="book-art book-art-letter"><span class="art-emoji big" aria-hidden="true">🍎🍎 + 🍎</span></div>
+        <div class="book-body">
+          <div class="book-title">Қосу: 2 + 1</div>
+          <div class="book-desc">У лисёнка два яблока, он добавил ещё одно. Сколько стало?</div>
+          <span class="btn btn-primary book-cta">▶ Сабақ</span>
+        </div>
+      </a>
+      <a class="book theme-river" href="/story.html?lesson=minus">
+        <div class="book-art book-art-letter"><span class="art-emoji big" aria-hidden="true">🍎🍎🍎 <s>🍎</s></span></div>
+        <div class="book-body">
+          <div class="book-title">Азайту: 4 − 1</div>
+          <div class="book-desc">Было четыре яблока, одно лисёнок съел. Сколько осталось?</div>
+          <span class="btn btn-primary book-cta">▶ Сабақ</span>
+        </div>
+      </a>
+      <a class="book theme-sun" href="/story.html?lesson=write">
+        <div class="book-art book-art-letter"><span class="letter-big outline">А</span><span class="art-emoji" aria-hidden="true">✏️</span></div>
+        <div class="book-body">
+          <div class="book-title">Жазу: А әрпі</div>
+          <div class="book-desc">Малыш обводит букву «А» пальцем прямо на экране.</div>
+          <span class="btn btn-primary book-cta">▶ Сабақ</span>
+        </div>
+      </a>
     </div>
-    <div class="op-title">Управление</div>
-    <button id="nextBtn" class="btn btn-primary">▶ Далее (override)</button>
-    <div id="uploadRow">
-      <label id="uploadLabel" for="fileInput">📁 загрузить аудиофайл вместо микрофона</label>
-      <input type="file" id="fileInput" accept="audio/*,video/*">
+    <div class="soon">
+      <span class="soon-letter">У</span><span class="soon-letter">О</span><span class="soon-letter">М</span>
+      <span>Келесі әріптер — скоро</span>
     </div>
-    <div id="result">
-      <div id="transcript" class="body-text"></div>
-      <div id="meta" class="mono"></div>
-      <audio id="player" controls></audio>
-      <div id="aiVerdict" class="ai-verdict"></div>
-      <div class="actions">
-        <button id="btnCorrect" class="btn btn-ok">✅ Верно</button>
-        <button id="btnReask" class="btn btn-warn">🔁 Переспросить</button>
-        <button id="btnAdvance" class="btn btn-muted">⏭ Advance</button>
-      </div>
-    </div>
-    <div class="op-title">Лог</div>
-    <div id="log"></div>
-    <div id="resetRow"><button id="resetBtn" class="btn btn-muted">🔄 Сначала</button></div>
-  </aside>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <!-- Rive fox rig (docs/rive-fox-rig-spec.md). DISABLED until public/rive/fox.riv
-       actually exists: loading the runtime for a rig that isn't there blocks
-       page parsing on a flaky demo network and leaves #heroStage an empty
-       canvas for the length of the request (forever, if it hangs rather than
-       errors — onLoadError never fires). With `rive` undefined, characters.js
-       mountFoxRive() calls its fail callback synchronously and the video/GSAP
-       fox renders in the same tick. Re-enable this line together with the .riv:
-  <script src="https://cdn.jsdelivr.net/npm/@rive-app/canvas@2.21.2/rive.js"></script>
-  -->
+  </section>
 
-  <script src="fx.js"></script>
-  <script src="story.js"></script>
-  <script src="characters.js"></script>
-  <script src="classify-local.js"></script>
-  <script src="session.js"></script>
-  <script src="report.js"></script>
-  <script src="preroll.js"></script>
-  <script src="app.js"></script>
+  <section class="shelf">
+    <h2 class="section-title">🏅 Жапсырмалар <small id="stickerCount"></small></h2>
+    <div id="stickerShelf" class="sticker-shelf"></div>
+  </section>
+
+  <footer>🔒 Баланың дауысы сақталмайды — тек сөздер мен көрсеткіштер. Ата-ана есебі — ертегінің соңында.<br><a class="cabinet-link" href="/cabinet.html">🩺 Кабинет логопеда / родителя</a></footer>
+  <script src="profiles.js"></script>
+  <script src="stickers.js"></script>
+  <script>
+    // Active child and today's assigned activities (set in the cabinet).
+    (function () {
+      const child = Profiles.active();
+      document.getElementById("childName").textContent = child.name;
+      const assigned = new Set(child.settings.assigned || []);
+      if (!assigned.size) return;
+      document.querySelectorAll("a.book").forEach((card) => {
+        const u = new URL(card.getAttribute("href"), location.origin);
+        const id = u.searchParams.get("lesson") || (u.pathname === "/story.html" && !u.searchParams.get("route") ? "story" : null);
+        if (id && assigned.has(id)) {
+          const b = document.createElement("span");
+          b.className = "task-badge"; b.textContent = "⭐ Бүгінгі тапсырма";
+          card.querySelector(".book-art").appendChild(b);
+          card.classList.add("assigned");
+        }
+      });
+    })();
+  </script>
+  <script>
+    // The collection: every sticker in the catalogue, earned ones in colour,
+    // the rest as a dashed slot with the hint of how to get it.
+    (function () {
+      const shelf = Stickers.shelf();
+      const earned = shelf.filter((s) => s.earnedAt).length;
+      document.getElementById("stickerCount").textContent = `${earned} / ${shelf.length}`;
+      document.getElementById("stickerShelf").innerHTML = shelf.map((s, i) => `
+        <div class="sticker-badge${s.earnedAt ? "" : " locked"}${s.blend ? " blend" : ""}" style="animation-delay:${i * 60}ms" title="${s.ru}">
+          <img src="${s.img}" alt="">
+          <span class="sticker-badge-name">${s.kk}</span>
+          ${s.earnedAt ? "" : `<span class="sticker-badge-hint">${s.hint_kk}</span>`}
+        </div>`).join("");
+    })();
+  </script>
 </body>
 </html>
