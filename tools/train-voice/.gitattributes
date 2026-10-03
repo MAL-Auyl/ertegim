@@ -1,0 +1,4 @@
+# Скрипты запускаются в WSL: CRLF от core.autocrlf сломает bash.
+*.sh text eol=lf
+*.py text eol=lf
+*.env text eol=lf

@@ -171,13 +171,22 @@ function localClassify(node, transcript, ctx) {
       : { label: "unclear", reason: "слишком коротко (локально)" };
   }
 
-  if (node.skill === "count") {
+  // `node.count` — lesson sums (skills "plus"/"minus") are answered with a number too.
+  if (node.skill === "count" || node.count) {
     const n = ctx.trackCount;
     const accepted = [ctx.numKk?.[n], ctx.numRu?.[n], String(n), ...(NUM_FORMS[n] || [])].filter(Boolean);
     const hit = accepted.some((form) => fuzzyIncludes(words, form));
     return hit
       ? { label: "correct", reason: "число совпало (локально)" }
       : { label: "unclear", reason: "число не совпало (локально)" };
+  }
+
+  if (node.skill === "letter") {
+    // Lesson node: any word that starts with the letter counts («а», «алма»).
+    const hit = words.some((w) => (node.forms || []).some((f) => phonetic(w).startsWith(phonetic(f))));
+    return hit
+      ? { label: "correct", reason: "буква прозвучала (локально)" }
+      : { label: "unclear", reason: "буква не прозвучала (локально)" };
   }
 
   if (node.skill === "rhyme") {

@@ -257,6 +257,196 @@ function audioIdFor(id) {
   return id;
 }
 
+// --- Lessons that live inside STORY (story.js LESSONS: letters, count,
+// plus, minus, write) --------------------------------------------------
+// Selected like every activity through ACTIVITY above; the start screen,
+// the finale and the report skills come from ACTIVITIES, so nothing here
+// needs to know which lesson it is.
+
+// The count a "count" question expects: fixed on lesson nodes (`count`),
+// rolled per session for the story's tracks.
+function countForNode(id) {
+  return NODES[id]?.count || trackCount;
+}
+
+// What a lesson node shows on the scene: a big letter and/or a row of apples.
+// `slow` lands one apple per ~0.9 s so they appear as the fox counts aloud.
+let lessonOverlay = null;
+function renderLessonOverlay(spec) {
+  if (!lessonOverlay) {
+    lessonOverlay = document.createElement("div");
+    lessonOverlay.id = "lessonOverlay";
+    lessonOverlay.style.cssText =
+      "position:absolute;left:0;right:0;top:6%;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;z-index:3;";
+    document.getElementById("sceneStage").appendChild(lessonOverlay);
+  }
+  if (!spec) { lessonOverlay.innerHTML = ""; return; }
+  const still = prefersReducedMotion();
+  const letter = spec.letter
+    ? `<div style="font:800 clamp(72px,22vw,150px)/1 system-ui,sans-serif;color:#fff;text-shadow:0 6px 18px rgba(46,32,19,.45),0 0 2px #c2410c;">${esc(spec.letter)}</div>`
+    : "";
+  // `plus: n` adds a "+" and n more apples after the base row; `minus: n`
+  // fades the last n apples out once the row has landed ("the fox ate it").
+  const base = spec.apples || 0;
+  const step = spec.slow ? 900 : 160;
+  const size = "font-size:clamp(34px,9vw,58px);";
+  const pop = (i) => (still ? "" : `opacity:0;animation:lessonPop 420ms ${i * step}ms both;`);
+  const apple = (i) => {
+    const eaten = spec.minus && i >= base - spec.minus;
+    const inner = eaten
+      ? `<span style="display:inline-block;${still ? "opacity:.25;filter:grayscale(1);" : `animation:lessonEaten 600ms ${base * step + 500}ms both;`}">🍎</span>`
+      : "🍎";
+    return `<span style="${size}filter:drop-shadow(0 4px 8px rgba(46,32,19,.35));${pop(i)}">${inner}</span>`;
+  };
+  let row = Array.from({ length: base }, (_, i) => apple(i)).join("");
+  if (spec.plus) {
+    row += `<span style="${size}font-weight:800;color:#fff;text-shadow:0 3px 8px rgba(46,32,19,.5);${pop(base)}">+</span>`;
+    row += Array.from({ length: spec.plus }, (_, i) =>
+      `<span style="${size}filter:drop-shadow(0 4px 8px rgba(46,32,19,.35));${pop(base + 1 + i)}">🍎</span>`).join("");
+  }
+  lessonOverlay.innerHTML = letter + (row ? `<div style="display:flex;gap:10px;align-items:center;">${row}</div>` : "");
+}
+
+// --- Trace lesson (STORY kind "trace") --------------------------------
+// The letter is a few straight strokes in a 0..1 box. Checkpoints are
+// sampled along them; the child's finger "collects" every checkpoint it
+// passes near, and the letter counts as written at TRACE_DONE_RATIO. Loose
+// on purpose: a 4-year-old's line wobbles, and failing them here teaches
+// nothing.
+const TRACE_STROKES = {
+  "А": [
+    [[0.5, 0.1], [0.2, 0.9]],
+    [[0.5, 0.1], [0.8, 0.9]],
+    [[0.31, 0.62], [0.69, 0.62]],
+  ],
+};
+const TRACE_DONE_RATIO = 0.85;
+const TRACE_IDLE_MS = 45000;
+let traceCanvas = null;
+let traceState = null;
+
+function tracePoints(strokes) {
+  const pts = [];
+  strokes.forEach(([[x1, y1], [x2, y2]], stroke) => {
+    const n = Math.max(4, Math.round(Math.hypot(x2 - x1, y2 - y1) * 12));
+    for (let i = 0; i <= n; i++) pts.push({ x: x1 + ((x2 - x1) * i) / n, y: y1 + ((y2 - y1) * i) / n, hit: false, stroke });
+  });
+  return pts;
+}
+
+function stopTrace() {
+  if (traceState) clearTimeout(traceState.idleTimer);
+  traceState = null;
+  if (traceCanvas) traceCanvas.style.display = "none";
+}
+
+function startTrace(id) {
+  const s = NODES[id];
+  const strokes = TRACE_STROKES[s.letter];
+  if (!strokes) { renderState(s.onReveal); return; }
+  const stage = document.getElementById("sceneStage");
+  if (!traceCanvas) {
+    traceCanvas = document.createElement("canvas");
+    traceCanvas.id = "traceCanvas";
+    traceCanvas.style.cssText = "position:absolute;inset:0;width:100%;height:100%;z-index:4;touch-action:none;cursor:crosshair;";
+    stage.appendChild(traceCanvas);
+    traceCanvas.addEventListener("pointerdown", (e) => { if (traceState) { traceState.down = true; traceState.last = null; traceCanvas.setPointerCapture(e.pointerId); traceMove(e); } });
+    traceCanvas.addEventListener("pointermove", (e) => { if (traceState?.down) traceMove(e); });
+    const up = () => { if (traceState) { traceState.down = false; traceState.last = null; } };
+    traceCanvas.addEventListener("pointerup", up);
+    traceCanvas.addEventListener("pointercancel", up);
+  }
+  const rect = stage.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  traceCanvas.width = Math.round(rect.width * dpr);
+  traceCanvas.height = Math.round(rect.height * dpr);
+  traceCanvas.style.display = "block";
+  // The letter sits in a centred square box so it keeps its proportions on
+  // any scene aspect ratio.
+  const side = Math.min(rect.width, rect.height) * 0.9;
+  traceState = {
+    id, strokes, points: tracePoints(strokes), down: false, last: null, drawn: [],
+    w: rect.width, h: rect.height, dpr, side,
+    ox: (rect.width - side) / 2, oy: (rect.height - side) / 2,
+    idleTimer: null,
+  };
+  armTraceIdle();
+  drawTrace();
+}
+
+function armTraceIdle() {
+  clearTimeout(traceState.idleTimer);
+  const id = traceState.id;
+  traceState.idleTimer = setTimeout(() => {
+    if (currentId !== id || !traceState) return;
+    log("trace: нет касаний → reveal");
+    finishTrace("reveal");
+  }, TRACE_IDLE_MS);
+}
+
+function traceMove(e) {
+  const t = traceState;
+  const r = traceCanvas.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  if (t.last) t.drawn.push([t.last.x, t.last.y, x, y]);
+  t.last = { x, y };
+  const reach = t.side * 0.08;
+  for (const p of t.points) {
+    if (!p.hit && Math.hypot(t.ox + p.x * t.side - x, t.oy + p.y * t.side - y) <= reach) p.hit = true;
+  }
+  armTraceIdle();
+  drawTrace();
+  // Every stroke on its own: the crossbar of «А» lies between the legs, so a
+  // whole-letter ratio was already satisfied by the two legs alone.
+  const done = t.strokes.every((_, i) => {
+    const pts = t.points.filter((p) => p.stroke === i);
+    return pts.filter((p) => p.hit).length / pts.length >= TRACE_DONE_RATIO;
+  });
+  if (done) finishTrace("correct");
+}
+
+function drawTrace() {
+  const t = traceState;
+  const ctx = traceCanvas.getContext("2d");
+  ctx.setTransform(t.dpr, 0, 0, t.dpr, 0, 0);
+  ctx.clearRect(0, 0, t.w, t.h);
+  ctx.fillStyle = "rgba(255,247,235,0.86)";
+  ctx.fillRect(0, 0, t.w, t.h);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const line = (x1, y1, x2, y2) => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
+  const px = (p) => [t.ox + p[0] * t.side, t.oy + p[1] * t.side];
+  // guide: wide soft track + dashed centre line
+  ctx.setLineDash([]);
+  ctx.strokeStyle = "rgba(194,65,12,0.16)";
+  ctx.lineWidth = t.side * 0.13;
+  for (const [a, b] of t.strokes) line(...px(a), ...px(b));
+  ctx.setLineDash([t.side * 0.03, t.side * 0.05]);
+  ctx.strokeStyle = "rgba(194,65,12,0.55)";
+  ctx.lineWidth = Math.max(2, t.side * 0.015);
+  for (const [a, b] of t.strokes) line(...px(a), ...px(b));
+  // the child's line
+  ctx.setLineDash([]);
+  ctx.strokeStyle = "#ea580c";
+  ctx.lineWidth = t.side * 0.07;
+  for (const [x1, y1, x2, y2] of t.drawn) line(x1, y1, x2, y2);
+  // start dot of the first stroke — "put your finger here"
+  if (!t.drawn.length) {
+    const [sx, sy] = px(t.strokes[0][0]);
+    ctx.fillStyle = "#16a34a";
+    ctx.beginPath(); ctx.arc(sx, sy, t.side * 0.045, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function finishTrace(verdict) {
+  const id = traceState.id;
+  const s = NODES[id];
+  stopTrace();
+  Session.answer({ nodeId: id, transcript: "", verdict, source: "trace" });
+  if (verdict === "correct") burstSparkles();
+  renderState(verdict === "correct" ? s.onCorrect : s.onReveal);
+}
+
 // --- Child-facing feedback (fire-and-forget) --------------------------
 // Everything below is decoration: it is called for its side effect and
 // never awaited, so a failure (no WebAudio, no GSAP, blocked autoplay)
@@ -1054,6 +1244,9 @@ function renderState(id) {
   statusText.textContent = "";
   thinkingDots.hidden = true;
 
+  renderLessonOverlay(s.overlay || null);
+  stopTrace();
+
   if (id === "parent_report") {
     storySpeaker.textContent = "";
     storyKk.textContent = "";
@@ -1090,11 +1283,23 @@ function renderState(id) {
   storyKk.textContent = s.kk;
   storyRu.textContent = s.ru;
   setHero(s);
-  const speakDone = speakLine(s.kk, audioIdFor(id), { echo: ECHO_IDS.has(id) });
+  // Back at a question after its re-ask line: the re-ask already said what to
+  // do, so the question is shown but NOT spoken a second time — the mic opens
+  // straight away. Hearing the same question twice in a row (ask, re-ask,
+  // ask again) was the slow, boring part of a wrong answer.
+  const repeatAfterReask = s.kind === "question" && activeQuestionId === id && reaskCount > 0;
+  const speakDone = repeatAfterReask
+    ? speakLine("", null)
+    : speakLine(s.kk, audioIdFor(id), { echo: ECHO_IDS.has(id) });
   const gen = speakGen; // a line started later must win over this one's tail
 
   if (id === "found") Session.moment("інісін тапты");
   if (id === "cave_enter") Session.moment("түлкіге батылдық берді");
+  if (id === "la_ok") Session.moment("А әрпін айтты");
+  if (id === "lc_ok") Session.moment("беске дейін санады");
+  if (id === "lp_ok") Session.moment("екіге бірді қосты");
+  if (id === "lm_ok") Session.moment("төрттен бірді азайтты");
+  if (id === "lw_ok") Session.moment("А әрпін жазды");
 
   if (s.kind === "narration") {
     nextBtn.style.display = "block";
@@ -1150,6 +1355,14 @@ function renderState(id) {
       armVadForQuestion();
       log("mic armed after line");
     });
+  } else if (s.kind === "trace") {
+    // No mic here: the answer is the finger on the scene. The canvas is live
+    // straight away — the child need not wait for the fox to finish talking.
+    nextBtn.style.display = "none";
+    recordBtn.style.display = "none";
+    uploadRow.style.display = "none";
+    Session.questionShown(id, s.skill, 1);
+    startTrace(id);
   } else {
     // "end"
     nextBtn.style.display = "none";
@@ -1360,7 +1573,7 @@ async function submitAudio(blob, filename, meta = {}) {
   // The server needs the rolled count to know which number is the right
   // answer at q_tracks — it is what expectedForms() scores the two
   // recognitions against.
-  form.append("trackCount", String(trackCount));
+  form.append("trackCount", String(countForNode(meta.nodeId || currentId)));
   setStage("stt", "running", "");
 
   try {
@@ -1493,7 +1706,7 @@ function advanceFromQuestion(nextId) {
 // misjudges or the call fails/times out (fail-open, see server.js comment
 // above classifyAnswer()).
 let aiAutoAdvanceTimer = null;
-const AI_AUTO_ADVANCE_MS = 2500;
+const AI_AUTO_ADVANCE_MS = 1000;
 
 let narrationAutoAdvanceTimer = null;
 const NARRATION_AUTO_ADVANCE_MS = 500;
@@ -1698,7 +1911,7 @@ function showVerdictAndAutoAdvance(data, source) {
 }
 
 function classifyCtx() {
-  return { trackCount, brotherName: brotherName.kkLower, numKk: NUM_KK, numRu: NUM_RU };
+  return { trackCount: countForNode(currentId), brotherName: brotherName.kkLower, numKk: NUM_KK, numRu: NUM_RU };
 }
 
 // Client-side twin of lib/stt-pick.js's expectedForms().forms — the same
@@ -1707,6 +1920,8 @@ function classifyCtx() {
 // having to import an ESM module.
 function expectedFormsForNode(nodeId) {
   if (nodeId === "q_tracks") return NUM_FORMS[trackCount] || [];
+  if (NODES[nodeId]?.count) return NUM_FORMS[NODES[nodeId].count]; // lesson counts: q_count5, q_plus, q_minus
+  if (nodeId === "q_letter_a") return STORY.q_letter_a.forms;
   if (nodeId === "q_fork") return [...ROUTE_KEYWORDS.river, ...ROUTE_KEYWORDS.forest];
   // Lesson nodes carry their own accepted forms (story.js `accept` /
   // `choices[].forms`), so no second table is needed here.

@@ -48,6 +48,28 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 // "think" animation.
 const GROQ_TIMEOUT_MS = Number(process.env.GROQ_TIMEOUT_MS) || 8000;
 
+// Any OpenAI-compatible transcription endpoint can stand in for Groq — in
+// particular tools/stt/server.py, which serves the Kazakh-finetuned Whisper
+// turbo on a local GPU (see tools/stt/README.md for the comparison numbers):
+//   STT_BASE_URL=http://127.0.0.1:3910/v1
+// Unset = Groq, exactly as before. The key is optional for a custom endpoint
+// (the local server has none); Groq still needs GROQ_API_KEY.
+const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+const STT_BASE_URL = (process.env.STT_BASE_URL || GROQ_BASE_URL).replace(/\/+$/, "");
+const STT_IS_GROQ = STT_BASE_URL === GROQ_BASE_URL;
+const STT_API_KEY = process.env.STT_API_KEY || (STT_IS_GROQ ? GROQ_API_KEY : "");
+const STT_ENGINE = STT_IS_GROQ ? "groq" : "stt-server";
+const STT_PRIMARY = { base: STT_BASE_URL, key: STT_API_KEY, engine: STT_ENGINE };
+// A self-hosted STT server is one machine that can be down; when it is and a
+// Groq key exists, Groq takes over before the much weaker local whisper-cli.
+const STT_FALLBACK = !STT_IS_GROQ && GROQ_API_KEY
+  ? { base: GROQ_BASE_URL, key: GROQ_API_KEY, engine: "groq" }
+  : null;
+
+function assertSttConfigured(target = STT_PRIMARY) {
+  if (target.engine === "groq" && !target.key) throw new Error("GROQ_API_KEY not set");
+}
+
 function isMostlyCyrillic(text) {
   const letters = text.match(/\p{L}/gu) || [];
   if (letters.length === 0) return true; // empty/no letters — nothing to reject
@@ -132,8 +154,8 @@ if (STT_LANGS.length === 0) throw new Error("STT_LANGS is empty");
 // transcribeGroq so transcribeDual can preprocess the clip ONCE and then run
 // the kk and ru passes over the same wav in parallel (ffmpeg is the slow part
 // and the audio is identical for both languages).
-async function groqCall(uploadBuf, uploadName, hint, lang, model = GROQ_STT_MODEL) {
-  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
+async function groqCall(uploadBuf, uploadName, hint, lang, model = GROQ_STT_MODEL, target = STT_PRIMARY) {
+  assertSttConfigured(target);
   const t0 = performance.now();
   const form = new FormData();
   form.append("file", new Blob([uploadBuf]), uploadName);
@@ -151,13 +173,13 @@ async function groqCall(uploadBuf, uploadName, hint, lang, model = GROQ_STT_MODE
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+    const res = await fetch(`${target.base}/audio/transcriptions`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+      headers: target.key ? { Authorization: `Bearer ${target.key}` } : {},
       body: form,
       signal: controller.signal,
     });
-    if (!res.ok) throw new Error(`groq http ${res.status}: ${await res.text()}`);
+    if (!res.ok) throw new Error(`${target.engine} http ${res.status}: ${await res.text()}`);
     const data = await res.json();
     const ms = Math.round(performance.now() - t0);
     const raw = (data.text || "").trim();
@@ -184,7 +206,7 @@ async function groqCall(uploadBuf, uploadName, hint, lang, model = GROQ_STT_MODE
       lang: lang === "auto" ? (detected || "auto") : lang,
       requested: lang,
       detected,
-      noSpeechProb, avgLogprob, ms, engine: "groq",
+      noSpeechProb, avgLogprob, ms, engine: target.engine,
     };
   } finally {
     clearTimeout(timer);
@@ -205,7 +227,7 @@ async function prepareUpload(audioBuf, ext) {
 }
 
 async function transcribeGroq(audioBuf, ext, hint, lang = "auto", model = GROQ_STT_MODEL) {
-  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
+  assertSttConfigured();
   // t0 starts before preprocessing so the reported `ms` is comparable to
   // transcribeLocal's, which times its own ffmpeg step too.
   const t0 = performance.now();
@@ -219,12 +241,12 @@ async function transcribeGroq(audioBuf, ext, hint, lang = "auto", model = GROQ_S
 // Children here answer in either language (often mixing both inside one
 // sentence), and a single forced pass mangles the other language — a Russian
 // "три" comes back as Kazakh-shaped noise and vice versa.
-async function transcribeDual(audioBuf, ext, hint, expected, model = GROQ_STT_MODEL, langs = STT_LANGS) {
-  if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
+async function transcribeDual(audioBuf, ext, hint, expected, model = GROQ_STT_MODEL, langs = STT_LANGS, target = STT_PRIMARY) {
+  assertSttConfigured(target);
   const t0 = performance.now();
   const { uploadBuf, uploadName } = await prepareUpload(audioBuf, ext);
   const settled = await Promise.allSettled(
-    langs.map((lang) => groqCall(uploadBuf, uploadName, hint, lang, model)),
+    langs.map((lang) => groqCall(uploadBuf, uploadName, hint, lang, model, target)),
   );
   const candidates = settled.filter((s) => s.status === "fulfilled").map((s) => s.value);
   if (candidates.length === 0) {
@@ -237,7 +259,7 @@ async function transcribeDual(audioBuf, ext, hint, expected, model = GROQ_STT_MO
     ...picked,
     candidates,
     ms: Math.round(performance.now() - t0),
-    engine: "groq",
+    engine: target.engine,
   };
 }
 
@@ -249,8 +271,17 @@ async function transcribeDual(audioBuf, ext, hint, expected, model = GROQ_STT_MO
 async function transcribe(audioBuf, ext, hint, expected) {
   try {
     return await transcribeDual(audioBuf, ext, hint, expected);
-  } catch (err) {
-    console.error(`Groq STT failed, falling back to local Whisper: ${err}`);
+  } catch (primaryErr) {
+    let err = primaryErr;
+    if (STT_FALLBACK) {
+      console.error(`${STT_ENGINE} STT failed, falling back to Groq: ${err}`);
+      try {
+        return await transcribeDual(audioBuf, ext, hint, expected, GROQ_STT_MODEL, STT_LANGS, STT_FALLBACK);
+      } catch (groqErr) {
+        err = new Error(`${primaryErr.message}; groq: ${groqErr.message}`, { cause: primaryErr });
+      }
+    }
+    console.error(`${STT_ENGINE} STT failed, falling back to local Whisper: ${err}`);
     try {
       const local = await transcribeLocal(audioBuf, ext);
       // Local Whisper is kk-only and reports no confidence numbers — fill the
@@ -260,7 +291,7 @@ async function transcribe(audioBuf, ext, hint, expected) {
         lowConfidence: false, candidates: [{ lang: "kk", text: local.transcript }],
       };
     } catch (localErr) {
-      throw new Error(`${localErr.message}; groq: ${err.message}`, { cause: err });
+      throw new Error(`${localErr.message}; ${STT_ENGINE}: ${err.message}`, { cause: err });
     }
   }
 }
@@ -315,7 +346,9 @@ async function speak(text, speakerId = HERO_SPEAKER) {
   try {
     const proc = Bun.spawnSync(
       [bins.piper, "-m", bins.piperVoice, "-f", rawName, "--speaker", String(speakerId)],
-      { cwd: TMP, stdin: new TextEncoder().encode(text), timeout: SPAWN_TIMEOUT_MS },
+      // PYTHONUTF8: on Windows the Piper CLI otherwise decodes stdin with the
+      // ANSI codepage and speaks mojibake (3x longer gibberish, exit code 0).
+      { cwd: TMP, stdin: new TextEncoder().encode(text), timeout: SPAWN_TIMEOUT_MS, env: { ...process.env, PYTHONUTF8: "1" } },
     );
     if (proc.exitCode !== 0) throw new Error(`piper failed: ${new TextDecoder().decode(proc.stderr)}`);
     let outFile = rawName;

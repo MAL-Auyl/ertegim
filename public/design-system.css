@@ -400,6 +400,16 @@ body {
      when q_tracks re-renders and they pop again. */
   animation: trackPop 380ms var(--ease-response) both;
 }
+/* Lesson overlay (app.js renderLessonOverlay): apples pop in place — no
+   translate/rotate like the tracks, they sit in a flex row. */
+@keyframes lessonPop {
+  from { opacity: 0; transform: scale(0); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes lessonEaten {
+  from { opacity: 1; filter: none; transform: scale(1); }
+  to   { opacity: 0.25; filter: grayscale(1); transform: scale(0.8); }
+}
 @keyframes trackPop {
   from { opacity: 0; transform: translate(-50%, -50%) rotate(-20deg) scale(0); }
   to   { opacity: 0.85; transform: translate(-50%, -50%) rotate(-20deg) scale(1); }
@@ -1079,3 +1089,9 @@ body.gentle .mic-btn.recording { animation: none; }
 }
 @media (prefers-reduced-motion: reduce) { .sticker-badge.pop { animation: none; } }
 body.gentle .sticker-badge.pop { animation: fade-in 260ms ease both; }
+
+/* Emoji art on lesson cards (apples, pencil) and the outlined "trace me" letter */
+.book-art .art-emoji { position: relative; font-size: 2.6rem; line-height: 1; filter: drop-shadow(0 6px 8px rgba(46, 32, 19, 0.3)); }
+.book-art .art-emoji.big { font-size: clamp(1.9rem, 7vw, 2.6rem); letter-spacing: -0.08em; }
+.book-art .art-emoji s { opacity: 0.35; filter: grayscale(1); text-decoration: none; }
+.book-art-letter .letter-big.outline { color: transparent; -webkit-text-stroke: 4px var(--ink); text-shadow: none; }

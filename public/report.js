@@ -13,6 +13,10 @@ const SKILL_META = {
   word_a: { icon: "🍎", name: "«Алма» сөзі" },
   pick_a: { icon: "👆", name: "А-ны суреттен тапты" },
   open_a: { icon: "💛", name: "Ана туралы айтты" },
+  letter: { icon: "🔤", name: "Әріптер" },
+  plus: { icon: "➕", name: "Қосу" },
+  minus: { icon: "➖", name: "Азайту" },
+  write: { icon: "✏️", name: "Жазу" },
 };
 
 // Only the rows this session actually had: summarize() keys `skills` by the

@@ -86,6 +86,10 @@ def render(audio_id: str, text: str, voice: Path, ffmpeg: str) -> None:
         subprocess.run(
             [c.replace("{raw}", str(raw)) for c in cmd],
             input=text.encode("utf-8"), check=True,
+            # Piper is a Python CLI: on Windows it decodes stdin with the ANSI
+            # codepage unless told otherwise, and then "speaks" mojibake —
+            # 3x longer gibberish that still exits 0.
+            env={**os.environ, "PYTHONUTF8": "1"},
         )
         subprocess.run(
             [ffmpeg, "-y", "-loglevel", "error", "-i", str(raw),
