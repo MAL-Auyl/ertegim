@@ -220,6 +220,7 @@ function renderLessonOverlays(s) {
   letterOverlay.classList.toggle("chant", !!s.chant);
   letterOverlay.classList.remove("glow");
   sceneStage.classList.toggle("has-choices", s.kind === "question" && s.mode === "pick" && Array.isArray(s.choices));
+  sceneStage.classList.toggle("has-picture", !!s.picture && !(s.kind === "question" && s.mode === "pick"));
   if (s.kind === "question" && s.mode === "pick" && Array.isArray(s.choices)) {
     pictureOverlay.className = "show two";
     pictureOverlay.innerHTML = s.choices.map((c) => pictureCardHTML(c.picture, { kk: c.kk, ru: c.ru, choiceId: c.id })).join("");
@@ -854,7 +855,9 @@ const listenCue = document.getElementById("listenCue");
 function setListenCue(listening, recording) {
   if (!listenCue) return;
   listenCue.classList.toggle("show", listening);
-  if (listening) listenCue.textContent = recording ? "Естіп тұрмын" : "Тыңдаймын…";
+  listenCue.classList.toggle("recording", listening && recording);
+  const text = listenCue.querySelector(".turn-text");
+  if (listening && text) text.textContent = recording ? "Естіп тұрмын!" : "Сенің кезегің";
 }
 
 function updateHeroAmplitude(rms) {
@@ -866,6 +869,7 @@ function updateHeroAmplitude(rms) {
   if (!listening) return;
   const level = Math.max(0, Math.min(1, rms / 0.08));
   heroStage.style.setProperty("--amp", String(level));
+  if (listenCue) listenCue.style.setProperty("--amp", String(level));
 }
 
 function startVadRecorder() {

@@ -344,7 +344,15 @@
         <div id="letterOverlay" aria-hidden="true"></div>
         <div id="pictureOverlay"></div>
         <div id="heroStage"></div>
-        <div id="listenCue">Тыңдаймын…</div>
+        <!-- "Your turn" cue: one big badge in one fixed corner, the same on
+             every question — a child with ASD needs the signal to be
+             predictable, not subtle. Pulses while waiting, breathes with the
+             child's own voice while recording (--amp from the VAD loop). -->
+        <div id="listenCue" class="turn-cue" aria-live="polite">
+          <span class="turn-ring"></span>
+          <span class="turn-icon" aria-hidden="true">🗣️</span>
+          <span class="turn-text">Сенің кезегің</span>
+        </div>
       </div>
       <div id="micOverlay">
         <button id="recordBtn" class="mic-btn" title="Записать ответ">🎙</button>
