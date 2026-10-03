@@ -6,6 +6,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ертегім</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32 48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#ff7a2f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ертегім">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
@@ -165,7 +172,7 @@
     <div class="scene-forest"></div>
     <div class="scene-tint"></div>
     <div class="hero-cast">
-      <img class="hero-owl blend-owl" src="/images/cover-owl.png" alt="">
+      <img class="hero-owl" src="/images/cover-owl.png" alt="">
       <img class="hero-fox" src="/images/cover-fox-fullbody.png" alt="Түлкі">
       <img class="hero-bear" src="/images/cover-bear-fullbody.png" alt="">
     </div>
@@ -190,7 +197,7 @@
         </div>
       </a>
       <a class="book theme-river" href="/story.html?route=river">
-        <div class="book-art"><img class="art-face blend-owl" src="/images/cover-owl.png" alt=""></div>
+        <div class="book-art"><img class="art-face" src="/images/cover-owl.png" alt=""></div>
         <div class="book-body">
           <div class="book-title">Үкімен — өзен арқылы</div>
           <div class="book-desc">Та же сказка: на развилке лисёнок пойдёт к реке, где ждёт совёнок.</div>
@@ -301,7 +308,7 @@
       const earned = shelf.filter((s) => s.earnedAt).length;
       document.getElementById("stickerCount").textContent = `${earned} / ${shelf.length}`;
       document.getElementById("stickerShelf").innerHTML = shelf.map((s, i) => `
-        <div class="sticker-badge${s.earnedAt ? "" : " locked"}${s.blend ? " blend" : ""}" style="animation-delay:${i * 60}ms" title="${s.ru}">
+        <div class="sticker-badge${s.earnedAt ? "" : " locked"}" style="animation-delay:${i * 60}ms" title="${s.ru}">
           <img src="${s.img}" alt="">
           <span class="sticker-badge-name">${s.kk}</span>
           ${s.earnedAt ? "" : `<span class="sticker-badge-hint">${s.hint_kk}</span>`}

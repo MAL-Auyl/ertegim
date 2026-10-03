@@ -13,7 +13,7 @@ const STICKERS_KEY = "ertegim.stickers";
 // Order here is the order on the library shelf.
 const STICKER_CATALOG = {
   fox: { kk: "Түлкі досы", ru: "Друг лисёнка", img: "/images/fox-happy.png", hint_kk: "Ертегіні соңына дейін өт" },
-  owl: { kk: "Үкімен таныстым", ru: "Познакомился с совёнком", img: "/images/cover-owl.png", blend: true, hint_kk: "Өзен жолымен жүр" },
+  owl: { kk: "Үкімен таныстым", ru: "Познакомился с совёнком", img: "/images/cover-owl.png", hint_kk: "Өзен жолымен жүр" },
   bear: { kk: "Аюмен таныстым", ru: "Познакомился с медведем", img: "/images/cover-bear-fullbody.png", hint_kk: "Орман жолымен жүр" },
   "letter-a": { kk: "А әрпі", ru: "Буква А", img: "/images/lesson-a/alma.svg", hint_kk: "А әрпі сабағын өт" },
   star: { kk: "Жұлдыз", ru: "Всё с первого раза", img: "/images/sticker-star.svg", hint_kk: "Барлық сұраққа бірден жауап бер" },

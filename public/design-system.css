@@ -931,7 +931,6 @@ body.gentle .mic-btn.recording { animation: none; }
 /* cover-owl.png has an opaque white background (the owl is the only cover
    that wasn't cut out): multiply makes white vanish over any scene while the
    ink lines stay. */
-.blend-owl { mix-blend-mode: multiply; }
 @media (hover: hover) and (pointer: fine) { .book:hover .book-art img { transform: translateY(-4px) scale(1.03); } }
 .book-art-letter { gap: 14px; align-items: center; }
 .book-art-letter .letter-big {
@@ -1065,8 +1064,6 @@ body.gentle .mic-btn.recording { animation: none; }
   border: 3px solid var(--ink);
   box-shadow: 0 5px 0 0 var(--ink-shadow);
 }
-.sticker-badge.blend img { background: #fff; }
-.sticker-badge.blend img { mix-blend-mode: normal; }
 .sticker-badge-name { font-size: 0.78rem; font-weight: 800; line-height: 1.15; }
 .sticker-badge-hint { font-size: 0.66rem; color: var(--ink-soft); line-height: 1.2; }
 .sticker-badge.locked img {
