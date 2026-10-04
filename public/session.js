@@ -15,7 +15,9 @@
 const SESSION_LIMIT_MS = 8 * 60 * 1000;
 const MEMORY_KEY = "ertegim.memory";
 const HISTORY_KEY = "ertegim.sessions";
-const HISTORY_MAX = 30;
+// 100 sessions ≈ three months of daily practice; a therapist imports the
+// home sessions on top of the clinic ones (homework.js mergeHistory).
+const HISTORY_MAX = 100;
 // Skills of the fox tale — the default when Session.start() is given no
 // activity. A lesson passes its own list (see ACTIVITIES in story.js), so
 // the report never shows the tale's rows for a letter lesson or vice versa.
@@ -195,6 +197,12 @@ const Session = {
     return Array.isArray(h) ? h : [];
   },
 
+  // Replaces the active child's history — used by the cabinet's import of
+  // sessions played at home (already merged and sorted by the caller).
+  replaceHistory(list) {
+    writeJson(HISTORY_KEY, (Array.isArray(list) ? list : []).slice(0, HISTORY_MAX));
+  },
+
   finish({ completed }, now = Date.now()) {
     const r = this.current();
     r.endedAt = now;
@@ -218,5 +226,5 @@ const Session = {
 };
 
 if (typeof module !== "undefined") {
-  module.exports = { Session, SESSION_LIMIT_MS };
+  module.exports = { Session, SESSION_LIMIT_MS, HISTORY_MAX };
 }

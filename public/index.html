@@ -113,6 +113,29 @@
     background: var(--warn); color: #fff; border: 2px solid var(--ink); box-shadow: 0 3px 0 0 var(--ink-shadow);
   }
   .book.assigned { box-shadow: 0 0 0 4px color-mix(in srgb, var(--warn) 45%, transparent), 0 7px 0 0 var(--ink-shadow); }
+  .task-badge.met { background: var(--ok); }
+
+  /* --- Homework from the therapist (homework.js) --- */
+  .hw-strip {
+    margin-top: var(--space-3); padding: 10px 14px; max-width: 460px;
+    background: var(--card-solid); border: 2.5px solid var(--ink); border-radius: var(--radius-md);
+    box-shadow: 0 4px 0 0 var(--ink-shadow); font-size: 0.86rem; font-weight: 700; text-align: left;
+  }
+  .hw-strip[hidden] { display: none; }
+  .hw-strip b { font-weight: 900; }
+  .hw-strip .hw-note { margin: 4px 0 0; color: var(--ink-soft); font-style: italic; }
+  .hw-strip .hw-rows { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .hw-pill { padding: 3px 10px; border-radius: 999px; border: 1.5px solid var(--line); font-size: 0.78rem; font-weight: 800; }
+  .hw-pill.met { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
+  dialog.hw-dialog {
+    max-width: min(440px, calc(100vw - 32px)); border: 3px solid var(--ink); border-radius: var(--radius-xl);
+    box-shadow: 0 8px 0 0 var(--ink-shadow); padding: var(--space-5); background: var(--card-solid); color: var(--ink);
+  }
+  dialog.hw-dialog::backdrop { background: rgba(46, 32, 19, 0.45); }
+  .hw-dialog h3 { margin: 0 0 6px; font-size: 1.2rem; font-weight: 900; }
+  .hw-dialog ul { margin: 8px 0; padding-left: 20px; font-weight: 700; }
+  .hw-dialog .hw-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: var(--space-4); }
+  .hw-dialog .btn { padding: 12px 18px; border-radius: 999px; font-size: 0.95rem; }
 
   /* --- Shelves --- */
   .shelf { width: 100%; max-width: 1040px; padding: var(--space-6) var(--space-4) 0; }
@@ -182,6 +205,7 @@
       <p class="tag-ru">Ребёнок не смотрит сказку — он в ней участвует: говорит с героем голосом</p>
       <a class="btn btn-primary btn-big" href="/story.html">▶ Ойнауды бастау</a>
       <a class="child-chip" id="childChip" href="/cabinet.html" title="Сменить ребёнка — в кабинете">👧 <span id="childName">—</span></a>
+      <div class="hw-strip" id="hwStrip" hidden></div>
     </div>
   </section>
 
@@ -279,21 +303,78 @@
   </section>
 
   <footer>🔒 Баланың дауысы сақталмайды — тек сөздер мен көрсеткіштер. Ата-ана есебі — ертегінің соңында.<br><a class="cabinet-link" href="/cabinet.html">🩺 Кабинет логопеда / родителя</a></footer>
+  <dialog class="hw-dialog" id="hwDialog">
+    <h3>📝 Логопедтің тапсырмасы</h3>
+    <p class="muted" style="margin:0;">Задание от логопеда</p>
+    <div id="hwDialogBody"></div>
+    <div class="hw-actions">
+      <button type="button" class="btn btn-primary" id="hwAccept">✅ Қабылдау · Принять</button>
+      <button type="button" class="btn btn-muted" id="hwDecline">Жоқ</button>
+    </div>
+  </dialog>
   <script src="profiles.js"></script>
+  <script src="session.js"></script>
+  <script src="homework.js"></script>
   <script src="stickers.js"></script>
   <script>
-    // Active child and today's assigned activities (set in the cabinet).
+    // Active child, the therapist's homework (homework.js) and today's
+    // assigned activities (set in the cabinet or received through a link).
     (function () {
+      const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      const cardId = (card) => {
+        const u = new URL(card.getAttribute("href"), location.origin);
+        return u.searchParams.get("lesson") || (u.pathname === "/story.html" && !u.searchParams.get("route") ? "story" : null);
+      };
+      const cards = [...document.querySelectorAll("a.book")];
+      const titleOf = {};
+      cards.forEach((c) => { const id = cardId(c); if (id && !titleOf[id]) titleOf[id] = (c.querySelector("h3, .book-title") || c).textContent.trim().split("\n")[0]; });
+      const known = Object.keys(titleOf);
+
+      // 1) A link from the therapist: /#hw=<plan>. Shown once, stored on accept.
+      const incoming = Homework.planFromHash(location.hash, known);
+      const clearHash = () => history.replaceState(null, "", location.pathname + location.search);
+      if (incoming) {
+        const dlg = document.getElementById("hwDialog");
+        document.getElementById("hwDialogBody").innerHTML =
+          `${incoming.child ? `<p><b>${esc(incoming.child)}</b>${incoming.from ? ` · ${esc(incoming.from)}` : ""}</p>` : incoming.from ? `<p><b>${esc(incoming.from)}</b></p>` : ""}
+           <ul>${incoming.activities.map((id) => `<li>${esc(titleOf[id] || id)}</li>`).join("")}</ul>
+           <p>Аптасына <b>${incoming.perWeek}</b> рет · ${incoming.perWeek} раз(а) в неделю</p>
+           ${incoming.note ? `<p class="muted"><i>«${esc(incoming.note)}»</i></p>` : ""}`;
+        document.getElementById("hwAccept").onclick = () => {
+          const list = Profiles.list();
+          const target = (incoming.pid && list.find((p) => p.linkedId === incoming.pid)) || Profiles.active();
+          const patch = { homework: incoming, linkedId: incoming.pid, settings: { assigned: incoming.activities } };
+          if (incoming.child && (target.name === "Бала" || /^Бала \d+$/.test(target.name))) patch.name = incoming.child;
+          Profiles.update(target.id, patch);
+          Profiles.setActive(target.id);
+          clearHash(); dlg.close(); location.reload();
+        };
+        document.getElementById("hwDecline").onclick = () => { clearHash(); dlg.close(); };
+        if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+      }
+
+      // 2) The active child: name, homework strip, badges with week progress.
       const child = Profiles.active();
       document.getElementById("childName").textContent = child.name;
+      const plan = child.homework ? Homework.normalizePlan(child.homework, known) : null;
+      const progress = plan ? Homework.weekProgress(plan, Session.history()) : [];
+      const byId = Object.fromEntries(progress.map((p) => [p.id, p]));
+      if (plan) {
+        const strip = document.getElementById("hwStrip");
+        strip.innerHTML = `📝 <b>Апталық тапсырма</b>${plan.from ? ` · ${esc(plan.from)}` : ""}
+          ${plan.note ? `<p class="hw-note">«${esc(plan.note)}»</p>` : ""}
+          <div class="hw-rows">${progress.map((p) => `<span class="hw-pill${p.met ? " met" : ""}">${p.met ? "✅" : "⭐"} ${esc(titleOf[p.id] || p.id)} · ${p.done}/${p.target}</span>`).join("")}</div>`;
+        strip.hidden = false;
+      }
       const assigned = new Set(child.settings.assigned || []);
       if (!assigned.size) return;
-      document.querySelectorAll("a.book").forEach((card) => {
-        const u = new URL(card.getAttribute("href"), location.origin);
-        const id = u.searchParams.get("lesson") || (u.pathname === "/story.html" && !u.searchParams.get("route") ? "story" : null);
-        if (id && assigned.has(id)) {
+      cards.forEach((card) => {
+        const id = cardId(card);
+        if (id && assigned.has(id) && !card.querySelector(".task-badge")) {
           const b = document.createElement("span");
-          b.className = "task-badge"; b.textContent = "⭐ Бүгінгі тапсырма";
+          const pr = byId[id];
+          b.className = "task-badge" + (pr && pr.met ? " met" : "");
+          b.textContent = pr ? `${pr.met ? "✅" : "⭐"} Тапсырма ${pr.done}/${pr.target}` : "⭐ Бүгінгі тапсырма";
           card.querySelector(".book-art").appendChild(b);
           card.classList.add("assigned");
         }

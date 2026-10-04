@@ -102,6 +102,14 @@
   table.attempts th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); border-top: none; }
   table.attempts td.tr { font-weight: 800; }
 
+  .hw-progress { display: flex; flex-direction: column; gap: 6px; margin: var(--space-3) 0; }
+  .hw-row { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 0.9rem; }
+  .hw-bar { flex: 0 0 120px; height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .hw-bar > i { display: block; height: 100%; background: var(--warn); border-radius: 999px; }
+  .hw-row.met .hw-bar > i { background: var(--ok); }
+  .hw-link { width: 100%; font: inherit; font-size: 0.8rem; padding: 8px 10px; border: 2px dashed var(--line); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink); }
+  .hw-received { padding: 10px 12px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--warn) 12%, var(--card-solid)); border: 2px solid color-mix(in srgb, var(--warn) 40%, transparent); font-weight: 700; font-size: 0.9rem; margin-bottom: var(--space-3); }
+  #importStatus { font-weight: 800; }
   .tools { display: flex; flex-wrap: wrap; gap: 10px; }
   .tools .btn { padding: 12px 18px; font-size: 0.95rem; border-radius: 999px; }
   #printTitle { display: none; }
@@ -154,13 +162,45 @@
         <p id="stTrend" class="muted"></p>
       </section>
 
+      <section class="sheet" id="hwSection">
+        <h2>📝 Домашнее задание <small>занятия дома между встречами с логопедом</small></h2>
+        <div id="hwReceived" class="hw-received" hidden></div>
+        <form id="hwForm">
+          <div class="form-grid">
+            <div class="field wide">Что делать дома <span class="hint">отмеченные занятия выделяются на главном экране ребёнка</span>
+              <div class="assign-list" id="assignedList"></div>
+            </div>
+            <label class="field">Раз в неделю (каждое занятие)
+              <select id="hwPerWeek">
+                <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7 — каждый день</option>
+              </select>
+            </label>
+            <label class="field">Логопед <input id="hwFrom" maxlength="60" placeholder="Например: Асель Маратовна"><span class="hint">видно родителям в задании</span></label>
+            <label class="field wide">Заметка для родителей <textarea id="hwNote" rows="2" maxlength="300" placeholder="Например: хвалите за любую попытку сказать «а», не исправляйте"></textarea></label>
+          </div>
+          <div class="hw-progress" id="hwProgress"></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">💾 Сохранить задание</button>
+            <button type="button" class="btn" id="hwShare">🔗 Ссылка для родителей</button>
+            <button type="button" class="btn btn-muted" id="hwClear">Снять задание</button>
+            <span id="hwSaved" hidden style="color:var(--ok);font-weight:800;"></span>
+          </div>
+          <input class="hw-link" id="hwLink" readonly hidden aria-label="Ссылка с заданием">
+        </form>
+        <div class="form-actions no-print">
+          <label class="btn" style="cursor:pointer;">📥 Загрузить результаты из дома<input type="file" id="importFile" accept="application/json,.json" hidden></label>
+          <span id="importStatus" class="muted"></span>
+        </div>
+        <p class="muted">Ссылка открывает задание на телефоне родителей — без регистрации, данные идут в самой ссылке. Родители возвращают результаты кнопкой «📤 Отправить логопеду», вы загружаете файл сюда — занятия добавятся в историю этого ребёнка.</p>
+      </section>
+
       <section class="sheet">
-        <h2>📖 Занятия <small>последние 30; раскройте, чтобы увидеть попытки</small></h2>
+        <h2>📖 Занятия <small>последние 100; раскройте, чтобы увидеть попытки</small></h2>
         <div id="sessions"></div>
         <p class="muted">Наклейки: <span id="stickers"></span></p>
         <div class="tools no-print">
           <button type="button" class="btn btn-primary" id="printBtn">🖨 Печать / сохранить в PDF</button>
-          <button type="button" class="btn" id="exportJson">⬇ Экспорт JSON</button>
+          <button type="button" class="btn" id="exportJson">📤 Отправить логопеду (файл)</button>
         </div>
       </section>
 
@@ -191,9 +231,6 @@
               <label class="check"><input type="checkbox" id="fTranscripts"> Сохранять транскрипты попыток</label>
               <span class="hint">Текст каждого ответа (без звука) останется в истории на этом устройстве — для разбора с логопедом. По умолчанию выключено.</span>
             </div>
-            <div class="field wide">Задание на сегодня <span class="hint">отмеченные занятия выделяются на главном экране</span>
-              <div class="assign-list" id="assignedList"></div>
-            </div>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">💾 Сохранить</button>
@@ -204,12 +241,13 @@
         </form>
       </section>
 
-      <p class="muted no-print" style="margin-top:var(--space-4)">🔒 Всё хранится в браузере этого устройства. Звук ребёнка не записывается и не сохраняется. Экспорт JSON и печать — единственный способ забрать данные отсюда.</p>
+      <p class="muted no-print" style="margin-top:var(--space-4)">🔒 Всё хранится в браузере этого устройства. Звук ребёнка не записывается и не сохраняется. Файл результатов, ссылка с заданием и печать — единственные способы забрать данные отсюда.</p>
     </div>
   </div>
 
   <script src="profiles.js"></script>
   <script src="session.js"></script>
+  <script src="homework.js"></script>
   <script src="stickers.js"></script>
   <script src="cabinet.js"></script>
 </body>

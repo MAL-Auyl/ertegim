@@ -93,7 +93,7 @@ function exportBundle(profile, history, stickers) {
   return {
     exportedAt: new Date().toISOString(),
     app: "Ертегім",
-    child: { id: profile.id, name: profile.name, age: profile.age, notes: profile.notes, settings: profile.settings, createdAt: profile.createdAt },
+    child: { id: profile.id, linkedId: profile.linkedId || null, name: profile.name, age: profile.age, notes: profile.notes, settings: profile.settings, createdAt: profile.createdAt },
     sessions: history,
     stickers,
   };
@@ -149,11 +149,10 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
     $("fSilence").value = s.silenceMs ?? "";
     $("fTimeout").value = s.silenceTimeoutMs ?? "";
     $("fTranscripts").checked = !!s.keepTranscripts;
-    $("assignedList").innerHTML = ACTIVITY_IDS.map((id) =>
-      `<label class="assign"><input type="checkbox" value="${id}" ${s.assigned.includes(id) ? "checked" : ""}> ${esc(activityTitle(id))}</label>`).join("");
     $("deleteChild").disabled = Profiles.list().length <= 1;
 
     const history = Session.history();
+    renderHomework(p, history);
     renderStats(history);
     renderTrends(history);
     renderSessions(history);
@@ -222,6 +221,114 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
     $("stickers").innerHTML = shelf.map((s) => `<span class="tag ${s.earnedAt ? "tag-first" : "tag-off"}">${esc(s.kk)}</span>`).join(" ");
   }
 
+
+  // ------------------------------------------------ homework (homework.js)
+  const THERAPIST_KEY = "ertegim.therapist";
+  const lsGet = (k) => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
+
+  function renderHomework(p, history) {
+    const plan = p.homework ? Homework.normalizePlan(p.homework, ACTIVITY_IDS) : null;
+    const assigned = plan ? plan.activities : p.settings.assigned;
+    $("assignedList").innerHTML = ACTIVITY_IDS.map((id) =>
+      `<label class="assign"><input type="checkbox" value="${id}" ${assigned.includes(id) ? "checked" : ""}> ${esc(activityTitle(id))}</label>`).join("");
+    $("hwPerWeek").value = String(plan ? plan.perWeek : 3);
+    $("hwNote").value = plan ? plan.note : "";
+    $("hwFrom").value = (plan && plan.from) || lsGet(THERAPIST_KEY);
+    $("hwLink").hidden = true;
+    // On the parents' device the plan came through a link: say from whom.
+    const received = plan && p.linkedId;
+    $("hwReceived").hidden = !received;
+    if (received) $("hwReceived").innerHTML = `📬 Задание получено по ссылке${plan.from ? ` от <b>${esc(plan.from)}</b>` : ""}, ${esc(fmtDateTime(plan.createdAt))}. Когда позанимаетесь — нажмите «📤 Отправить логопеду» ниже.`;
+    const progress = plan ? Homework.weekProgress(plan, history) : [];
+    $("hwProgress").innerHTML = progress.length
+      ? `<div class="muted">Эта неделя (с понедельника):</div>` + progress.map((x) =>
+          `<div class="hw-row${x.met ? " met" : ""}"><span class="hw-bar"><i style="width:${Math.min(100, Math.round((x.done / x.target) * 100))}%"></i></span>${x.met ? "✅" : "⏳"} ${esc(activityTitle(x.id))} — ${x.done} из ${x.target}</div>`).join("")
+      : `<div class="muted">Задание не выдано.</div>`;
+    $("hwClear").disabled = !plan && !p.settings.assigned.length;
+  }
+
+  function readPlanForm() {
+    const p = Profiles.active();
+    return Homework.normalizePlan({
+      activities: [...$("assignedList").querySelectorAll("input:checked")].map((i) => i.value),
+      perWeek: Number($("hwPerWeek").value),
+      note: $("hwNote").value,
+      from: $("hwFrom").value,
+      child: p.name,
+      // The link always points back to THIS device's profile — unless this
+      // device is itself the home one, then it keeps the therapist's id.
+      pid: p.linkedId || p.id,
+      createdAt: new Date().toISOString(),
+    }, ACTIVITY_IDS);
+  }
+
+  function flash(text) {
+    $("hwSaved").textContent = text; $("hwSaved").hidden = false;
+    setTimeout(() => { $("hwSaved").hidden = true; }, 2200);
+  }
+
+  function savePlan() {
+    const plan = readPlanForm();
+    if (!plan) { alert("Отметьте хотя бы одно занятие."); return null; }
+    if (plan.from) lsSet(THERAPIST_KEY, plan.from);
+    const p = Profiles.active();
+    Profiles.update(p.id, { homework: plan, settings: { assigned: plan.activities } });
+    return plan;
+  }
+
+  $("hwForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (savePlan()) { render(); flash("Задание сохранено"); }
+  });
+
+  $("hwShare").addEventListener("click", async () => {
+    const plan = savePlan();
+    if (!plan) return;
+    render();
+    const link = Homework.planLink(location.origin, plan);
+    $("hwLink").value = link; $("hwLink").hidden = false; $("hwLink").select();
+    const text = `Ертегім: тапсырма — ${plan.child}. Сілтемені телефонда ашыңыз / Откройте ссылку на телефоне ребёнка:`;
+    try {
+      if (navigator.share) { await navigator.share({ title: "Ертегім — тапсырма", text, url: link }); flash("Отправлено"); return; }
+    } catch { /* cancelled — fall back to copying */ }
+    try { await navigator.clipboard.writeText(link); flash("Ссылка скопирована — вставьте в WhatsApp"); }
+    catch { flash("Скопируйте ссылку из поля ниже"); }
+  });
+
+  $("hwClear").addEventListener("click", () => {
+    const p = Profiles.active();
+    if (!confirm(`Снять домашнее задание у «${p.name}»?`)) return;
+    Profiles.update(p.id, { homework: null, settings: { assigned: [] } });
+    render();
+  });
+
+  // Results played at home → this device. The file is the JSON export of
+  // the parents' cabinet; sessions are merged into the matching child.
+  $("importFile").addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    let bundle = null;
+    try { bundle = Homework.parseBundle(JSON.parse(await file.text())); } catch { bundle = null; }
+    if (!bundle) { $("importStatus").textContent = "Это не файл результатов Ертегім."; return; }
+    let target = Homework.matchProfile(Profiles.list(), bundle.child);
+    if (!target) {
+      if (!confirm(`Ребёнок «${bundle.child.name || "без имени"}» не найден. Создать новый профиль?`)) return;
+      target = Profiles.add({ name: bundle.child.name });
+    }
+    Profiles.update(target.id, { remoteId: bundle.child.id });
+    Profiles.setActive(target.id);
+    const before = Session.history();
+    const merged = Homework.mergeHistory(before, bundle.sessions);
+    Session.replaceHistory(merged);
+    const added = merged.length - before.length;
+    render();
+    $("importStatus").textContent = added > 0
+      ? `✅ ${target.name}: добавлено занятий — ${added}.`
+      : `${target.name}: новых занятий нет, всё уже загружено.`;
+  });
+
   $("childForm").addEventListener("submit", (e) => {
     e.preventDefault();
     const p = Profiles.active();
@@ -236,7 +343,6 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
         silenceMs: $("fSilence").value === "" ? null : Number($("fSilence").value),
         silenceTimeoutMs: $("fTimeout").value === "" ? null : Number($("fTimeout").value),
         keepTranscripts: $("fTranscripts").checked,
-        assigned: [...$("assignedList").querySelectorAll("input:checked")].map((i) => i.value),
       },
     });
     $("saved").hidden = false;
@@ -251,13 +357,25 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
     render();
   });
 
-  $("exportJson").addEventListener("click", () => {
+  // «Отправить логопеду»: the JSON export, shared as a file where the
+  // browser can (phone → WhatsApp/Telegram), downloaded otherwise.
+  $("exportJson").addEventListener("click", async () => {
     const p = Profiles.active();
     const data = exportBundle(p, Session.history(), Stickers.earned());
+    const name = `ertegim-${p.name.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0, 10)}.json`;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    try {
+      const file = new File([blob], name, { type: "application/json" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Ертегім — нәтижелер", text: `${p.name}: занятия дома` });
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+    }
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `ertegim-${p.name.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = name;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   });
