@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="ерін түтікше">
+  <!-- Articulation pictogram for [у] / Ұ: lips pushed forward into a small
+       tube. Small mouth + the little «forward» marks either side. -->
+  <circle cx="100" cy="100" r="80" fill="#FFD9A8" stroke="#14181C" stroke-width="7"/>
+  <circle cx="72" cy="80" r="9" fill="#14181C"/>
+  <circle cx="128" cy="80" r="9" fill="#14181C"/>
+  <path d="M60 70 C66 62 78 60 86 66" fill="none" stroke="#14181C" stroke-width="5" stroke-linecap="round"/>
+  <path d="M114 66 C122 60 134 62 140 70" fill="none" stroke="#14181C" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="100" cy="136" rx="17" ry="15" fill="#E8677A" stroke="#14181C" stroke-width="6"/>
+  <ellipse cx="100" cy="136" rx="6" ry="5" fill="#14181C"/>
+  <path d="M70 128 C66 134 66 140 70 146 M130 128 C134 134 134 140 130 146" fill="none" stroke="#14181C" stroke-width="4" stroke-linecap="round"/>
+</svg>

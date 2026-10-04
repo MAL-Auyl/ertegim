@@ -79,6 +79,9 @@ describe("summarize", () => {
     expect(s.adultAnswers).toBe(2);
     expect(s.gestureAnswers).toBe(1);
     expect(s.skills.sound_a).toBe("reask");
+    // nothing was heard: no «words», and the adult's tap delay is not a reaction time
+    expect(s.words).toEqual([]); // «👂 ата-ана» and «👆 алма» are not speech
+    expect(s.avgResponseSec).toBe(1); // only the child's own tap (1 s); the adult's 2 s is left out
   });
 
   test("shown but never answered (all verdicts null) is 'skipped'", () => {

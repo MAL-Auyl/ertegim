@@ -724,6 +724,301 @@ const LESSON_A = {
   },
 };
 
+// ---- Уроки «О әрпі» и «Ұ әрпі» -------------------------------------------
+// Same 3-5 minute ladder as LESSON_A (docs/lesson-letter-a.md): the sound by
+// imitation with an articulation picture, one word with a picture, «which
+// one starts with the letter?» (say it or tap the card), one open question
+// for emotional contact, a chant. Node ids are prefixed (o_ / q_o_, u_ /
+// q_u_) so all lessons share one id space with the tale and public/audio/.
+//
+// Why Ұ and not У: in Kazakh «у» is a glide (су, қуыршақ) with almost no
+// child words to start with — and «у» alone means «poison». The rounded
+// vowel a speech therapist trains as [у] is Ұ: ұшақ, ұнайды, ұя. A Russian
+// speaker's «у-у-у» is accepted as the same sound.
+const lessonNode = (letter, node) => ({ speaker: FOX, character: "fox", bg: "lesson", letter, ...node });
+
+const LESSON_O_SOUND_FORMS = ["о", "оо", "ооо", "ох", "оһ", "ой", "уо"];
+const LESSON_O_OT_FORMS = ["от", "оот", "отт", "огонь", "огонёк", "огонек", "агонь"];
+const LESSON_O_PICK_FORMS = {
+  ot: ["от", "оот", "огонь", "огонёк", "огонек", "агонь"],
+  mysyq: ["мысық", "мысы", "мышық", "мысык", "кошка", "киса", "котик", "мяу"],
+};
+const LESSON_O_TOY_FORMS = ["ойыншық", "ойыншығым", "игрушка", "доп", "қуыршақ", "машина", "аю", "мяч", "кукла"];
+
+const oNode = (node) => lessonNode("Оо", node);
+const LESSON_O = {
+  o_intro: oNode({ kind: "narration", pose: "talk",
+    kk: "Сәлем! Бүгін біз жаңа әріппен танысамыз. Ол дөп-дөңгелек, сақина сияқты!",
+    ru: "Привет! Сегодня мы познакомимся с новой буквой. Она круглая-круглая, как колечко!",
+    next: "o_show" }),
+  o_intro_again: oNode({ kind: "narration", pose: "talk",
+    kk: "Сен қайта келдің! Есіңде ме, дөңгелек О әрпі? Бүгін тағы ойнайық!",
+    ru: "Ты вернулся! Помнишь круглую букву О? Давай сегодня поиграем ещё!",
+    next: "o_show" }),
+  o_show: oNode({ kind: "narration", pose: "happy",
+    kk: "Міне, О әрпі! Қара, дөп-дөңгелек! О-о-о!",
+    ru: "Вот буква О! Смотри, какая круглая! О-о-о!",
+    next: "o_mouth" }),
+  o_mouth: oNode({ kind: "narration", pose: "talk", picture: "mouth_o",
+    kk: "О дегенде ерінімізді дөңгелетеміз — дәл О әрпі сияқты. Қара маған: О-о-о!",
+    ru: "Когда говорим О — губы делаем кругленькими, прямо как буква О. Смотри на меня: О-о-о!",
+    next: "q_o_sound" }),
+
+  q_o_sound: oNode({ kind: "question", mode: "imitate", skill: "sound_o", pose: "talk", picture: "mouth_o",
+    kk: "Енді сен! Менімен бірге: О-о-о!",
+    ru: "Теперь ты! Вместе со мной: О-о-о!",
+    accept: LESSON_O_SOUND_FORMS, acceptPrefix: ["о"],
+    criterion:
+      "Ребёнок должен произнести протяжный звук [о] («О-о-о»). Засчитывай верным (correct) любой ответ " +
+      "с округлым гласным «о»: «о», «оо», «о-о-о», «ох», «ой», а также любое слово, начинающееся на «о» — " +
+      "цель урока звук, не слово. Тишина, кашель, шум без гласного «о» — unclear.",
+    onCorrect: "o_sound_ok", onReask: "o_sound_reask", onReveal: "o_sound_reveal" }),
+  o_sound_reask: oNode({ kind: "narration", pose: "confused", picture: "mouth_o",
+    kk: "Ерініңді дөңгелетші, міне былай… О-о-о!",
+    ru: "Сделай губы кругленькими, вот так… О-о-о!",
+    next: "q_o_sound" }),
+  o_sound_reveal: oNode({ kind: "narration", pose: "think",
+    kk: "О-о-о! Міне, солай! Сен тырыстың — жарайсың!",
+    ru: "О-о-о! Вот так! Ты старался — молодец!",
+    next: "o_words" }),
+  o_sound_ok: oNode({ kind: "narration", pose: "happy",
+    kk: "Жарайсың! Нағыз О!",
+    ru: "Молодец! Настоящая О!",
+    next: "o_words" }),
+
+  o_words: oNode({ kind: "narration", pose: "talk",
+    kk: "О әрпінен басталатын сөздер де бар. Мен саған біреуін көрсетейін.",
+    ru: "Есть слова и на букву О. Я покажу тебе одно.",
+    next: "q_o_ot" }),
+  q_o_ot: oNode({ kind: "question", mode: "imitate", skill: "word_o", pose: "talk", picture: "ot",
+    kk: "Бұл — от. От жылы, бірақ оған жақын бармаймыз! Айтшы: о-от!",
+    ru: "Это — огонь, от. Он тёплый, но близко к нему не подходим! Скажи: о-от!",
+    accept: LESSON_O_OT_FORMS, acceptPrefix: ["о"],
+    criterion:
+      "Ребёнок повторяет слово «от» (огонь) по картинке костра. Засчитывай верным (correct) «от», " +
+      "растянутое «о-от», «огонь»/«огонёк» и детские искажения («агонь»). Любое слово на «о» тоже верно — " +
+      "цель урока звук [о]. Молчание или посторонний ответ — unclear.",
+    onCorrect: "o_ot_ok", onReask: "o_ot_reask", onReveal: "o_ot_reveal" }),
+  o_ot_reask: oNode({ kind: "narration", pose: "confused", picture: "ot",
+    kk: "Бірге айтайық, ақырын: о… от. От!",
+    ru: "Скажем вместе, медленно: о… от. От!",
+    next: "q_o_ot" }),
+  o_ot_reveal: oNode({ kind: "narration", pose: "think", picture: "ot",
+    kk: "О-от! От — О әрпінен басталады. Жарайсың, тырыстың!",
+    ru: "О-от! От начинается с О. Молодец, ты старался!",
+    next: "q_o_pick" }),
+  o_ot_ok: oNode({ kind: "narration", pose: "happy", picture: "ot",
+    kk: "Дұрыс! От! От — О-дан басталады!",
+    ru: "Правильно! От! От начинается с О!",
+    next: "q_o_pick" }),
+
+  q_o_pick: oNode({ kind: "question", mode: "pick", skill: "pick_o", pose: "talk",
+    kk: "Қара: от және мысық. Қайсысы О-дан басталады? Айтшы немесе саусағыңмен көрсет!",
+    ru: "Смотри: огонь и кошка. Что начинается на О? Скажи или покажи пальчиком!",
+    choices: [
+      { id: "ot", kk: "от", ru: "огонь", picture: "ot", forms: LESSON_O_PICK_FORMS.ot },
+      { id: "mysyq", kk: "мысық", ru: "кошка", picture: "mysyq", forms: LESSON_O_PICK_FORMS.mysyq },
+    ],
+    criterion:
+      "На экране две картинки: огонь (от) и кошка (мысық). Ребёнок должен назвать то, что начинается на О. " +
+      'Если он сказал «от»/«огонь» — верни label "correct" и reason ровно "ot". Если «мысық»/«кошка»/«мяу» — ' +
+      'label "correct" и reason ровно "mysyq" (герой мягко поправит). Иначе — "unclear".',
+    onAnswer: { ot: "o_pick_ok" }, onOther: { mysyq: "o_pick_other" },
+    onReask: "o_pick_reask", onReveal: "o_pick_reveal" }),
+  o_pick_other: oNode({ kind: "narration", pose: "confused", picture: "mysyq",
+    kk: "Бұл — мысық. М-м-мысық. Ал О қайда? Тағы қарашы!",
+    ru: "Это — кошка, мысық. М-м-мысық. А где О? Посмотри ещё!",
+    next: "q_o_pick" }),
+  o_pick_reask: oNode({ kind: "narration", pose: "confused",
+    kk: "От қайда? Отты көрсетші!",
+    ru: "Где огонь? Покажи огонь!",
+    next: "q_o_pick" }),
+  o_pick_reveal: oNode({ kind: "narration", pose: "think", picture: "ot",
+    kk: "Міне, от! О-о-от! Жарайсың!",
+    ru: "Вот огонь! О-о-от! Молодец!",
+    next: "q_o_toy" }),
+  o_pick_ok: oNode({ kind: "narration", pose: "happy", picture: "ot",
+    kk: "Дұрыс! От — О! Сен таптың!",
+    ru: "Правильно! От — О! Ты нашёл!",
+    next: "q_o_toy" }),
+
+  q_o_toy: oNode({ kind: "question", mode: "open", skill: "open_o", pose: "talk", picture: "oiynshyq",
+    kk: "Ойыншық деген сөз де О-дан басталады. Ой-ын-шық. Сенің сүйікті ойыншығың қандай? Айтшы!",
+    ru: "Слово «ойыншық» — игрушка — тоже начинается с О. Ой-ын-шық. Какая твоя любимая игрушка? Расскажи!",
+    accept: LESSON_O_TOY_FORMS,
+    criterion:
+      "Лисёнок спрашивает про любимую игрушку. Это узел эмоционального контакта, не проверка: любая речь — " +
+      "correct, включая одно слово («доп», «мяч», «қуыршақ», «машина», имя игрушки). Только тишина или явный " +
+      "шум без слов — unclear. Будь щедрым.",
+    onCorrect: "o_toy_ok", onReask: "o_toy_reask", onReveal: "o_toy_reveal" }),
+  o_toy_reask: oNode({ kind: "narration", pose: "confused", picture: "oiynshyq",
+    kk: "Сен немен ойнағанды жақсы көресің? Доппен бе? Қуыршақпен бе? Айтшы!",
+    ru: "Чем ты любишь играть? Мячом? Куклой? Скажи!",
+    next: "q_o_toy" }),
+  o_toy_reveal: oNode({ kind: "narration", pose: "think", picture: "oiynshyq",
+    kk: "Ойыншық! Менің сүйікті ойыншығым — доп. Жарайсың!",
+    ru: "Игрушка! Моя любимая игрушка — мяч. Молодец!",
+    next: "o_chant" }),
+  o_toy_ok: oNode({ kind: "narration", pose: "happy", picture: "oiynshyq",
+    kk: "Қандай керемет! Ойыншық — О-дан басталады!",
+    ru: "Как здорово! Ойыншық — на букву О!",
+    next: "o_chant" }),
+
+  o_chant: oNode({ kind: "narration", pose: "happy", chant: true,
+    kk: "О-о-о — от! О-о-о — ойыншық! О-о-о — орман! О әрпі — дөп-дөңгелек әріп!",
+    ru: "О-о-о — огонь! О-о-о — игрушка! О-о-о — лес (орман)! Буква О — круглая буква!",
+    next: "o_bye" }),
+  o_bye: oNode({ kind: "narration", pose: "happy",
+    kk: "Бүгін біз О әрпімен таныстық! Сен керемет тырыстың. Ертең тағы кел!",
+    ru: "Сегодня мы познакомились с буквой О! Ты отлично старался. Приходи завтра ещё!",
+    next: "parent_report" }),
+};
+
+const LESSON_U_SOUND_FORMS = ["ұ", "ұұ", "ұұұ", "у", "уу", "ууу", "ух", "уһ", "ү", "үү"];
+const LESSON_U_USHAQ_FORMS = ["ұшақ", "ушақ", "ушак", "ұшак", "ұсақ", "усак", "самолёт", "самолет", "самолот", "амолёт"];
+const LESSON_U_PICK_FORMS = {
+  ushaq: ["ұшақ", "ушақ", "ушак", "ұшак", "самолёт", "самолет", "самолот"],
+  alma: ["алма", "ама", "альма", "яблоко", "ябоко", "яблако"],
+};
+const LESSON_U_LIKE_FORMS = ["ұнайды", "унайды", "ұнайды маған", "нравится", "люблю", "жақсы көремін", "ойнау", "алма", "мама", "ана"];
+
+const uNode = (node) => lessonNode("Ұұ", node);
+const LESSON_U = {
+  u_intro: uNode({ kind: "narration", pose: "talk",
+    kk: "Сәлем! Бүгін біз жаңа әріппен танысамыз. Ол ұшақ сияқты дыбыстайды: ұ-ұ-ұ!",
+    ru: "Привет! Сегодня мы познакомимся с новой буквой. Она звучит, как самолёт: у-у-у!",
+    next: "u_show" }),
+  u_intro_again: uNode({ kind: "narration", pose: "talk",
+    kk: "Сен қайта келдің! Есіңде ме, ұшақтың әрпі Ұ? Бүгін тағы ойнайық!",
+    ru: "Ты вернулся! Помнишь букву Ұ — как самолёт? Давай сегодня поиграем ещё!",
+    next: "u_show" }),
+  u_show: uNode({ kind: "narration", pose: "happy",
+    kk: "Міне, Ұ әрпі! Қара, аяғында кішкентай сызықша бар. Ұ-ұ-ұ!",
+    ru: "Вот буква Ұ! Смотри, на ножке у неё маленькая чёрточка. У-у-у!",
+    next: "u_mouth" }),
+  u_mouth: uNode({ kind: "narration", pose: "talk", picture: "mouth_u",
+    kk: "Ұ дегенде ерінімізді түтікше қылып алға созамыз. Қара маған: Ұ-ұ-ұ!",
+    ru: "Когда говорим Ұ — вытягиваем губы вперёд трубочкой. Смотри на меня: У-у-у!",
+    next: "q_u_sound" }),
+
+  q_u_sound: uNode({ kind: "question", mode: "imitate", skill: "sound_u", pose: "talk", picture: "mouth_u",
+    kk: "Енді сен! Менімен бірге: Ұ-ұ-ұ!",
+    ru: "Теперь ты! Вместе со мной: У-у-у!",
+    accept: LESSON_U_SOUND_FORMS, acceptPrefix: ["ұ", "у", "ү"],
+    criterion:
+      "Ребёнок должен произнести протяжный звук [у] — по-казахски Ұ («Ұ-ұ-ұ», «у-у-у»). Засчитывай верным " +
+      "(correct) любой ответ с гласным «ұ», «у» или «ү»: «у», «уу», «у-у-у», «ух», а также любое слово, " +
+      "начинающееся на эти звуки — цель урока звук, не слово. Тишина, кашель, шум без этого гласного — unclear.",
+    onCorrect: "u_sound_ok", onReask: "u_sound_reask", onReveal: "u_sound_reveal" }),
+  u_sound_reask: uNode({ kind: "narration", pose: "confused", picture: "mouth_u",
+    kk: "Ерініңді түтікше қылып созшы… Ұ-ұ-ұ!",
+    ru: "Вытяни губы трубочкой… У-у-у!",
+    next: "q_u_sound" }),
+  u_sound_reveal: uNode({ kind: "narration", pose: "think",
+    kk: "Ұ-ұ-ұ! Міне, солай! Сен тырыстың — жарайсың!",
+    ru: "У-у-у! Вот так! Ты старался — молодец!",
+    next: "u_words" }),
+  u_sound_ok: uNode({ kind: "narration", pose: "happy",
+    kk: "Жарайсың! Нағыз Ұ!",
+    ru: "Молодец! Настоящая Ұ!",
+    next: "u_words" }),
+
+  u_words: uNode({ kind: "narration", pose: "talk",
+    kk: "Ұ әрпінен басталатын сөздер де бар. Мен саған біреуін көрсетейін.",
+    ru: "Есть слова и на букву Ұ. Я покажу тебе одно.",
+    next: "q_u_ushaq" }),
+  q_u_ushaq: uNode({ kind: "question", mode: "imitate", skill: "word_u", pose: "talk", picture: "ushaq",
+    kk: "Бұл — ұшақ. Ұ-шақ. Ол аспанда ұшады! Айтшы: ұ-шақ!",
+    ru: "Это — самолёт, ұшақ. Ұ-шақ. Он летает в небе! Скажи: ұ-шақ!",
+    accept: LESSON_U_USHAQ_FORMS, acceptPrefix: ["ұ", "у"],
+    criterion:
+      "Ребёнок повторяет слово «ұшақ» (самолёт) по картинке. Засчитывай верным (correct) «ұшақ», «ушақ», " +
+      "«ушак», детские искажения («ұсақ»), а также «самолёт» — ребёнок понял картинку. Любое слово на «ұ»/«у» " +
+      "тоже верно — цель урока звук [у]. Молчание или посторонний ответ — unclear.",
+    onCorrect: "u_ushaq_ok", onReask: "u_ushaq_reask", onReveal: "u_ushaq_reveal" }),
+  u_ushaq_reask: uNode({ kind: "narration", pose: "confused", picture: "ushaq",
+    kk: "Бірге айтайық, ақырын: ұ… шақ. Ұшақ!",
+    ru: "Скажем вместе, медленно: ұ… шақ. Ұшақ!",
+    next: "q_u_ushaq" }),
+  u_ushaq_reveal: uNode({ kind: "narration", pose: "think", picture: "ushaq",
+    kk: "Ұ-шақ! Ұшақ — Ұ әрпінен басталады. Жарайсың, тырыстың!",
+    ru: "Ұ-шақ! Ұшақ начинается с Ұ. Молодец, ты старался!",
+    next: "q_u_pick" }),
+  u_ushaq_ok: uNode({ kind: "narration", pose: "happy", picture: "ushaq",
+    kk: "Дұрыс! Ұшақ! Ұшақ — Ұ-дан басталады!",
+    ru: "Правильно! Ұшақ! Самолёт по-казахски начинается с Ұ!",
+    next: "q_u_pick" }),
+
+  q_u_pick: uNode({ kind: "question", mode: "pick", skill: "pick_u", pose: "talk",
+    kk: "Қара: ұшақ және алма. Қайсысы Ұ-дан басталады? Айтшы немесе саусағыңмен көрсет!",
+    ru: "Смотри: самолёт и яблоко. Что начинается на Ұ? Скажи или покажи пальчиком!",
+    choices: [
+      { id: "ushaq", kk: "ұшақ", ru: "самолёт", picture: "ushaq", forms: LESSON_U_PICK_FORMS.ushaq },
+      { id: "alma", kk: "алма", ru: "яблоко", picture: "alma", forms: LESSON_U_PICK_FORMS.alma },
+    ],
+    criterion:
+      "На экране две картинки: самолёт (ұшақ) и яблоко (алма). Ребёнок должен назвать то, что начинается на Ұ. " +
+      'Если он сказал «ұшақ»/«самолёт» — верни label "correct" и reason ровно "ushaq". Если «алма»/«яблоко» — ' +
+      'label "correct" и reason ровно "alma" (герой мягко поправит). Иначе — "unclear".',
+    onAnswer: { ushaq: "u_pick_ok" }, onOther: { alma: "u_pick_other" },
+    onReask: "u_pick_reask", onReveal: "u_pick_reveal" }),
+  u_pick_other: uNode({ kind: "narration", pose: "confused", picture: "alma",
+    kk: "Бұл — алма. А-а-алма. Ол А-дан басталады. Ал Ұ қайда? Тағы қарашы!",
+    ru: "Это — яблоко, алма. А-а-алма. Оно начинается с А. А где Ұ? Посмотри ещё!",
+    next: "q_u_pick" }),
+  u_pick_reask: uNode({ kind: "narration", pose: "confused",
+    kk: "Ұшақ қайда? Ұшақты көрсетші!",
+    ru: "Где самолёт? Покажи самолёт!",
+    next: "q_u_pick" }),
+  u_pick_reveal: uNode({ kind: "narration", pose: "think", picture: "ushaq",
+    kk: "Міне, ұшақ! Ұ-ұ-ұшақ! Жарайсың!",
+    ru: "Вот самолёт! Ұ-ұ-ұшақ! Молодец!",
+    next: "q_u_like" }),
+  u_pick_ok: uNode({ kind: "narration", pose: "happy", picture: "ushaq",
+    kk: "Дұрыс! Ұшақ — Ұ! Сен таптың!",
+    ru: "Правильно! Ұшақ — Ұ! Ты нашёл!",
+    next: "q_u_like" }),
+
+  q_u_like: uNode({ kind: "question", mode: "open", skill: "open_u", pose: "talk", picture: "unaidy",
+    kk: "Ұнайды деген сөз де Ұ-дан басталады. Ұ-най-ды. Саған не ұнайды? Айтшы!",
+    ru: "Слово «ұнайды» — «нравится» — тоже начинается с Ұ. Ұ-най-ды. Что тебе нравится? Расскажи!",
+    accept: LESSON_U_LIKE_FORMS,
+    criterion:
+      "Лисёнок спрашивает, что ребёнку нравится. Это узел эмоционального контакта, не проверка: любая речь — " +
+      "correct, включая одно слово («алма», «мама», «ойнау», «машина»). Только тишина или явный шум без слов — " +
+      "unclear. Будь щедрым.",
+    onCorrect: "u_like_ok", onReask: "u_like_reask", onReveal: "u_like_reveal" }),
+  u_like_reask: uNode({ kind: "narration", pose: "confused", picture: "unaidy",
+    kk: "Саған алма ұнай ма? Ойнау ұнай ма? Айтшы!",
+    ru: "Тебе нравятся яблоки? Нравится играть? Скажи!",
+    next: "q_u_like" }),
+  u_like_reveal: uNode({ kind: "narration", pose: "think", picture: "unaidy",
+    kk: "Маған сенімен ойнау ұнайды! Жарайсың!",
+    ru: "А мне нравится играть с тобой! Молодец!",
+    next: "u_chant" }),
+  u_like_ok: uNode({ kind: "narration", pose: "happy", picture: "unaidy",
+    kk: "Қандай жақсы! Ұнайды — Ұ-дан басталады!",
+    ru: "Как хорошо! Ұнайды — на букву Ұ!",
+    next: "u_chant" }),
+
+  u_chant: uNode({ kind: "narration", pose: "happy", chant: true,
+    kk: "Ұ-ұ-ұ — ұшақ! Ұ-ұ-ұ — ұнайды! Ұ-ұ-ұ — ұя! Ұ әрпі — ұшақтың әрпі!",
+    ru: "У-у-у — самолёт! У-у-у — нравится! У-у-у — гнездо (ұя)! Буква Ұ — буква самолёта!",
+    next: "u_bye" }),
+  u_bye: uNode({ kind: "narration", pose: "happy",
+    kk: "Бүгін біз Ұ әрпімен таныстық! Сен керемет тырыстың. Ертең тағы кел!",
+    ru: "Сегодня мы познакомились с буквой Ұ! Ты отлично старался. Приходи завтра ещё!",
+    next: "parent_report" }),
+};
+
+// Every letter lesson: its graph and the picture ids it may show. app.js
+// merges all graphs into NODES; tests walk each one the same way.
+const LETTER_LESSONS = {
+  "letter-a": { nodes: LESSON_A, letter: "Аа", prefix: "a", pictures: ["mouth", "alma", "dop", "ana"] },
+  "letter-o": { nodes: LESSON_O, letter: "Оо", prefix: "o", pictures: ["mouth_o", "ot", "mysyq", "oiynshyq"] },
+  "letter-u": { nodes: LESSON_U, letter: "Ұұ", prefix: "u", pictures: ["mouth_u", "ushaq", "alma", "unaidy"] },
+};
+
 // Everything app.js needs to run one activity: which graph, where it
 // starts (first run / replay), which beats are "final" (never cut by the
 // session limit), where the limit jumps to, the skills the report lists and
@@ -754,6 +1049,30 @@ const ACTIVITIES = {
     endLineKk: "Бүгін А әрпін үйрендік!",
     cover: "/images/cover-fox-fullbody.png",
   },
+  "letter-o": {
+    id: "letter-o", kind: "lesson",
+    start: "o_intro", startAgain: "o_intro_again",
+    finalIds: new Set(["o_chant", "o_bye", "parent_report"]), limitTarget: "o_bye",
+    skills: ["sound_o", "word_o", "pick_o", "open_o"],
+    gentle: true,
+    title: "О әрпі",
+    subtitleKk: "Түлкімен бірге О әрпін үйрен — айт немесе суретті көрсет",
+    subtitleRu: "Выучи букву О с лисёнком — говори или показывай картинку",
+    endLineKk: "Бүгін О әрпін үйрендік!",
+    cover: "/images/cover-fox-fullbody.png",
+  },
+  "letter-u": {
+    id: "letter-u", kind: "lesson",
+    start: "u_intro", startAgain: "u_intro_again",
+    finalIds: new Set(["u_chant", "u_bye", "parent_report"]), limitTarget: "u_bye",
+    skills: ["sound_u", "word_u", "pick_u", "open_u"],
+    gentle: true,
+    title: "Ұ әрпі",
+    subtitleKk: "Түлкімен бірге Ұ әрпін үйрен — айт немесе суретті көрсет",
+    subtitleRu: "Выучи букву Ұ (звук «у») с лисёнком — говори или показывай картинку",
+    endLineKk: "Бүгін Ұ әрпін үйрендік!",
+    cover: "/images/cover-fox-fullbody.png",
+  },
 };
 
 // The short lessons that live inside STORY (LESSONS above: letters, count,
@@ -779,5 +1098,8 @@ if (typeof module !== "undefined") {
   module.exports = {
     STORY, START_STATE, START_STATE_AGAIN, FINAL_IDS, LESSONS, NUM_KK, NUM_RU, BROTHER_NAMES, trackLines, echoLines,
     LESSON_A, ACTIVITIES, LESSON_A_SOUND_FORMS, LESSON_A_ALMA_FORMS, LESSON_A_PICK_FORMS, LESSON_A_ANA_FORMS,
+    LESSON_O, LESSON_O_SOUND_FORMS, LESSON_O_OT_FORMS, LESSON_O_PICK_FORMS,
+    LESSON_U, LESSON_U_SOUND_FORMS, LESSON_U_USHAQ_FORMS, LESSON_U_PICK_FORMS,
+    LETTER_LESSONS,
   };
 }

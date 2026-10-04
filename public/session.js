@@ -76,13 +76,20 @@ function tokenize(text) {
     .filter((w) => w.length >= 3);
 }
 
+// Answers that were not speech the recogniser heard: a tapped picture card
+// («👆 алма»), a traced letter, or the adult's verdict («👂 ата-ана»). Their
+// placeholder transcripts must not turn into «words the child said», and
+// the adult's tap delay is not the child's reaction time.
+const NOT_SPEECH = new Set(["tap", "trace", "adult"]);
+
 function summarize(r) {
   const words = [];
   for (const t of r.turns) {
+    if (NOT_SPEECH.has(t.source)) continue;
     for (const w of tokenize(t.transcript)) if (!words.includes(w)) words.push(w);
   }
 
-  const firstAttempts = r.turns.filter((t) => t.attempt === 1 && t.answeredAt != null);
+  const firstAttempts = r.turns.filter((t) => t.attempt === 1 && t.answeredAt != null && t.source !== "adult");
   const avgResponseSec = firstAttempts.length
     ? firstAttempts.reduce((acc, t) => acc + (t.answeredAt - t.askedAt) / 1000, 0) / firstAttempts.length
     : null;

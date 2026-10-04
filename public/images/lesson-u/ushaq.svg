@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="ұшақ">
+  <!-- Airplane: «ұшақ» on q_u_ushaq / q_u_pick. Side view, nose to the
+       right, big round windows — a picture-book plane. -->
+  <path d="M86 98 L64 40 L84 40 L120 98 Z" fill="#3B82E6" stroke="#14181C" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M30 96 L18 62 L36 62 L52 92 Z" fill="#3B82E6" stroke="#14181C" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M24 98 C24 86 34 82 48 82 L150 82 C172 82 186 92 186 104 C186 116 172 124 150 124 L48 124 C34 124 24 112 24 98 Z" fill="#F4F6F8" stroke="#14181C" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M160 90 C170 92 176 96 178 100 L160 100 Z" fill="#7EC8F2" stroke="#14181C" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="72" cy="100" r="7" fill="#7EC8F2" stroke="#14181C" stroke-width="4"/>
+  <circle cx="96" cy="100" r="7" fill="#7EC8F2" stroke="#14181C" stroke-width="4"/>
+  <circle cx="120" cy="100" r="7" fill="#7EC8F2" stroke="#14181C" stroke-width="4"/>
+  <path d="M90 116 L74 164 L94 164 L124 116 Z" fill="#2E6CC4" stroke="#14181C" stroke-width="6" stroke-linejoin="round"/>
+</svg>

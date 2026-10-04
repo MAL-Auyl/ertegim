@@ -16,6 +16,8 @@ const STICKER_CATALOG = {
   owl: { kk: "Үкімен таныстым", ru: "Познакомился с совёнком", img: "/images/cover-owl.png", hint_kk: "Өзен жолымен жүр" },
   bear: { kk: "Аюмен таныстым", ru: "Познакомился с медведем", img: "/images/cover-bear-fullbody.png", hint_kk: "Орман жолымен жүр" },
   "letter-a": { kk: "А әрпі", ru: "Буква А", img: "/images/lesson-a/alma.svg", hint_kk: "А әрпі сабағын өт" },
+  "letter-o": { kk: "О әрпі", ru: "Буква О", img: "/images/lesson-o/oiynshyq.svg", hint_kk: "О әрпі сабағын өт" },
+  "letter-u": { kk: "Ұ әрпі", ru: "Буква Ұ", img: "/images/lesson-u/ushaq.svg", hint_kk: "Ұ әрпі сабағын өт" },
   star: { kk: "Жұлдыз", ru: "Всё с первого раза", img: "/images/sticker-star.svg", hint_kk: "Барлық сұраққа бірден жауап бер" },
 };
 

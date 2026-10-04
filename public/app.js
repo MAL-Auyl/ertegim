@@ -63,7 +63,7 @@ const parentBtn = document.getElementById("parentBtn");
 // q_a_), so every NODES[...] lookup below is the same for either.
 const pageParams = new URLSearchParams(location.search);
 const ACTIVITY = ACTIVITIES[pageParams.get("lesson")] || ACTIVITIES.story;
-const NODES = { ...STORY, ...LESSON_A };
+const NODES = Object.assign({}, STORY, ...Object.values(LETTER_LESSONS).map((l) => l.nodes));
 
 // --- Gentle mode ----------------------------------------------------------
 // For children with a speech delay / dysarthria / ASD: longer pauses before
@@ -209,6 +209,15 @@ const LESSON_PICTURES = {
   alma: { src: "/images/lesson-a/alma.svg", kk: "алма", ru: "яблоко" },
   dop: { src: "/images/lesson-a/dop.svg", kk: "доп", ru: "мяч" },
   ana: { src: "/images/lesson-a/ana.svg", kk: "ана", ru: "мама" },
+  // lesson «О» (LESSON_O)
+  mouth_o: { src: "/images/lesson-o/mouth-o.svg", kk: "О-о-о", ru: "губы кругленькие" },
+  ot: { src: "/images/lesson-o/ot.svg", kk: "от", ru: "огонь" },
+  mysyq: { src: "/images/lesson-o/mysyq.svg", kk: "мысық", ru: "кошка" },
+  oiynshyq: { src: "/images/lesson-o/oiynshyq.svg", kk: "ойыншық", ru: "игрушка" },
+  // lesson «Ұ» (LESSON_U)
+  mouth_u: { src: "/images/lesson-u/mouth-u.svg", kk: "Ұ-ұ-ұ", ru: "губы трубочкой" },
+  ushaq: { src: "/images/lesson-u/ushaq.svg", kk: "ұшақ", ru: "самолёт" },
+  unaidy: { src: "/images/lesson-u/unaidy.svg", kk: "ұнайды", ru: "нравится" },
 };
 
 function pictureCardHTML(picId, { kk, ru, choiceId } = {}) {
@@ -1425,6 +1434,8 @@ function renderState(id) {
   if (id === "lp_ok") Session.moment("екіге бірді қосты");
   if (id === "lm_ok") Session.moment("төрттен бірді азайтты");
   if (id === "lw_ok") Session.moment("А әрпін жазды");
+  if (id === "o_sound_ok") Session.moment("О дыбысын айтты");
+  if (id === "u_sound_ok") Session.moment("Ұ дыбысын айтты");
 
   if (s.kind === "narration") {
     nextBtn.style.display = "block";
@@ -1461,7 +1472,9 @@ function renderState(id) {
     lastTranscript = "";
     recordingStartedAt = 0;
     nextBtn.style.display = "none";
-    recordBtn.style.display = "flex";
+    // In «the adult judges» mode the mic never opens — do not show it even
+    // while the hero is still speaking (showJudgeBar hides it later anyway).
+    recordBtn.style.display = adultJudgeReason() ? "none" : "flex";
     recordBtn.disabled = false;
     recordBtn.textContent = "🎙";
     recordBtn.title = "Слушаю… (нажми, если ребёнок уже ответил)";

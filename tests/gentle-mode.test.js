@@ -56,7 +56,8 @@ test("decoration checks calmMotion() (OS reduced-motion OR gentle), and gentle i
 });
 
 test("the page runs one ACTIVITY over the merged node table", () => {
-  expect(SRC).toContain("const NODES = { ...STORY, ...LESSON_A };");
+  // the tale plus every letter lesson (story.js LETTER_LESSONS: «А», «О», «Ұ»)
+  expect(SRC).toContain("const NODES = Object.assign({}, STORY, ...Object.values(LETTER_LESSONS).map((l) => l.nodes));");
   expect(SRC).not.toMatch(/\bSTORY\[/); // every id lookup goes through NODES
   expect(SRC).toContain("ACTIVITIES[pageParams.get(\"lesson\")] || ACTIVITIES.story");
   expect(SRC).toContain("ACTIVITY.finalIds.has(id)");

@@ -24,7 +24,7 @@ VOICE_FALLBACK_URL = "https://github.com/rhasspy/piper/releases/download/v0.0.2/
 VOICE_FALLBACK_NAME = "kk-issai-high"
 SPEAKER = 3
 PITCH = 1.4
-# Letter-lesson lines (a_* / q_a_*) are read a little slower: a child with a
+# Letter-lesson lines (a_* / q_a_*, o_* / q_o_*, u_* / q_u_*) are read a little slower: a child with a
 # speech delay needs the pause between syllables (docs/lesson-letter-a.md).
 LESSON_LENGTH_SCALE = 1.15
 _piper_win = ROOT / "tools" / ".venv" / "Scripts" / "piper.exe"
@@ -73,7 +73,7 @@ def lines() -> dict:
 
 
 def is_lesson_line(audio_id: str) -> bool:
-    return audio_id.startswith("a_") or audio_id.startswith("q_a_")
+    return audio_id.startswith(("a_", "q_a_", "o_", "q_o_", "u_", "q_u_"))
 
 
 def render(audio_id: str, text: str, voice: Path, ffmpeg: str) -> None:
