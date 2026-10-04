@@ -105,6 +105,10 @@ function summarize(r) {
   // "pick" nodes). A speech therapist reads this as a separate signal — the
   // child understood but did not vocalise — so the report shows it apart.
   const gestureAnswers = r.turns.filter((t) => t.verdict !== null && t.source === "tap").length;
+  // Answers the adult judged by ear («Ата-ана бағалайды»: no network, no
+  // mic, or the child's profile asks for it) — the recogniser heard nothing,
+  // so the report says so instead of passing them off as recognised speech.
+  const adultAnswers = r.turns.filter((t) => t.verdict !== null && t.source === "adult").length;
 
   // Per-attempt detail for the therapist's cabinet — only when the profile
   // asked for it (Session.keepTranscripts), see the privacy note above.
@@ -130,6 +134,7 @@ function summarize(r) {
     firstTryCorrect,
     questionsTotal: askedSkills.length,
     gestureAnswers,
+    adultAnswers,
     skills,
     moments: r.moments.map((m) => ({ atSec: Math.round((m.at - r.startedAt) / 1000), text_kk: m.text_kk })),
     ...(attempts ? { attempts } : {}),

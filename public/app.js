@@ -731,6 +731,7 @@ async function speakLine(text, stateId, { echo = false } = {}) {
         return;
       } catch (fallbackErr) {
         log(`voice error, fallback also failed: ${fallbackErr.message} — держу реплику ${readingTimeMs(text)}мс текстом`);
+        noteError(`voice: /audio/${stateId}.wav — ${fallbackErr.message}`, "speakLine");
         setStage("tts", "err", "live + fallback failed");
         await sleep(readingTimeMs(text));
         return;
@@ -1160,6 +1161,10 @@ function armVadForQuestion() {
     setListenCue(false, false);
     setStage("mic", "err", err.name || err.message);
     log(`VAD недоступен, ручной режим: ${err.name || err.message}`);
+    micUnavailable = true;
+    micErrorName = err.name || "";
+    noteError(`mic: ${err.name || ""} ${err.message || ""}`.trim(), "getUserMedia");
+    showJudgeBar("mic");
     // No mic at all means no clip will ever be submitted, so the
     // Correct/Re-ask/Advance controls (normally opened by submitAudio)
     // would never appear and the operator would be stuck on this question
@@ -1233,6 +1238,115 @@ function log(msg) {
 
 let currentRoute = null; // "river" | "forest", set at q_fork
 
+// --- «Ата-ана бағалайды»: the adult judges the answer -------------------
+// Voice answers need the network (speech recognition runs on the server).
+// Without it — or without a microphone, or when recognition keeps failing —
+// the child must not get stuck on the first question: the hero still asks,
+// and the adult next to the child taps «Айтты» / «Тағы» on a big bar under
+// the speech bubble. A child profile can also ask for this ALWAYS
+// (settings.judge = "adult"): for severe speech impairments a therapist's
+// ear is more reliable than any recogniser. Picture cards stay tappable for
+// the child either way. Answers are recorded with source "adult".
+const judgeBar = document.getElementById("judgeBar");
+const judgeButtons = document.getElementById("judgeButtons");
+const judgeWhy = document.getElementById("judgeWhy");
+const STT_FAILS_FOR_ADULT = 2; // consecutive recognition failures before the bar stays on
+let sttFailStreak = 0;
+let micUnavailable = false;
+let micErrorName = "";
+const judgeHint = document.getElementById("judgeHint");
+// What the adult can do about it — shown once per reason under the buttons.
+// Phrased for a phone or tablet (the pilot devices), not for a laptop.
+function judgeHintText(reason) {
+  if (reason === "offline") return "Интернет жоқ: жауапты сіз бағалайсыз. Интернет пайда болғанда микрофон қайта қосылады. · Нет интернета — ответ оцениваете вы; с интернетом микрофон включится снова.";
+  if (reason === "stt") return "Сөйлеуді тану уақытша істемейді. · Распознавание речи сейчас не отвечает — оцените ответ сами.";
+  if (reason === "mic") {
+    if (micErrorName === "NotAllowedError" || micErrorName === "SecurityError") {
+      return "Микрофонға рұқсат жоқ. · Доступ к микрофону запрещён: нажмите 🔒 или ⓘ слева от адреса сайта → Микрофон → Разрешить, затем обновите страницу.";
+    }
+    if (micErrorName === "NotFoundError" || micErrorName === "OverconstrainedError") return "Микрофон табылмады. · Микрофон не найден — подключите гарнитуру или используйте другое устройство.";
+    if (micErrorName === "NotReadableError") return "Микрофонды басқа қолданба алып тұр. · Микрофон занят другим приложением (звонок, запись) — закройте его и обновите страницу.";
+    return "Микрофон қосылмады. · Микрофон не включился — ответы оценивает взрослый.";
+  }
+  return "";
+}
+let judgeHintShown = "";
+const BRANCH_LABELS = {
+  river: { kk: "🌊 Өзен", ru: "река" },
+  forest: { kk: "🌲 Орман", ru: "лес" },
+};
+const JUDGE_WHY = {
+  setting: "👂",
+  offline: "📴 Интернет жоқ ·",
+  mic: "🎙️✕ Микрофон жоқ ·",
+  stt: "📶 Байланыс әлсіз ·",
+};
+
+// Pilot diagnostics (errlog.js): failures the adult never sees as an error
+// but the developer needs — recognition down, mic refused.
+function noteError(msg, src) {
+  try {
+    if (typeof ErrLog !== "undefined") ErrLog.note(msg, { src, page: location.pathname + location.search, version: localStorage.getItem("ertegim.version") || "" });
+  } catch { /* diagnostics are best-effort */ }
+}
+
+function adultJudgeReason() {
+  if (CHILD_SETTINGS.judge === "adult") return "setting";
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return "offline";
+  if (micUnavailable) return "mic";
+  if (sttFailStreak >= STT_FAILS_FOR_ADULT) return "stt";
+  return null;
+}
+
+function hideJudgeBar() {
+  if (!judgeBar) return;
+  judgeBar.classList.remove("show");
+  judgeButtons.innerHTML = "";
+}
+
+function showJudgeBar(reason) {
+  if (!judgeBar || storyEnded) return;
+  const s = NODES[currentId];
+  if (!s || s.kind !== "question") return;
+  judgeWhy.textContent = JUDGE_WHY[reason] || "";
+  // The mic button is the operator's override; next to the adult's bar it
+  // only suggests «press to talk», which is exactly what does not work now.
+  recordBtn.style.display = "none";
+  const hint = judgeHintText(reason);
+  // Explain each reason once per session, not on every question.
+  if (judgeHint) {
+    judgeHint.hidden = !hint || judgeHintShown.includes(`|${reason}|`);
+    judgeHint.textContent = hint;
+    judgeHintShown += `|${reason}|`;
+  }
+  const btn = (cls, data, kk, ru) => `<button type="button" class="judge-btn ${cls}" data-judge="${data}">${kk}<small>${ru}</small></button>`;
+  const yes = s.mode === "branch"
+    ? Object.keys(s.onAnswer || {}).map((r) => btn("route", `route:${r}`, (BRANCH_LABELS[r] || { kk: r }).kk, (BRANCH_LABELS[r] || { ru: "" }).ru)).join("")
+    : btn("yes", "correct", "✅ Айтты", "сказал(а)");
+  judgeButtons.innerHTML = yes + btn("again", "reask", "🔁 Тағы бір рет", "ещё раз");
+  judgeBar.classList.add("show");
+  log(`ата-ана бағалайды (${reason}): микрофон не слушает, ответ оценивает взрослый`);
+}
+
+function onJudge(action) {
+  if (storyEnded || !currentId) return;
+  const s = NODES[currentId];
+  if (!s || s.kind !== "question") return;
+  judgeButtons.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+  cancelAiAutoAdvance();
+  disarmVad();
+  if (!lastTranscript) lastTranscript = "👂 ата-ана";
+  if (!recordingStartedAt) recordingStartedAt = Date.now();
+  if (action === "reask") { markReask("adult"); return; }
+  if (action.startsWith("route:")) pendingRoute = action.slice(6);
+  if (s.mode === "pick") pendingChoice = Object.keys(s.onAnswer || {})[0] || null;
+  markCorrect("adult");
+}
+judgeButtons?.addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-judge]");
+  if (b && !b.disabled) onJudge(b.dataset.judge);
+});
+
 function renderState(id) {
   // Soft session cap: past the limit, any non-final beat jumps straight to
   // the finale instead of cutting the child off mid-story.
@@ -1248,6 +1362,7 @@ function renderState(id) {
   cancelAiAutoAdvance();
   cancelNarrationAutoAdvance();
   disarmVad();
+  hideJudgeBar();
   aiVerdictEl.classList.remove("show");
   blockedFlash.classList.remove("show", "materialize-in");
   resultEl.classList.remove("show", "materialize-in");
@@ -1362,6 +1477,8 @@ function renderState(id) {
     // hears the hero's own voice from the speakers and trips the VAD.
     speakDone.then(() => {
       if (currentId !== id || gen !== speakGen) return;
+      const why = adultJudgeReason();
+      if (why) { showJudgeBar(why); return; }
       armVadForQuestion();
       log("mic armed after line");
     });
@@ -1474,8 +1591,8 @@ async function startRecording() {
     stream = await navigator.mediaDevices.getUserMedia({ audio: MIC_CONSTRAINTS });
   } catch (err) {
     const hint = {
-      NotFoundError: "микрофон не найден — проверь Параметры Windows → Звук → Ввод",
-      NotAllowedError: "доступ к микрофону запрещён — проверь разрешения сайта и Windows",
+      NotFoundError: "микрофон не найден — подключи гарнитуру или проверь настройки звука устройства",
+      NotAllowedError: "доступ к микрофону запрещён — 🔒/ⓘ у адреса сайта → Микрофон → Разрешить, затем обнови страницу",
       NotReadableError: "микрофон занят другим приложением",
     }[err.name] || err.message;
     statusText.textContent = `Микрофон недоступен: ${hint}`;
@@ -1602,6 +1719,7 @@ async function submitAudio(blob, filename, meta = {}) {
       return;
     }
 
+    sttFailStreak = 0;
     statusText.textContent = "";
     thinkingDots.hidden = true;
     lastAlternatives = data.alternatives || [];
@@ -1672,6 +1790,12 @@ async function submitAudio(blob, filename, meta = {}) {
     resultEl.classList.add("show", "materialize-in");
     setStage("stt", "err", err.message);
     log(`STT недоступен, ручной режим: ${err.message}`);
+    // The child is not left waiting for a button only the operator panel
+    // has: the adult judges this answer, and after a second failure in a row
+    // every next question too (adultJudgeReason).
+    sttFailStreak++;
+    if (navigator.onLine !== false) noteError(`stt: ${err.message}`, "/api/transcribe");
+    showJudgeBar(sttFailStreak >= STT_FAILS_FOR_ADULT ? "stt" : (navigator.onLine === false ? "offline" : "stt"));
   } finally {
     recordBtn.disabled = false;
     fileInput.disabled = false;

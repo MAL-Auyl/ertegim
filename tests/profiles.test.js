@@ -38,7 +38,7 @@ describe("profiles", () => {
     expect(a.name).toBe("Айгерім");
     expect(Profiles.active().id).toBe(a.id); // a new child becomes active
     expect(Profiles.scopedKey("ertegim.sessions")).toBe(`ertegim.sessions:${a.id}`);
-    expect(Profiles.settings()).toEqual({ gentle: true, maxReasks: 3, silenceMs: null, silenceTimeoutMs: null, keepTranscripts: true, assigned: ["letter-a"] });
+    expect(Profiles.settings()).toEqual({ gentle: true, maxReasks: 3, silenceMs: null, silenceTimeoutMs: null, keepTranscripts: true, assigned: ["letter-a"], judge: "auto" });
 
     const u = Profiles.update(a.id, { name: "Айгерим", settings: { maxReasks: 2, silenceMs: 4000 } });
     expect(u.name).toBe("Айгерим");
@@ -58,7 +58,9 @@ describe("profiles", () => {
 
   test("settings are validated, out-of-range values fall back to «no override»", () => {
     expect(normalizeSettings({ maxReasks: 7, silenceMs: 50, silenceTimeoutMs: 999999, gentle: "yes", keepTranscripts: "1", assigned: "x" }))
-      .toEqual({ gentle: null, maxReasks: null, silenceMs: null, silenceTimeoutMs: null, keepTranscripts: false, assigned: [] });
+      .toEqual({ gentle: null, maxReasks: null, silenceMs: null, silenceTimeoutMs: null, keepTranscripts: false, assigned: [], judge: "auto" });
+    expect(normalizeSettings({ judge: "adult" }).judge).toBe("adult");
+    expect(normalizeSettings({ judge: "robot" }).judge).toBe("auto");
     expect(normalizeSettings(null).assigned).toEqual([]);
   });
 

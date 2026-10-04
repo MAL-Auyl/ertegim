@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Ертегім">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<link crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="design-system.css">
 <style>
   /* Page-specific layout only — visual language lives in design-system.css */
@@ -377,6 +377,16 @@
       <span id="storyRu" class="ru"></span>
     </div>
 
+    <!-- «The adult judges»: shown instead of listening when there is no
+         network, no speech recognition or no microphone — or always, if the
+         child's profile says so (severe speech impairments). The adult hears
+         the answer and taps. See adultJudgeReason() in app.js. -->
+    <div id="judgeBar" class="judge-bar" role="group" aria-label="Ата-ана бағалайды">
+      <div class="judge-label"><span id="judgeWhy"></span> <b>Ата-ана бағалайды</b> · <span class="judge-ru">оценивает взрослый</span></div>
+      <div class="judge-buttons" id="judgeButtons"></div>
+      <p class="judge-hint" id="judgeHint" hidden></p>
+    </div>
+
     <div id="status"><span id="statusText"></span><span class="dots" id="thinkingDots" hidden><span></span><span></span><span></span></span></div>
 
     <div id="blockedFlash">⛔ Заблокировано — вне темы</div>
@@ -484,7 +494,8 @@
     <div id="log"></div>
     <div id="resetRow"><button id="resetBtn" class="btn btn-muted">🔄 Сначала</button></div>
   </aside>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="errlog.js"></script>
+  <script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <!-- Rive fox rig (docs/rive-fox-rig-spec.md). DISABLED until public/rive/fox.riv
        actually exists: loading the runtime for a rig that isn't there blocks
        page parsing on a flaky demo network and leaves #heroStage an empty
@@ -505,5 +516,7 @@
   <script src="report.js"></script>
   <script src="preroll.js"></script>
   <script src="app.js"></script>
+  <script src="offline.js"></script>
+  <script>OfflineKit.register();</script>
 </body>
 </html>

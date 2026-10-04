@@ -121,6 +121,7 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
   function render() {
     renderTabs();
     renderChild();
+    renderDevice();
   }
 
   function renderTabs() {
@@ -149,6 +150,7 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
     $("fSilence").value = s.silenceMs ?? "";
     $("fTimeout").value = s.silenceTimeoutMs ?? "";
     $("fTranscripts").checked = !!s.keepTranscripts;
+    $("fJudge").value = s.judge === "adult" ? "adult" : "auto";
     $("deleteChild").disabled = Profiles.list().length <= 1;
 
     const history = Session.history();
@@ -193,7 +195,7 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
       const skills = Object.entries(h.skills || {}).filter(([, st]) => st !== "skipped")
         .map(([k, st]) => `<span class="tag tag-${st}">${esc(SKILL_LABEL[k] || k)}: ${st === "first" ? "сразу" : st === "reask" ? "с переспросом" : "показал герой"}</span>`).join(" ");
       const attempts = (h.attempts || []).map((a) =>
-        `<tr><td>${esc(SKILL_LABEL[a.skill] || a.skill)}</td><td>${a.attempt}</td><td class="tr">${esc(a.transcript || "(тишина)")}</td><td><span class="tag tag-${a.verdict}">${esc(VERDICT_LABEL[a.verdict] || a.verdict)}</span></td><td>${a.source === "tap" ? "👆 жест" : a.source === "trace" ? "✏️ палец" : esc(a.source || "")}</td><td>${a.responseSec == null ? "—" : a.responseSec + " с"}</td></tr>`).join("");
+        `<tr><td>${esc(SKILL_LABEL[a.skill] || a.skill)}</td><td>${a.attempt}</td><td class="tr">${esc(a.transcript || "(тишина)")}</td><td><span class="tag tag-${a.verdict}">${esc(VERDICT_LABEL[a.verdict] || a.verdict)}</span></td><td>${a.source === "tap" ? "👆 жест" : a.source === "trace" ? "✏️ палец" : a.source === "adult" ? "👂 взрослый" : esc(a.source || "")}</td><td>${a.responseSec == null ? "—" : a.responseSec + " с"}</td></tr>`).join("");
       return `<details class="session"${i === 0 ? " open" : ""}>
         <summary>
           <span class="s-date">${esc(fmtDateTime(h.date))}</span>
@@ -206,6 +208,7 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
         <div class="s-body">
           <div class="s-skills">${skills || "<span class='muted'>вопросов не было</span>"}</div>
           ${h.gestureAnswers ? `<p class="muted">👆 ответов жестом: ${h.gestureAnswers}</p>` : ""}
+          ${h.adultAnswers ? `<p class="muted">👂 оценил взрослый (без распознавания речи): ${h.adultAnswers}</p>` : ""}
           ${h.words && h.words.length ? `<p><b>Слова:</b> ${h.words.map(esc).join(", ")}</p>` : ""}
           ${h.moments && h.moments.length ? `<p><b>Моменты:</b> ${h.moments.map((m) => esc(m.text_kk)).join("; ")}</p>` : ""}
           ${attempts
@@ -329,6 +332,158 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
       : `${target.name}: новых занятий нет, всё уже загружено.`;
   });
 
+
+  // ------------------------------------------------- this device (pilot)
+  const fmtMb = (b) => `${(b / 1048576).toFixed(1)} МБ`;
+  const dayWord = (n) => (n % 10 === 1 && n % 100 !== 11 ? "день" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "дня" : "дней");
+  let versionText = lsGet("ertegim.version");
+
+  function anySessions() {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k === "ertegim.sessions" || (k && k.startsWith("ertegim.sessions:"))) {
+          const a = JSON.parse(localStorage.getItem(k) || "[]");
+          if (Array.isArray(a) && a.length) return true;
+        }
+      }
+    } catch { /* no storage */ }
+    return false;
+  }
+
+  function renderBackupState() {
+    let age = null, need = false;
+    try { age = Backup.backupAgeDays(localStorage); need = Backup.needsBackup(localStorage, anySessions()); } catch { /* no storage */ }
+    $("backupStatus").innerHTML = age === null
+      ? `<span class="warn-text">Копию ещё ни разу не сохраняли.</span>`
+      : `Последняя копия: ${age === 0 ? "сегодня" : `${age} ${dayWord(age)} назад`}.`;
+    $("backupBanner").hidden = !need;
+    if (need) {
+      $("backupBannerText").textContent = age === null
+        ? "💾 На этом устройстве есть занятия, но резервной копии нет. Если браузер очистит данные, история пропадёт."
+        : `💾 Резервной копии нет уже ${age} ${dayWord(age)}. Сохраните свежую — это одна кнопка.`;
+    }
+  }
+
+  async function renderOffline() {
+    if (typeof OfflineKit === "undefined" || !OfflineKit.supported()) {
+      $("offStatus").textContent = "Этот браузер не умеет работать без интернета. Откройте сайт в Chrome или Safari по https.";
+      $("offDownload").disabled = true;
+      return;
+    }
+    try {
+      const st = await OfflineKit.status();
+      if (!st) { $("offStatus").textContent = "Нет связи с сервером — статус появится, когда будет интернет."; return; }
+      const pct = st.bytes ? Math.round((st.doneBytes / st.bytes) * 100) : 0;
+      $("offMeter").firstElementChild.style.width = `${pct}%`;
+      $("offMeter").classList.toggle("done", st.ready);
+      $("offStatus").innerHTML = st.ready
+        ? `<span class="ok-text">✅ Готово: всё скачано (${fmtMb(st.bytes)}).</span>`
+        : `Скачано ${fmtMb(st.doneBytes)} из ${fmtMb(st.bytes)}${st.doneBytes ? " — остальное докачается" : ""}.`;
+      $("offDownload").textContent = st.ready ? "🔄 Проверить обновления" : "📥 Скачать для работы без интернета";
+    } catch (err) {
+      $("offStatus").textContent = `Не удалось проверить: ${err.message}`;
+    }
+  }
+
+  async function renderStorage() {
+    let persisted = false;
+    try { persisted = !!(navigator.storage && navigator.storage.persisted && await navigator.storage.persisted()); } catch { /* unknown */ }
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+    const parts = [persisted ? "🔒 Браузер не будет очищать данные сам." : "⚠️ Браузер может очистить данные при нехватке места."];
+    if (ios && !standalone) parts.push("На iPhone/iPad добавьте Ертегім на экран «Домой» (Поделиться → На экран «Домой»): иначе Safari стирает данные сайта через 7 дней без посещений.");
+    $("storageStatus").textContent = parts.join(" ");
+  }
+
+  function renderErrors() {
+    const n = typeof ErrLog !== "undefined" ? ErrLog.list().length : 0;
+    $("errCount").textContent = String(n);
+    $("appVersion").textContent = versionText || "—";
+  }
+
+  async function refreshVersion() {
+    try {
+      const res = await fetch("/api/version", { cache: "no-store" });
+      if (!res.ok) return;
+      const v = (await res.json()).version;
+      if (v) { versionText = v; lsSet("ertegim.version", v); renderErrors(); }
+    } catch { /* offline: keep the last one seen */ }
+  }
+
+  function renderDevice() {
+    renderBackupState();
+    renderErrors();
+    renderOffline();
+    renderStorage();
+  }
+
+  $("offDownload").addEventListener("click", async () => {
+    const btn = $("offDownload");
+    btn.disabled = true;
+    try {
+      await OfflineKit.persist();
+      const r = await OfflineKit.downloadAll((done, total) => {
+        const pct = total ? Math.round((done / total) * 100) : 0;
+        $("offMeter").firstElementChild.style.width = `${pct}%`;
+        $("offStatus").textContent = `Скачиваю… ${fmtMb(done)} из ${fmtMb(total)} (${pct}%)`;
+      });
+      await renderOffline();
+      if (r.failed) $("offStatus").textContent += ` Не скачалось файлов: ${r.failed} — нажмите ещё раз при хорошем интернете.`;
+      renderStorage();
+    } catch (err) {
+      $("offStatus").textContent = `Не получилось: ${err.message}. Проверьте интернет и нажмите ещё раз.`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  function saveDeviceBackup() {
+    const data = Backup.collectBackup(localStorage);
+    const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `ertegim-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    Backup.markBackup(localStorage);
+    renderBackupState();
+  }
+  $("backupNow").addEventListener("click", saveDeviceBackup);
+  $("backupNow2").addEventListener("click", saveDeviceBackup);
+
+  $("restoreFile").addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    let backup = null;
+    try { backup = Backup.parseBackup(JSON.parse(await file.text())); } catch { backup = null; }
+    if (!backup) { alert("Это не резервная копия Ертегім. Для файла результатов одного ребёнка используйте «Загрузить результаты из дома»."); return; }
+    const d = Backup.describeBackup(backup);
+    const when = backup.createdAt ? new Date(backup.createdAt).toLocaleString("ru-RU") : "неизвестно когда";
+    if (!confirm(`Копия от ${when}: детей — ${d.children}, занятий — ${d.sessions}.\n\nВсе текущие данные на этом устройстве будут ЗАМЕНЕНЫ данными из копии. Продолжить?`)) return;
+    Backup.restoreBackup(localStorage, backup);
+    Backup.markBackup(localStorage);
+    alert("Готово: данные восстановлены.");
+    location.reload();
+  });
+
+  $("errCopy").addEventListener("click", async () => {
+    const text = ErrLog.text(versionText);
+    $("errText").value = text;
+    $("errText").hidden = false;
+    $("errText").select();
+    try { await navigator.clipboard.writeText(text); $("errCopy").textContent = "✅ Скопировано"; setTimeout(() => { $("errCopy").textContent = "📋 Скопировать журнал"; }, 1800); } catch { /* the textarea is selected for manual copy */ }
+  });
+  $("errClear").addEventListener("click", () => {
+    if (!confirm("Очистить журнал ошибок?")) return;
+    ErrLog.clear();
+    $("errText").hidden = true;
+    renderErrors();
+  });
+
+  refreshVersion();
+
   $("childForm").addEventListener("submit", (e) => {
     e.preventDefault();
     const p = Profiles.active();
@@ -343,6 +498,7 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
         silenceMs: $("fSilence").value === "" ? null : Number($("fSilence").value),
         silenceTimeoutMs: $("fTimeout").value === "" ? null : Number($("fTimeout").value),
         keepTranscripts: $("fTranscripts").checked,
+        judge: $("fJudge").value === "adult" ? "adult" : "auto",
       },
     });
     $("saved").hidden = false;

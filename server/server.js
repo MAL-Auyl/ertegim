@@ -381,6 +381,16 @@ Bun.serve({
   async fetch(req) {
     const url = new URL(req.url);
 
+    // Same contract as api/version.js on Vercel: the build the cabinet shows.
+    if (url.pathname === "/api/version" && req.method === "GET") {
+      let version = "local";
+      try {
+        const r = Bun.spawnSync(["git", "rev-parse", "--short=7", "HEAD"], { cwd: ROOT });
+        if (r.exitCode === 0) version = r.stdout.toString().trim() || version;
+      } catch { /* no git — "local" */ }
+      return Response.json({ version, env: "local" }, { headers: { "Cache-Control": "no-store" } });
+    }
+
     if (url.pathname === "/api/speak" && req.method === "POST") {
       try {
         const { text, speaker } = await req.json();

@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-title" content="Ертегім">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<link crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="design-system.css">
 <style>
   /* Page layout only — the visual language (sky, scene, shelf cards, big
@@ -312,6 +312,7 @@
       <button type="button" class="btn btn-muted" id="hwDecline">Жоқ</button>
     </div>
   </dialog>
+  <script src="errlog.js"></script>
   <script src="profiles.js"></script>
   <script src="session.js"></script>
   <script src="homework.js"></script>
@@ -347,6 +348,8 @@
           if (incoming.child && (target.name === "Бала" || /^Бала \d+$/.test(target.name))) patch.name = incoming.child;
           Profiles.update(target.id, patch);
           Profiles.setActive(target.id);
+          // Homework history now lives here — ask the browser not to evict it.
+          if (typeof OfflineKit !== "undefined") OfflineKit.persist();
           clearHash(); dlg.close(); location.reload();
         };
         document.getElementById("hwDecline").onclick = () => { clearHash(); dlg.close(); };
@@ -396,5 +399,7 @@
         </div>`).join("");
     })();
   </script>
+  <script src="offline.js"></script>
+  <script>OfflineKit.register();</script>
 </body>
 </html>

@@ -116,8 +116,12 @@ function renderReport(summary, history, doc = document) {
   const gestureEl = el(doc, "reportGesture");
   if (gestureEl) {
     const n = summary.gestureAnswers || 0;
-    gestureEl.style.display = n ? "block" : "none";
-    gestureEl.textContent = n ? `👆 ${n} жауап — сөзбен емес, суретті көрсетіп` : "";
+    const a = summary.adultAnswers || 0;
+    const lines = [];
+    if (n) lines.push(`👆 ${n} жауап — сөзбен емес, суретті көрсетіп`);
+    if (a) lines.push(`👂 ${a} жауапты ересек адам бағалады`);
+    gestureEl.style.display = lines.length ? "block" : "none";
+    gestureEl.textContent = lines.join(" · ");
   }
 
   const rows = history.slice(0, 5);

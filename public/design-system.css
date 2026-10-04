@@ -1092,3 +1092,35 @@ body.gentle .sticker-badge.pop { animation: fade-in 260ms ease both; }
 .book-art .art-emoji.big { font-size: clamp(1.9rem, 7vw, 2.6rem); letter-spacing: -0.08em; }
 .book-art .art-emoji s { opacity: 0.35; filter: grayscale(1); text-decoration: none; }
 .book-art-letter .letter-big.outline { color: transparent; -webkit-text-stroke: 4px var(--ink); text-shadow: none; }
+
+/* «Ата-ана бағалайды» — the adult judges the answer (app.js showJudgeBar).
+   Big, calm, two choices; sits under the speech bubble so the scene stays
+   the child's. */
+.judge-bar {
+  display: none; flex-direction: column; align-items: center; gap: 8px;
+  width: 100%; max-width: 640px; margin: 10px auto 0; padding: 10px 12px 12px;
+  background: var(--card-solid); border: 2.5px solid var(--ink); border-radius: var(--radius-xl);
+  box-shadow: 0 5px 0 0 var(--ink-shadow);
+}
+.judge-bar.show { display: flex; animation: judgeIn 260ms var(--ease-materialize, ease-out) both; }
+@keyframes judgeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .judge-bar.show { animation: none; } }
+.judge-label { font-size: 0.82rem; font-weight: 800; color: var(--ink-soft); text-align: center; }
+.judge-label b { color: var(--ink); font-weight: 900; }
+.judge-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%; }
+.judge-btn {
+  flex: 1 1 140px; min-height: 64px; padding: 10px 16px; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 1.15rem; font-weight: 900; color: #fff;
+  border: 2.5px solid var(--ink); box-shadow: 0 4px 0 0 var(--ink-shadow);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1;
+  touch-action: manipulation;
+}
+.judge-btn small { font-size: 0.72rem; font-weight: 800; opacity: 0.9; }
+.judge-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 0 var(--ink-shadow); }
+.judge-btn:disabled { opacity: 0.5; }
+.judge-btn.yes { background: var(--ok); }
+.judge-btn.again { background: var(--warn); }
+.judge-btn.route { background: var(--info, #3b82f6); }
+@media (prefers-color-scheme: dark) { .judge-btn { color: #1b140d; } }
+.judge-hint { margin: 2px 4px 0; font-size: 0.8rem; font-weight: 700; color: var(--ink-soft); text-align: center; line-height: 1.35; }
+.judge-hint[hidden] { display: none; }
