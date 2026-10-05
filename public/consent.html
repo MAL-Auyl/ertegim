@@ -1,0 +1,103 @@
+<!doctype html>
+<!-- Printable parental consent for the pilot (kk + ru). A template: the
+     organisation's lawyer adapts it before use (screen-only note below). -->
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ертегім — ата-ана келісімі</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32 48x48">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#ff7a2f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="design-system.css">
+<style>
+  body { display: flex; flex-direction: column; align-items: center; padding: 12px 12px 60px; }
+  .wrap { width: 100%; max-width: 820px; }
+  .topbar { max-width: 820px; }
+  .paper { background: #fff; color: #1b140d; border: 2px solid var(--ink); border-radius: var(--radius-lg, 16px); padding: 28px 30px; margin-top: var(--space-4); font-size: 0.95rem; line-height: 1.45; }
+  .paper h2 { margin: 0 0 4px; font-size: 1.25rem; font-weight: 900; text-align: center; }
+  .paper .sub { text-align: center; color: #6b5a48; margin: 0 0 18px; font-weight: 700; }
+  .fill { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px; margin: 14px 0 18px; }
+  .fill .line { border-bottom: 1.5px solid #1b140d; min-height: 26px; }
+  .fill label { font-size: 0.8rem; font-weight: 800; color: #6b5a48; }
+  .fill .wide { grid-column: 1 / -1; }
+  ol { padding-left: 20px; margin: 8px 0 14px; }
+  ol li { margin-bottom: 8px; }
+  .ru { display: block; color: #6b5a48; font-size: 0.88rem; }
+  .box { display: grid; grid-template-columns: 22px 1fr; gap: 10px; margin: 10px 0; align-items: start; }
+  .box .sq { width: 18px; height: 18px; border: 2px solid #1b140d; border-radius: 3px; margin-top: 2px; }
+  .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 26px; }
+  .sign .line { border-bottom: 1.5px solid #1b140d; min-height: 30px; }
+  .sign label { font-size: 0.8rem; font-weight: 800; color: #6b5a48; }
+  .tools { display: flex; gap: 10px; flex-wrap: wrap; margin-top: var(--space-4); }
+  .tools .btn { padding: 12px 18px; border-radius: 999px; font-size: 0.95rem; }
+  .legal { margin-top: var(--space-3); font-size: 0.85rem; font-weight: 700; color: var(--ink-soft); }
+  @media (max-width: 560px) { .fill, .sign { grid-template-columns: 1fr; } .paper { padding: 18px; } }
+  @media print {
+    body { padding: 0; background: #fff; }
+    .topbar, .tools, .legal { display: none !important; }
+    .paper { border: none; padding: 0; margin: 0; font-size: 10.5pt; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <a class="topbar-back" href="/help.html" aria-label="Нұсқаулыққа">←</a>
+      <h1 class="topbar-logo">📝 Келісім</h1>
+    </div>
+    <span class="muted">Согласие родителей</span>
+  </div>
+
+  <div class="wrap">
+    <div class="tools">
+      <button type="button" class="btn btn-primary" onclick="window.print()">🖨 Басып шығару · Печать</button>
+    </div>
+    <p class="legal">Это шаблон для пилота. Перед использованием согласуйте текст с юристом или методистом вашей организации.</p>
+
+    <article class="paper">
+      <h2>Ата-ананың келісімі · Согласие родителя</h2>
+      <p class="sub">«Ертегім» — дауыспен ойналатын ертегі-жаттығу · голосовая сказка-тренажёр для занятий с логопедом</p>
+
+      <div class="fill">
+        <div><label>Ата-ананың (заңды өкілдің) аты-жөні · ФИО родителя</label><div class="line"></div></div>
+        <div><label>Телефон</label><div class="line"></div></div>
+        <div><label>Баланың аты · Имя ребёнка</label><div class="line"></div></div>
+        <div><label>Жасы · Возраст</label><div class="line"></div></div>
+        <div class="wide"><label>Логопед, ұйым · Логопед, организация</label><div class="line"></div></div>
+      </div>
+
+      <p><b>Мен мыналармен таныстым · Мне объяснили:</b></p>
+      <ol>
+        <li>Бала планшетте немесе телефонда түлкімен ойнайды: дыбыстарды, сөздерді қайталайды, суретті көрсетеді. Бір сабақ 3–5 минут.
+          <span class="ru">Ребёнок играет с лисёнком на планшете или телефоне: повторяет звуки и слова, показывает картинки. Одно занятие — 3–5 минут.</span></li>
+        <li>Баланың жауабы (дыбыс) тек мәтінге айналдыру үшін интернет арқылы сөйлеуді тану сервисіне жіберіледі. Ертегім дыбысты сақтамайды. Интернет болмаса немесе «әрқашан ересек бағалайды» таңдалса, дыбыс еш жерге жіберілмейді.
+          <span class="ru">Звук ответа ребёнка передаётся через интернет сервису распознавания речи только чтобы получить текст. Ертегім звук не сохраняет. Без интернета или в режиме «всегда оценивает взрослый» звук никуда не передаётся.</span></li>
+        <li>Нәтижелер (қай сұраққа қалай жауап берді, жауап уақыты, айтылған сөздер) осы құрылғыда сақталады. Ата-ана оларды логопедке файл ретінде өзі жібереді; басқа ешкімге берілмейді.
+          <span class="ru">Результаты (как ответил на каждый вопрос, время ответа, сказанные слова) хранятся на этом устройстве. Логопеду их отправляет сам родитель файлом; больше никому они не передаются.</span></li>
+        <li>Ертегім диагноз қоймайды; ол логопедтің жұмысына көмекші құрал.
+          <span class="ru">Ертегім не ставит диагноз; это вспомогательный тренажёр для работы логопеда.</span></li>
+        <li>Мен кез келген уақытта келісімді қайтарып ала аламын — баланың профилі мен барлық деректері өшіріледі.
+          <span class="ru">Я могу в любой момент отозвать согласие — профиль ребёнка и все его данные будут удалены.</span></li>
+      </ol>
+
+      <div class="box"><span class="sq"></span><div><b>Келісемін:</b> балам «Ертегім» арқылы логопедпен және үйде жаттығады.
+        <span class="ru">Согласен(на): мой ребёнок занимается с «Ертегім» у логопеда и дома.</span></div></div>
+      <div class="box"><span class="sq"></span><div><b>Келісемін (міндетті емес):</b> әр жауаптың мәтінін (транскриптін) логопед талдау үшін құрылғыда сақтау.
+        <span class="ru">Согласен(на) (по желанию): сохранять на устройстве текст каждого ответа (транскрипт) для разбора логопедом.</span></div></div>
+      <div class="box"><span class="sq"></span><div><b>Келісемін (міндетті емес):</b> баланың атын көрсетпей, жалпы нәтижелерді пилоттың есебінде пайдалану.
+        <span class="ru">Согласен(на) (по желанию): использовать обезличенные общие результаты в отчёте о пилоте.</span></div></div>
+
+      <div class="sign">
+        <div><label>Күні · Дата</label><div class="line"></div></div>
+        <div><label>Қолы · Подпись</label><div class="line"></div></div>
+      </div>
+    </article>
+  </div>
+  <script src="offline.js"></script>
+  <script>OfflineKit.register();</script>
+</body>
+</html>
