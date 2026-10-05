@@ -1,0 +1,631 @@
+/* ===== Caspian Games 2026 — sport.yu.edu.kz ===== */
+
+:root {
+  --navy-900: #070f4f;
+  --navy-800: #0b177a;
+  --navy-700: #1226a8;
+  --navy-600: #1d36c9;
+  --cyan: #3fe6f2;
+  --cyan-soft: rgba(63, 230, 242, 0.14);
+  --lime: #e4f53a;
+  --red: #e2463a;
+  --white: #ffffff;
+  --ink: #0f1d5e;
+  --muted: #5b6796;
+  --line: #dfe5fb;
+  --bg-alt: #f2f5ff;
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 12px 32px rgba(10, 25, 120, 0.12);
+  --container: 1120px;
+  --font: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+h1, h2, h3 { margin: 0; line-height: 1.15; }
+p { margin: 0; }
+
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ===== Topbar ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(7, 15, 79, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(63, 230, 242, 0.25);
+}
+.topbar__inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 64px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--white);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.brand__mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--cyan);
+  color: var(--navy-900);
+  font-weight: 900;
+  font-size: 14px;
+}
+.brand__text b { color: var(--cyan); }
+
+.nav {
+  display: flex;
+  gap: 22px;
+  margin-left: auto;
+}
+.nav a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+.nav a:hover { color: var(--cyan); }
+
+.lang {
+  display: flex;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 3px;
+}
+.lang button {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font: 700 12px/1 var(--font);
+  padding: 8px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.lang button[aria-pressed="true"] {
+  background: var(--cyan);
+  color: var(--navy-900);
+}
+
+/* ===== Hero ===== */
+.hero {
+  position: relative;
+  overflow: hidden;
+  color: var(--white);
+  text-align: center;
+  padding: 80px 0 120px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(63, 230, 242, 0.25), transparent 60%),
+    linear-gradient(180deg, var(--navy-700) 0%, var(--navy-800) 55%, var(--navy-900) 100%);
+}
+.hero__waves {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 120px;
+  background:
+    radial-gradient(60px 18px at 30px 100%, transparent 96%, rgba(63, 230, 242, 0.18) 100%) 0 100% / 60px 30px repeat-x,
+    linear-gradient(0deg, rgba(63, 230, 242, 0.12), transparent);
+  pointer-events: none;
+}
+.hero__inner { position: relative; }
+.hero__eyebrow {
+  color: var(--cyan);
+  font-weight: 700;
+  font-size: clamp(13px, 2.2vw, 18px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.hero__title {
+  margin: 14px 0 18px;
+  font-size: clamp(42px, 9vw, 104px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.hero__title span {
+  display: block;
+  color: var(--lime);
+  font-size: 0.62em;
+}
+.hero__meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px 14px;
+  font-size: clamp(15px, 2.4vw, 20px);
+  font-weight: 600;
+}
+.hero__meta .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+}
+
+.status { margin: 36px 0 8px; }
+.status__label {
+  font-weight: 700;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 14px;
+}
+.status__label.is-live::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 0 rgba(226, 70, 58, 0.6);
+  animation: pulse 1.6s infinite;
+  vertical-align: 1px;
+}
+@keyframes pulse {
+  70% { box-shadow: 0 0 0 10px rgba(226, 70, 58, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(226, 70, 58, 0); }
+}
+.countdown {
+  display: inline-grid;
+  grid-template-columns: repeat(4, minmax(64px, 1fr));
+  gap: 10px;
+}
+.countdown div {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(63, 230, 242, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+}
+.countdown b {
+  display: block;
+  font-size: clamp(26px, 5vw, 38px);
+  font-weight: 800;
+  color: var(--cyan);
+  font-variant-numeric: tabular-nums;
+}
+.countdown span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.stats {
+  list-style: none;
+  padding: 0;
+  margin: 36px auto 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-width: 640px;
+}
+.stats li {
+  padding: 14px 8px;
+  border-top: 2px solid var(--cyan);
+}
+.stats b {
+  display: block;
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 900;
+}
+.stats span {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.flags {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin: 28px 0 32px;
+  font-size: 30px;
+}
+
+.btn {
+  display: inline-block;
+  background: var(--lime);
+  color: var(--navy-900);
+  font-weight: 800;
+  text-decoration: none;
+  padding: 15px 30px;
+  border-radius: 999px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(228, 245, 58, 0.35);
+}
+
+/* ===== Ceremonies ===== */
+.ceremonies {
+  position: relative;
+  z-index: 2;
+  margin-top: -64px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+.ceremony {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px;
+  border-left: 5px solid var(--cyan);
+}
+.ceremony__date {
+  flex: none;
+  width: 78px;
+  text-align: center;
+  color: var(--navy-700);
+}
+.ceremony__date b {
+  display: block;
+  font-size: 48px;
+  font-weight: 900;
+  line-height: 1;
+}
+.ceremony__date span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ceremony__body h3 {
+  font-size: 18px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.ceremony__time {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--red);
+  margin: 2px 0;
+}
+.ceremony__body p:last-child { color: var(--muted); font-size: 14px; }
+
+/* ===== Sections ===== */
+.section { padding: 80px 0; }
+.section--alt { background: var(--bg-alt); }
+.section__title {
+  font-size: clamp(28px, 4.5vw, 42px);
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--navy-700);
+}
+.section__title::after {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 5px;
+  margin-top: 14px;
+  border-radius: 3px;
+  background: var(--cyan);
+}
+.section__lead {
+  margin-top: 14px;
+  color: var(--muted);
+}
+
+/* ===== Schedule ===== */
+.days {
+  display: flex;
+  gap: 10px;
+  margin: 28px 0;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.days::-webkit-scrollbar { display: none; }
+.day {
+  flex: 1 0 auto;
+  min-width: 92px;
+  border: 2px solid var(--line);
+  background: var(--white);
+  border-radius: 14px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: var(--font);
+  color: var(--ink);
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+.day b {
+  display: block;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+.day span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.day:hover { border-color: var(--cyan); }
+.day[aria-selected="true"] {
+  background: var(--navy-700);
+  border-color: var(--navy-700);
+  color: var(--white);
+}
+.day[aria-selected="true"] span { color: var(--cyan); }
+.day.is-today { position: relative; }
+.day.is-today::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+}
+
+.timeline {
+  display: grid;
+  gap: 12px;
+}
+.event {
+  display: grid;
+  grid-template-columns: 90px 56px 1fr auto;
+  align-items: center;
+  gap: 18px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.event:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+.event--ceremony {
+  background: linear-gradient(90deg, var(--navy-700), var(--navy-600));
+  border-color: transparent;
+  color: var(--white);
+}
+.event__time {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--red);
+  font-variant-numeric: tabular-nums;
+}
+.event--ceremony .event__time { color: var(--lime); }
+.event__icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  background: var(--cyan-soft);
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+.event__name {
+  font-size: 18px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.event__venue {
+  font-size: 14px;
+  color: var(--muted);
+}
+.event--ceremony .event__venue { color: rgba(255, 255, 255, 0.75); }
+.event__tag {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--bg-alt);
+  color: var(--navy-700);
+  white-space: nowrap;
+}
+.event--ceremony .event__tag { background: rgba(255, 255, 255, 0.15); color: var(--white); }
+
+/* ===== Sports grid ===== */
+.sports {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+.sport {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+  border: 1px solid var(--line);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.sport:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.sport__icon {
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  background: linear-gradient(135deg, var(--navy-700), var(--navy-600));
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  margin-bottom: 14px;
+}
+.sport h3 {
+  font-size: 17px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.sport__dates {
+  margin-top: 6px;
+  font-weight: 800;
+  color: var(--navy-600);
+}
+.sport__dates small {
+  font-weight: 700;
+  color: var(--red);
+  margin-left: 6px;
+}
+.sport__venue {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ===== Venues ===== */
+.venues {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.venue {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  text-decoration: none;
+  padding: 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--white);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.venue:hover { border-color: var(--cyan); box-shadow: var(--shadow); }
+.venue__pin {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--cyan-soft);
+  font-size: 20px;
+}
+.venue h3 { font-size: 16px; font-weight: 800; }
+.venue p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.venue__sports {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.venue__sports span {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bg-alt);
+  color: var(--navy-700);
+}
+
+/* ===== Gallery ===== */
+.gallery {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.gallery__item {
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  background: var(--navy-800);
+}
+.gallery__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+.gallery__item:hover img { transform: scale(1.03); }
+.gallery__item--wide { grid-column: 1 / -1; max-width: 760px; justify-self: center; }
+
+/* ===== Footer ===== */
+.footer {
+  background: var(--navy-900);
+  color: var(--white);
+  padding: 48px 0;
+  text-align: center;
+}
+.footer__cta {
+  font-size: clamp(18px, 3vw, 24px);
+  font-weight: 800;
+}
+.footer__org {
+  margin-top: 12px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.footer__org a { color: var(--cyan); text-decoration: none; }
+
+/* ===== Responsive ===== */
+@media (max-width: 860px) {
+  .nav { display: none; }
+  .lang { margin-left: auto; }
+  .ceremonies { grid-template-columns: 1fr; }
+  .gallery { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 600px) {
+  .container { padding: 0 16px; }
+  .brand__text { display: none; }
+  .hero { padding: 56px 0 100px; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .section { padding: 56px 0; }
+  .event {
+    grid-template-columns: 48px 1fr auto;
+    gap: 12px;
+    padding: 14px;
+  }
+  .event__icon { width: 48px; height: 48px; font-size: 24px; grid-column: 1; grid-row: 1 / span 2; }
+  .event__time { grid-column: 3; grid-row: 1; font-size: 18px; text-align: right; }
+  .event__info { grid-column: 2; grid-row: 1 / span 2; }
+  .event__tag { grid-column: 3; grid-row: 2; justify-self: end; }
+  .event__name { font-size: 15px; }
+  .sports { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sport { padding: 16px 14px; }
+  .sport__icon { width: 48px; height: 48px; font-size: 24px; margin-bottom: 10px; }
+  .sport h3 { font-size: 14px; }
+  .sport__dates { font-size: 14px; }
+  .venues { grid-template-columns: 1fr; }
+  .gallery { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
