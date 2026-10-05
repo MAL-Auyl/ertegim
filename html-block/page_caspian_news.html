@@ -1,0 +1,249 @@
+<!-- Yessenov University · Caspian Games 2026 · страница «Все новости» (KK)
+Вставка: страница WordPress (шаблон Full Width) → блок «Произвольный HTML».
+Новости по ярлыку «kaspij-ojyndary» (тег, если нет — рубрика). Настройки у <section>: data-per-page="9" · data-slug="..." -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+.yucnp{--n:#0b2a5b;--b:#0b3d91;--a:#00aaff;--g:#f59e0b;--l:#f0f5fb;--t:#1a2a3a;--m:#64748b;--d:#94a3b8;--bd:#dde6f0;
+--ease:cubic-bezier(.4,0,.2,1);--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif!important;color:var(--t);background:#fafcff;line-height:1.7;-webkit-font-smoothing:antialiased}
+.yucnp *,.yucnp *::before,.yucnp *::after{box-sizing:border-box}
+.yucnp-wrap{max-width:1240px;margin:0 auto}
+.yucnp-hero{position:relative;padding:110px 6% 150px;color:#fff;clip-path:polygon(0 0,100% 0,100% 88%,0 100%);
+background:radial-gradient(ellipse at 85% 10%,rgba(0,170,255,.22),transparent 55%),linear-gradient(135deg,rgba(11,42,91,.98),rgba(11,61,145,.92))}
+.yucnp-eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono)!important;font-size:11px!important;font-weight:700!important;color:var(--a)!important;
+letter-spacing:.15em;text-transform:uppercase;padding:7px 16px;border:1px solid rgba(0,170,255,.35);border-radius:30px;margin:0 0 22px!important}
+.yucnp-eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--a)}
+.yucnp-h1{font-family:inherit!important;font-size:clamp(32px,5vw,64px)!important;font-weight:900!important;line-height:1.05!important;letter-spacing:-.03em!important;
+color:#fff!important;margin:0 0 18px!important;padding:0!important;text-transform:none!important}
+.yucnp-lead{font-size:17px;line-height:1.75;color:rgba(255,255,255,.7);max-width:620px;margin:0!important}
+.yucnp-meta{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.yucnp-meta span{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;
+padding:8px 14px;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff}
+.yucnp-meta b{color:var(--g)}
+.yucnp-main{padding:0 6% 100px;margin-top:-56px;position:relative}
+.yucnp-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;background:#fff;border:1px solid var(--bd);border-radius:16px;padding:14px;
+box-shadow:0 12px 30px rgba(11,42,91,.08);margin-bottom:40px}
+.yucnp-chips{display:flex;gap:8px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;padding:2px}
+.yucnp-chips::-webkit-scrollbar{display:none}
+.yucnp-chip{flex:none;border:0!important;cursor:pointer;font-family:inherit!important;font-size:13px!important;font-weight:600!important;line-height:1.2!important;
+padding:10px 16px!important;border-radius:30px!important;background:var(--l)!important;color:var(--n)!important;transition:all .3s var(--ease);white-space:nowrap;box-shadow:none!important;text-transform:none!important;letter-spacing:normal!important}
+.yucnp-chip:hover{background:#e3ecf7!important}
+.yucnp-chip[aria-pressed="true"]{background:var(--b)!important;color:#fff!important}
+.yucnp-search{position:relative;flex:0 1 280px}
+.yucnp-search input{width:100%!important;height:42px!important;margin:0!important;padding:0 14px 0 40px!important;border:1px solid var(--bd)!important;border-radius:30px!important;
+background:#fff!important;font-family:inherit!important;font-size:14px!important;color:var(--t)!important;outline:none;box-shadow:none!important;transition:border-color .3s var(--ease)}
+.yucnp-search input:focus{border-color:var(--a)!important}
+.yucnp-search svg{position:absolute;left:14px;top:50%;width:16px;height:16px;transform:translateY(-50%);color:var(--d);pointer-events:none}
+.yucnp-featured{display:grid;grid-template-columns:1.35fr 1fr;background:#fff;border:1px solid var(--bd);border-radius:20px;overflow:hidden;
+box-shadow:0 4px 12px rgba(11,42,91,.04);margin-bottom:40px;transition:all .3s var(--ease)}
+.yucnp-featured:hover{box-shadow:0 20px 40px rgba(11,42,91,.16);border-color:var(--a)}
+.yucnp-featured .yucnp-media{aspect-ratio:auto;min-height:420px}
+.yucnp-featured .yucnp-media img{position:absolute;inset:0}
+.yucnp-featured .yucnp-body{padding:44px 44px 40px;justify-content:center;gap:16px}
+.yucnp .yucnp-featured h3{font-size:clamp(22px,2.4vw,30px)!important;line-height:1.2!important;letter-spacing:-.01em!important}
+.yucnp-featured .yucnp-excerpt{font-size:16px}
+.yucnp-label{align-self:flex-start;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--g);
+background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:4px;padding:4px 10px}
+.yucnp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+.yucnp-card{display:flex;flex-direction:column;background:#fff;border:1px solid var(--bd);border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(11,42,91,.04);transition:all .3s var(--ease)}
+.yucnp-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(11,42,91,.16);border-color:var(--a)}
+.yucnp-media{position:relative;display:block;aspect-ratio:16/10;overflow:hidden;background:linear-gradient(135deg,var(--n),var(--b));text-decoration:none!important}
+.yucnp-media img{display:block!important;width:100%!important;height:100%!important;max-width:none!important;object-fit:cover;margin:0!important;border-radius:0!important;transition:transform .6s var(--ease)}
+.yucnp-card:hover .yucnp-media img,.yucnp-featured:hover .yucnp-media img{transform:scale(1.05)}
+.yucnp-media img.yucnp-logo{position:absolute;inset:0;margin:auto!important;width:96px!important;height:auto!important;object-fit:contain;filter:brightness(0) invert(1);opacity:.9}
+.yucnp-tag{position:absolute;left:16px;top:16px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;
+background:rgba(11,42,91,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:5px 10px;border-radius:4px}
+.yucnp-body{display:flex;flex-direction:column;gap:12px;padding:24px 26px 28px;flex:1}
+.yucnp-date{align-self:flex-start;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--n);background:var(--l);border:1px solid var(--bd);border-radius:6px;padding:4px 10px}
+.yucnp h3{font-family:inherit!important;font-size:18px!important;font-weight:800!important;line-height:1.35!important;margin:0!important;padding:0!important;letter-spacing:normal!important;text-transform:none!important}
+.yucnp h3 a{color:var(--n)!important;text-decoration:none!important;transition:color .3s var(--ease)}
+.yucnp h3 a:hover{color:var(--a)!important}
+.yucnp-excerpt{font-size:14px;line-height:1.7;color:var(--m);margin:0!important}
+.yucnp-more{margin-top:auto;padding-top:6px;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--a)!important;text-decoration:none!important;letter-spacing:.04em}
+.yucnp-more:hover{color:var(--n)!important}
+.yucnp-foot{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:48px}
+.yucnp-load{cursor:pointer;font-family:var(--mono)!important;font-size:13px!important;font-weight:700!important;line-height:1.2!important;padding:14px 32px!important;border-radius:8px!important;
+background:transparent!important;color:var(--n)!important;border:1.5px solid var(--n)!important;transition:all .3s var(--ease);text-transform:none!important;letter-spacing:normal!important}
+.yucnp-load:hover{background:var(--n)!important;color:#fff!important}
+.yucnp-load[disabled]{opacity:.5;cursor:wait}
+.yucnp-count{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--d)}
+.yucnp-empty{grid-column:1/-1;padding:56px 24px;text-align:center;border:1px dashed var(--bd);border-radius:16px;color:var(--m);background:var(--l);margin:0}
+.yucnp-skel{min-height:380px;border:1px solid var(--bd);border-radius:16px;background:linear-gradient(90deg,var(--l) 25%,#f8fbfe 50%,var(--l) 75%);background-size:200% 100%;animation:yucnp-sh 1.2s infinite}
+@keyframes yucnp-sh{to{background-position:-200% 0}}
+@media (max-width:900px){.yucnp-grid{grid-template-columns:repeat(2,1fr);gap:20px}.yucnp-featured{grid-template-columns:1fr}.yucnp-featured .yucnp-media{min-height:0;aspect-ratio:16/9}.yucnp-featured .yucnp-body{padding:28px}}
+@media (max-width:768px){.yucnp-grid{grid-template-columns:1fr}.yucnp-search{flex:1 1 100%}}
+@media (max-width:600px){.yucnp-hero{padding:90px 5% 120px}.yucnp-main{padding:0 5% 72px;margin-top:-48px}.yucnp-bar{padding:10px}}
+@media (prefers-reduced-motion:reduce){.yucnp *{transition:none!important;animation:none!important}}
+</style>
+<section class="yucnp" data-lang="kk" data-slug="kaspij-ojyndary" data-per-page="9">
+<div class="yucnp-hero">
+<div class="yucnp-wrap">
+<p class="yucnp-eyebrow">Жаңалықтар · Caspian Games 2026</p>
+<h1 class="yucnp-h1">Каспий ойындары – 2026: барлық жаңалықтар</h1>
+<p class="yucnp-lead">VIII халықаралық студенттік «Каспий ойындары» туралы жаңалықтар, жарыс нәтижелері мен фоторепортаждар.</p>
+<div class="yucnp-meta"><span>5–9 қазан</span><span>Ақтау</span><span><b class="yucnp-total">…</b> жаңалық</span></div>
+</div>
+</div>
+<div class="yucnp-main">
+<div class="yucnp-wrap">
+<div class="yucnp-bar">
+<div class="yucnp-chips" role="group"></div>
+<label class="yucnp-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><input type="search" placeholder="Жаңалықтарды іздеу…" aria-label="Жаңалықтарды іздеу…"></label>
+</div>
+<div class="yucnp-featured-slot"></div>
+<div class="yucnp-grid"></div>
+<div class="yucnp-foot">
+<button type="button" class="yucnp-load" hidden>Тағы көрсету</button>
+<span class="yucnp-count"></span>
+</div>
+</div>
+</div>
+</section>
+<script>
+(function () {
+  var root = document.querySelector(".yucnp[data-lang='kk']");
+  if (!root) return;
+  var T = {"locale": "kk-KZ", "all": "Барлығы", "read": "Толығырақ →", "latest": "Соңғы жаңалық", "empty": "Ештеңе табылмады.", "error": "Жаңалықтарды жүктеу мүмкін болмады.", "shown": "{n} / {t} көрсетілді", "sports": [["Жүзу", "Жүзу"], ["Бокс", "Бокс"], ["Баскетбол", "Баскетбол"], ["Волейбол", "Волейбол"], ["Жеңіл атлетика", "атлетика"], ["Футзал", "Футзал"], ["Шахмат", "Шахмат"], ["Киберспорт", "Киберспорт"], ["Каратэ-до", "Каратэ"], ["Самбо", "Самбо"]]};
+  var LOGO = "https://global.yu.edu.kz/wp-content/uploads/2026/02/blue_logo.png";
+  var A = String.fromCharCode(38);
+  var API = root.getAttribute("data-api") || "/wp-json/wp/v2/";
+  var PER = parseInt(root.getAttribute("data-per-page"), 10) || 9;
+  var SLUG = root.getAttribute("data-slug");
+  var grid = root.querySelector(".yucnp-grid");
+  var featured = root.querySelector(".yucnp-featured-slot");
+  var loadBtn = root.querySelector(".yucnp-load");
+  var countEl = root.querySelector(".yucnp-count");
+  var totalEl = root.querySelector(".yucnp-total");
+  var chips = root.querySelector(".yucnp-chips");
+  var input = root.querySelector(".yucnp-search input");
+  var term = null, total = 0, shown = 0, query = "", sport = "", token = 0;
+  function esc(s) {
+    return String(s).split(A).join(A + "amp;").split("<").join(A + "lt;").split(">").join(A + "gt;").split('"').join(A + "quot;");
+  }
+  function text(html) {
+    var d = document.createElement("div");
+    d.innerHTML = html || "";
+    return (d.textContent || "").replace(/\s+/g, " ").trim();
+  }
+  function trimWords(s, n) {
+    var w = s.split(" ");
+    return w.length > n ? w.slice(0, n).join(" ") + "…" : s;
+  }
+  function fmtDate(iso) {
+    try { return new Date(iso).toLocaleDateString(T.locale, { day: "numeric", month: "long", year: "numeric" }); }
+    catch (e) { return iso.slice(0, 10); }
+  }
+  function api(path) {
+    return API + path.replace("?", API.indexOf("?") === -1 ? "?" : A);
+  }
+  function get(url) {
+    return fetch(url, { credentials: "same-origin" }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status + " " + url);
+      return r.json().then(function (data) {
+        return { data: data, total: +r.headers.get("X-WP-Total") || 0, pages: +r.headers.get("X-WP-TotalPages") || 1 };
+      });
+    });
+  }
+  function media(p) {
+    var m = ((p._embedded || {})["wp:featuredmedia"] || [])[0];
+    if ((m || {}).source_url) {
+      var s = (m.media_details || {}).sizes || {};
+      var src = (s.large || s.medium_large || s.medium || {}).source_url || m.source_url;
+      return '<img src="' + esc(src) + '" alt="" loading="lazy">';
+    }
+    return '<img class="yucnp-logo" src="' + LOGO + '" alt="">';
+  }
+  function body(p, words, label) {
+    return '<div class="yucnp-body">' +
+      (label ? '<span class="yucnp-label">' + esc(label) + "<\/span>" : "") +
+      '<time class="yucnp-date" datetime="' + esc(p.date) + '">' + esc(fmtDate(p.date)) + "<\/time>" +
+      '<h3><a href="' + esc(p.link) + '">' + esc(text((p.title || {}).rendered)) + "<\/a><\/h3>" +
+      '<p class="yucnp-excerpt">' + esc(trimWords(text((p.excerpt || {}).rendered), words)) + "<\/p>" +
+      '<a class="yucnp-more" href="' + esc(p.link) + '">' + esc(T.read) + "<\/a><\/div>";
+  }
+  function card(p) {
+    return '<article class="yucnp-card"><a class="yucnp-media" href="' + esc(p.link) + '" tabindex="-1" aria-hidden="true">' +
+      media(p) + '<span class="yucnp-tag">Caspian Games<\/span><\/a>' + body(p, 20) + "<\/article>";
+  }
+  function featuredCard(p) {
+    return '<article class="yucnp-featured"><a class="yucnp-media" href="' + esc(p.link) + '" tabindex="-1" aria-hidden="true">' +
+      media(p) + "<\/a>" + body(p, 40, T.latest) + "<\/article>";
+  }
+  function skeleton() {
+    grid.innerHTML = '<div class="yucnp-skel"><\/div><div class="yucnp-skel"><\/div><div class="yucnp-skel"><\/div>';
+  }
+  function message(msg) {
+    grid.innerHTML = '<p class="yucnp-empty">' + esc(msg) + "<\/p>";
+  }
+  function updateFoot() {
+    loadBtn.hidden = shown >= total;
+    countEl.textContent = total ? T.shown.replace("{n}", shown).replace("{t}", total) : "";
+  }
+  function load(reset) {
+    var my = ++token;
+    var s = [sport, query].join(" ").trim();
+    if (reset) { shown = 0; skeleton(); featured.innerHTML = ""; }
+    // First unfiltered page: 1 featured + PER cards, so grid rows stay full.
+    var n = reset ? PER + 1 : PER;
+    if (reset ? s : false) n = PER;
+    loadBtn.disabled = true;
+    var q = "posts?" + term.tax + "=" + term.id + A + "per_page=" + n + A + "offset=" + shown + A + "_embed=wp:featuredmedia";
+    if (s) q += A + "search=" + encodeURIComponent(s);
+    return get(api(q)).then(function (res) {
+      if (my !== token) return;
+      total = res.total;
+      var posts = res.data;
+      if (reset) {
+        grid.innerHTML = "";
+        if (!s) totalEl.textContent = total;
+        if (!posts.length) { message(T.empty); updateFoot(); loadBtn.disabled = false; return; }
+        if (!s) { featured.innerHTML = featuredCard(posts[0]); posts = posts.slice(1); shown = 1; }
+      }
+      grid.insertAdjacentHTML("beforeend", posts.map(card).join(""));
+      shown += posts.length;
+      loadBtn.disabled = false;
+      updateFoot();
+    }).catch(function (e) {
+      if (my !== token) return;
+      console.error("[yucnp]", e);
+      message(T.error);
+      loadBtn.hidden = true;
+    });
+  }
+  chips.innerHTML = '<button type="button" class="yucnp-chip" data-q="" aria-pressed="true">' + esc(T.all) + "<\/button>" +
+    T.sports.map(function (x) {
+      return '<button type="button" class="yucnp-chip" data-q="' + esc(x[1]) + '" aria-pressed="false">' + esc(x[0]) + "<\/button>";
+    }).join("");
+  chips.addEventListener("click", function (e) {
+    var b = e.target.closest(".yucnp-chip");
+    if (!b || !term) return;
+    var all = chips.querySelectorAll(".yucnp-chip");
+    for (var i = 0; i < all.length; i++) all[i].setAttribute("aria-pressed", String(all[i] === b));
+    sport = b.getAttribute("data-q");
+    load(true);
+  });
+  var timer;
+  input.addEventListener("input", function () {
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      query = input.value.trim();
+      if (term) load(true);
+    }, 400);
+  });
+  loadBtn.addEventListener("click", function () { load(false); });
+  skeleton();
+  get(api("tags?slug=" + encodeURIComponent(SLUG)))
+    .then(function (r) {
+      if (r.data.length) return { tax: "tags", id: r.data[0].id };
+      return get(api("categories?slug=" + encodeURIComponent(SLUG))).then(function (c) {
+        return c.data.length ? { tax: "categories", id: c.data[0].id } : null;
+      });
+    })
+    .then(function (found) {
+      if (!found) { message(T.empty); loadBtn.hidden = true; return; }
+      term = found;
+      load(true);
+    })
+    .catch(function (e) { console.error("[yucnp]", e); message(T.error); loadBtn.hidden = true; });
+})();
+</script>

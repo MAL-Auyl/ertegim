@@ -1,6 +1,6 @@
 <!-- Yessenov University · Caspian Games 2026 · блок новостей (EN)
      Вставка: Custom HTML блок. Новости по ярлыку «caspian-games» (тег, если нет — рубрика).
-     Настройки у <section>: data-count="6" · data-slug="..." · data-api="/?rest_route=/wp/v2/" (если нет «красивых» ссылок) -->
+     Настройки у <section>: data-count="6" · data-slug="..." · data-more="ссылка на страницу «Все новости»" -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -69,7 +69,7 @@
 @media (prefers-reduced-motion:reduce){.yucgn *{transition:none!important;animation:none!important}}
 </style>
 
-<section class="yucgn" id="yucgn-en" data-slug="caspian-games" data-count="6">
+<section class="yucgn" id="yucgn-en" data-slug="caspian-games" data-count="6" data-more="">
   <div class="yucgn-wrap">
     <header class="yucgn-head">
       <div>
@@ -140,7 +140,7 @@
     })
     .then(function (found) {
       if (!found) return [];
-      moreBtn.href = found.term.link;
+      moreBtn.href = root.getAttribute("data-more") || found.term.link;
       moreBtn.hidden = false;
       return getJSON(api("posts?" + found.tax + "=" + found.term.id + "&per_page=" + COUNT + "&_embed=wp:featuredmedia"));
     })
