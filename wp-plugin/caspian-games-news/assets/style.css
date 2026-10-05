@@ -1,0 +1,194 @@
+/* Caspian Games News Block — all rules scoped under .cgn so the theme is untouched. */
+
+.cgn {
+  --cgn-navy-900: #070f4f;
+  --cgn-navy-700: #1226a8;
+  --cgn-navy-600: #1d36c9;
+  --cgn-cyan: #3fe6f2;
+  --cgn-lime: #e4f53a;
+  --cgn-ink: #0f1d5e;
+  --cgn-muted: #5b6796;
+  --cgn-line: #dfe5fb;
+  --cgn-radius: 16px;
+
+  margin: 40px 0;
+  font-family: inherit;
+  color: var(--cgn-ink);
+}
+.cgn *,
+.cgn *::before,
+.cgn *::after { box-sizing: border-box; }
+
+/* ===== Heading banner ===== */
+.cgn-head {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 32px 36px;
+  border-radius: var(--cgn-radius);
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 85% 0%, rgba(63, 230, 242, 0.3), transparent 55%),
+    linear-gradient(120deg, var(--cgn-navy-700), var(--cgn-navy-900));
+}
+.cgn-head::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--cgn-cyan), var(--cgn-lime));
+}
+.cgn-head__eyebrow {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cgn-cyan);
+}
+.cgn-head__title {
+  margin: 6px 0 8px;
+  font-size: clamp(26px, 4vw, 40px);
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: #fff;
+}
+.cgn-head__dates {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cgn-lime);
+}
+.cgn-head__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cgn-btn {
+  display: inline-block;
+  padding: 11px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-decoration: none !important;
+  background: var(--cgn-lime);
+  color: var(--cgn-navy-900) !important;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.cgn-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(228, 245, 58, 0.3);
+}
+.cgn-btn--ghost {
+  background: transparent;
+  color: #fff !important;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+.cgn-btn--ghost:hover {
+  box-shadow: inset 0 0 0 2px var(--cgn-cyan);
+}
+
+/* ===== News grid ===== */
+.cgn-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 24px;
+}
+.cgn-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--cgn-line);
+  border-radius: var(--cgn-radius);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.cgn-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(10, 25, 120, 0.12);
+}
+.cgn-card__media {
+  display: block;
+  text-decoration: none !important;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--cgn-navy-700);
+}
+.cgn-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+.cgn-card:hover .cgn-card__media img { transform: scale(1.04); }
+.cgn-card__placeholder {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--cgn-cyan);
+}
+.cgn-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px 22px;
+}
+.cgn-card__date {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cgn-navy-600);
+}
+.cgn-card__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.cgn-card__title a {
+  color: var(--cgn-ink) !important;
+  text-decoration: none !important;
+}
+.cgn-card__title a:hover { color: var(--cgn-navy-600) !important; }
+.cgn-card__excerpt {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--cgn-muted);
+}
+
+.cgn-empty {
+  margin: 24px 0 0;
+  padding: 24px;
+  text-align: center;
+  border: 1px dashed var(--cgn-line);
+  border-radius: var(--cgn-radius);
+  color: var(--cgn-muted);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .cgn-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .cgn-head { padding: 24px 20px 28px; align-items: flex-start; }
+  .cgn-head__actions { width: 100%; }
+  .cgn-btn { flex: 1; text-align: center; }
+  .cgn-grid { grid-template-columns: 1fr; gap: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cgn * { transition: none !important; }
+}
