@@ -30,7 +30,8 @@ add_action( 'wp_enqueue_scripts', 'cgn_register_assets' );
  * [caspian_news]
  *
  * Attributes:
- *   tag       — tag slug (e.g. "kaspij-ojyndary").
+ *   tag       — tag slug (default "kaspij-ojyndary"). If no tag has this
+ *               slug but a category does, the category is used.
  *   category  — category slug; used instead of tag when set.
  *   count     — number of posts (default 6).
  *   title     — block heading.
@@ -43,7 +44,7 @@ add_action( 'wp_enqueue_scripts', 'cgn_register_assets' );
 function cgn_shortcode( $atts ) {
 	$atts = shortcode_atts(
 		array(
-			'tag'       => 'caspian-games',
+			'tag'       => 'kaspij-ojyndary',
 			'category'  => '',
 			'count'     => 6,
 			'title'     => 'Каспий ойындары – 2026',
@@ -70,8 +71,18 @@ function cgn_shortcode( $atts ) {
 		$query_args['category_name'] = sanitize_title( $atts['category'] );
 		$term                        = get_category_by_slug( $query_args['category_name'] );
 	} else {
-		$query_args['tag'] = sanitize_title( $atts['tag'] );
-		$term              = get_term_by( 'slug', $query_args['tag'], 'post_tag' );
+		$slug = sanitize_title( $atts['tag'] );
+		$term = get_term_by( 'slug', $slug, 'post_tag' );
+		if ( $term ) {
+			$query_args['tag'] = $slug;
+		} else {
+			$term = get_category_by_slug( $slug );
+			if ( $term ) {
+				$query_args['category_name'] = $slug;
+			} else {
+				$query_args['tag'] = $slug;
+			}
+		}
 	}
 
 	$more_url = ( $term && ! is_wp_error( $term ) ) ? get_term_link( $term ) : '';
