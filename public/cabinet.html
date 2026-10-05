@@ -127,6 +127,16 @@
   .backup-banner[hidden] { display: none; }
   .backup-banner .btn { padding: 8px 14px; font-size: 0.85rem; border-radius: 999px; }
   #errText { width: 100%; min-height: 90px; font: 12px/1.4 ui-monospace, monospace; border: 2px solid var(--line); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink); padding: 8px; }
+  table.overview { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 0.88rem; }
+  table.overview th, table.overview td { text-align: left; padding: 9px 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+  table.overview th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); border-top: none; }
+  table.overview td.num { font-variant-numeric: tabular-nums; font-weight: 800; }
+  table.overview tr.active td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .ov-name { font: inherit; font-weight: 900; color: var(--accent-dark); background: none; border: none; padding: 0; cursor: pointer; text-align: left; }
+  .ov-name:hover { text-decoration: underline; }
+  .ov-flag { display: inline-block; margin: 2px 4px 2px 0; padding: 2px 8px; border-radius: 999px; font-size: 0.74rem; font-weight: 800; color: var(--warn); border: 1.5px solid color-mix(in srgb, var(--warn) 50%, transparent); }
+  .ov-ok { color: var(--ok); font-weight: 800; }
+  .trend-up { color: var(--ok); } .trend-down { color: var(--warn); } .trend-flat { color: var(--ink-soft); }
   .tools { display: flex; flex-wrap: wrap; gap: 10px; }
   .tools .btn { padding: 12px 18px; font-size: 0.95rem; border-radius: 999px; }
   #printTitle { display: none; }
@@ -166,6 +176,15 @@
         <span id="backupBannerText"></span>
         <button type="button" class="btn btn-primary" id="backupNow2">💾 Сохранить копию</button>
       </div>
+      <section class="sheet" id="overviewSection" hidden>
+        <h2>👥 Все дети <small>сначала те, на кого стоит обратить внимание</small></h2>
+        <div class="table-wrap">
+          <table class="overview">
+            <thead><tr><th>Ребёнок</th><th>Последнее занятие</th><th>За 7 дней</th><th>Задание недели</th><th>С первого раза</th><th>Внимание</th></tr></thead>
+            <tbody id="overviewRows"></tbody>
+          </table>
+        </div>
+      </section>
       <div class="child-tabs" id="childTabs"></div>
 
       <section class="sheet">

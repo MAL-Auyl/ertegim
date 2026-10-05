@@ -1,7 +1,7 @@
 // Service worker: makes Ертегім open and play without internet. All the
 // rules (what is shell / media / api, Range slicing) live in offline.js,
 // shared with the pages; this file is only the event wiring.
-/* global importScripts, offlineKind, shellKey, rangeResponse, mediaIndex,
+/* global importScripts, offlineKind, shellKey, rangeResponse, mediaIndex, isStaleMedia,
    OFFLINE_SHELL_CACHE, OFFLINE_MEDIA_CACHE, OFFLINE_CDN_CACHE, OFFLINE_CACHES,
    OFFLINE_MANIFEST_URL, OFFLINE_HASH_HEADER */
 importScripts("/offline.js");
@@ -29,11 +29,9 @@ async function pruneMedia() {
   if (!mediaHashes) return;
   const cache = await caches.open(OFFLINE_MEDIA_CACHE);
   for (const req of await cache.keys()) {
-    const path = new URL(req.url).pathname;
-    const want = mediaHashes[path];
     const res = await cache.match(req);
     const got = res ? res.headers.get(OFFLINE_HASH_HEADER) : null;
-    if (!want || (got && got !== want.hash)) await cache.delete(req);
+    if (isStaleMedia(new URL(req.url).pathname, got, mediaHashes)) await cache.delete(req);
   }
 }
 
@@ -87,7 +85,14 @@ async function shellResponse(event) {
   });
   event.waitUntil(network.catch(() => {}));
   try {
-    return await withTimeout(network, SHELL_TIMEOUT_MS);
+    const res = await withTimeout(network, SHELL_TIMEOUT_MS);
+    // A server error (deploy in progress, platform outage) must not replace
+    // a working page the device already has.
+    if (res.status >= 500) {
+      const hit = await cache.match(key);
+      if (hit) return hit;
+    }
+    return res;
   } catch {
     const hit = await cache.match(key);
     if (hit) return hit;

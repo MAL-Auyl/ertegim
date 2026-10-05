@@ -93,6 +93,16 @@ function mediaIndex(manifest) {
   return out;
 }
 
+// Should a cached media entry go? Yes when the app no longer ships it, when
+// its content changed, and when it carries no version stamp at all (cached
+// before the manifest was known) — an unstamped file could never be told
+// apart from an outdated one, so it is refetched once and stamped.
+function isStaleMedia(path, cachedHash, index) {
+  const want = index && index[path];
+  if (!want) return true;
+  return cachedHash !== want.hash;
+}
+
 // The fox clips ship twice — WebM (smaller) and MP4 (iOS cannot play WebM),
 // characters.js picks one per browser. A device downloads only its own.
 function mediaForDevice(media, canPlayWebm) {
@@ -216,7 +226,7 @@ const OfflineKit = {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    offlineKind, shellKey, parseRange, rangeResponse, mediaIndex, mediaForDevice, offlinePlan, OfflineKit,
+    offlineKind, shellKey, parseRange, rangeResponse, mediaIndex, mediaForDevice, offlinePlan, isStaleMedia, OfflineKit,
     OFFLINE_SHELL_CACHE, OFFLINE_MEDIA_CACHE, OFFLINE_CDN_CACHE, OFFLINE_CACHES, OFFLINE_MANIFEST_URL, OFFLINE_HASH_HEADER,
   };
 }

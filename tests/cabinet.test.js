@@ -1,4 +1,4 @@
-const { test, expect } = require("bun:test");
+const { test, expect, describe } = require("bun:test");
 const { activityTitle, fmtDuration, seriesFromHistory, trend, lineSVG, exportBundle, SKILL_LABEL, ACTIVITY_TITLES } = require("../public/cabinet.js");
 
 test("activity titles cover every activity the app ships", () => {
@@ -57,4 +57,45 @@ test("exportBundle carries the child, sessions and stickers", () => {
   expect(b.sessions.length).toBe(1);
   expect(b.stickers.fox).toBe("t");
   expect(b.app).toBe("Ертегім");
+});
+
+describe("«Все дети» overview", () => {
+  const { childOverview, sortOverview } = require("../public/cabinet.js");
+  const DAY = 86400000;
+  const now = new Date(2026, 9, 9, 12).getTime(); // Friday
+  const s = (daysAgo, ft, total = 4) => ({ date: new Date(now - daysAgo * DAY).toISOString(), questionsTotal: total, firstTryCorrect: ft, completed: true });
+
+  test("recent child doing well: no flags", () => {
+    const r = childOverview({ id: "p1", name: "Айгерім", age: 5 }, [s(0, 4), s(1, 3), s(2, 3), s(9, 2)], [{ id: "letter-a", done: 3, target: 3 }], now);
+    expect(r.daysSince).toBe(0);
+    expect(r.week).toBe(3);
+    expect(r.sessions).toBe(4);
+    expect(r.firstTry).toBeCloseTo((0.75 + 0.75 + 1) / 3, 5);
+    expect(r.homework).toEqual({ done: 3, target: 3 });
+    expect(r.flags).toEqual([]);
+  });
+
+  test("flags: never played, a week without sessions, homework behind late in the week, falling first-try share", () => {
+    expect(childOverview({ id: "a", name: "A" }, [], [], now).flags).toEqual(["ещё не занимался"]);
+    expect(childOverview({ id: "b", name: "B" }, [s(8, 2)], [], now).flags).toEqual(["не занимался 8 дн."]);
+    expect(childOverview({ id: "c", name: "C" }, [s(0, 4)], [{ id: "x", done: 1, target: 3 }], now).flags).toContain("задание отстаёт");
+    const monday = new Date(2026, 9, 5, 12).getTime();
+    expect(childOverview({ id: "c", name: "C" }, [{ ...s(0, 4), date: new Date(monday).toISOString() }], [{ id: "x", done: 0, target: 3 }], monday).flags).not.toContain("задание отстаёт");
+    const falling = [s(0, 1), s(1, 1), s(2, 1), s(3, 4), s(4, 4), s(5, 4)];
+    const r = childOverview({ id: "d", name: "D" }, falling, [], now);
+    expect(r.trend).toBe("down");
+    expect(r.flags).toContain("ответов с первого раза меньше");
+  });
+
+  test("homework counts at most the target per activity", () => {
+    const r = childOverview({ id: "e", name: "E" }, [s(0, 4)], [{ id: "a", done: 5, target: 2 }, { id: "b", done: 0, target: 2 }], now);
+    expect(r.homework).toEqual({ done: 2, target: 4 });
+  });
+
+  test("children needing attention come first, then by name", () => {
+    const rows = sortOverview([
+      { name: "Бекзат", flags: [] }, { name: "Айгерім", flags: [] }, { name: "Нұрлан", flags: ["x"] },
+    ]);
+    expect(rows.map((r) => r.name)).toEqual(["Нұрлан", "Айгерім", "Бекзат"]);
+  });
 });

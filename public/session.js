@@ -209,6 +209,20 @@ const Session = {
     return Array.isArray(h) ? h : [];
   },
 
+  // Any child's history, not just the active one's — the cabinet's «Все
+  // дети» overview reads every profile without switching between them.
+  historyFor(profileId) {
+    try {
+      const st = safeStorage();
+      if (!st || typeof Profiles === "undefined" || !Profiles.scopedKey) return this.history();
+      const v = st.getItem(Profiles.scopedKey(HISTORY_KEY, profileId));
+      const h = v ? JSON.parse(v) : [];
+      return Array.isArray(h) ? h : [];
+    } catch {
+      return [];
+    }
+  },
+
   // Replaces the active child's history — used by the cabinet's import of
   // sessions played at home (already merged and sorted by the caller).
   replaceHistory(list) {

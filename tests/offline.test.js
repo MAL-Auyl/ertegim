@@ -81,6 +81,16 @@ describe("range responses (Safari media from cache)", () => {
   });
 });
 
+describe("stale media", () => {
+  const index = { "/audio/a.wav": { hash: "aaa", bytes: 1 } };
+  test("matching stamp stays; changed, unstamped or unshipped files go", () => {
+    expect(O.isStaleMedia("/audio/a.wav", "aaa", index)).toBe(false);
+    expect(O.isStaleMedia("/audio/a.wav", "old", index)).toBe(true);
+    expect(O.isStaleMedia("/audio/a.wav", null, index)).toBe(true);
+    expect(O.isStaleMedia("/audio/gone.wav", "x", index)).toBe(true);
+  });
+});
+
 describe("download plan", () => {
   const manifest = { media: [
     { url: "/audio/a.wav", bytes: 100, hash: "aaa" },

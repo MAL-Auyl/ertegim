@@ -93,6 +93,44 @@ function esc(str) {
   return String(str ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+// One row of the «Все дети» overview. `history` is newest first (as
+// Session stores it); `weekProgress` is homework.js weekProgress() output or
+// [] when the child has no plan. Flags are what a therapist should look at
+// first: nobody played for a week, homework far behind late in the week,
+// first-try answers going down.
+const STALE_DAYS = 7;
+function childOverview(profile, history, weekProgress = [], now = Date.now()) {
+  const h = Array.isArray(history) ? history : [];
+  const last = h[0] ? new Date(h[0].date).getTime() : null;
+  const daysSince = last == null || Number.isNaN(last) ? null : Math.max(0, Math.floor((now - last) / 86400000));
+  const weekAgo = now - 7 * 86400000;
+  const week = h.filter((s) => new Date(s.date).getTime() >= weekAgo).length;
+  const series = seriesFromHistory(h).map((x) => x.firstTry).filter((x) => x != null);
+  const recent = series.slice(-3);
+  const firstTry = recent.length ? recent.reduce((a, b) => a + b, 0) / recent.length : null;
+  const t = trend(series);
+  const hwDone = weekProgress.reduce((a, p) => a + Math.min(p.done, p.target), 0);
+  const hwTarget = weekProgress.reduce((a, p) => a + p.target, 0);
+  const dow = (new Date(now).getDay() + 6) % 7; // Mon = 0
+  const flags = [];
+  if (daysSince === null) flags.push("ещё не занимался");
+  else if (daysSince >= STALE_DAYS) flags.push(`не занимался ${daysSince} дн.`);
+  if (hwTarget && dow >= 3 && hwDone / hwTarget < 0.5) flags.push("задание отстаёт");
+  if (t != null && t < -0.15) flags.push("ответов с первого раза меньше");
+  return {
+    id: profile.id, name: profile.name, age: profile.age ?? null,
+    sessions: h.length, week, daysSince,
+    firstTry, trend: t == null ? null : t > 0.05 ? "up" : t < -0.05 ? "down" : "flat",
+    homework: hwTarget ? { done: hwDone, target: hwTarget } : null,
+    flags,
+  };
+}
+
+// Children needing attention first, then by name.
+function sortOverview(rows) {
+  return [...rows].sort((a, b) => (b.flags.length > 0) - (a.flags.length > 0) || a.name.localeCompare(b.name, "ru"));
+}
+
 function exportBundle(profile, history, stickers) {
   return {
     exportedAt: new Date().toISOString(),
@@ -104,7 +142,7 @@ function exportBundle(profile, history, stickers) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { activityTitle, fmtDateTime, fmtDuration, seriesFromHistory, trend, lineSVG, exportBundle, esc, ACTIVITY_TITLES, SKILL_LABEL, VERDICT_LABEL };
+  module.exports = { activityTitle, fmtDateTime, fmtDuration, seriesFromHistory, trend, lineSVG, exportBundle, esc, childOverview, sortOverview, ACTIVITY_TITLES, SKILL_LABEL, VERDICT_LABEL };
 }
 
 // ---------------------------------------------------------------- DOM ----
@@ -123,9 +161,37 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
   });
 
   function render() {
+    renderOverview();
     renderTabs();
     renderChild();
     renderDevice();
+  }
+
+  function renderOverview() {
+    const list = Profiles.list();
+    $("overviewSection").hidden = list.length < 2;
+    if (list.length < 2) return;
+    const active = Profiles.active().id;
+    const rows = sortOverview(list.map((p) => {
+      const history = Session.historyFor(p.id);
+      const plan = p.homework ? Homework.normalizePlan(p.homework, ACTIVITY_IDS) : null;
+      return childOverview(p, history, plan ? Homework.weekProgress(plan, history) : []);
+    }));
+    const when = (d) => (d === null ? "—" : d === 0 ? "сегодня" : d === 1 ? "вчера" : `${d} дн. назад`);
+    const arrow = { up: "▲", down: "▼", flat: "■" };
+    $("overviewRows").innerHTML = rows.map((r) => `<tr class="${r.id === active ? "active" : ""}">
+      <td><button type="button" class="ov-name" data-id="${esc(r.id)}">${esc(r.name)}</button>${r.age ? ` <span class="muted">${r.age} л.</span>` : ""}</td>
+      <td>${when(r.daysSince)}</td>
+      <td class="num">${r.week}</td>
+      <td class="num">${r.homework ? `${r.homework.done}/${r.homework.target}` : "—"}</td>
+      <td class="num">${r.firstTry == null ? "—" : `${Math.round(r.firstTry * 100)} %`}${r.trend ? ` <span class="trend-${r.trend}" title="динамика">${arrow[r.trend]}</span>` : ""}</td>
+      <td>${r.flags.length ? r.flags.map((f) => `<span class="ov-flag">${esc(f)}</span>`).join("") : '<span class="ov-ok">всё хорошо</span>'}</td>
+    </tr>`).join("");
+    $("overviewRows").querySelectorAll(".ov-name").forEach((b) => b.addEventListener("click", () => {
+      Profiles.setActive(b.dataset.id);
+      render();
+      $("childTabs").scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
   }
 
   function renderTabs() {
