@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Caspian Games 2026 — Ақтау</title>
-  <meta name="description" content="VIII халықаралық студенттік «Каспий ойындары – 2026». 5–9 қазан, Ақтау. Жарыстар кестесі, спорт түрлері және өтетін орындар.">
-  <meta name="theme-color" content="#0d1b8c">
+  <title>Каспий ойындары – 2026 · Yessenov University</title>
+  <meta name="description" content="VIII халықаралық студенттік «Каспий ойындары – 2026». 5–9 қазан, Ақтау, Yessenov University. Жарыстар кестесі, спорт түрлері және өтетін орындар.">
+  <meta name="theme-color" content="#0b2a5b">
   <link rel="canonical" href="https://sport.yu.edu.kz/">
+  <link rel="icon" href="https://global.yu.edu.kz/wp-content/uploads/2026/02/blue_logo.png">
 
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sport.yu.edu.kz/">
@@ -16,125 +17,188 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <!-- Header -->
-  <header class="topbar">
-    <div class="container topbar__inner">
-      <a href="#top" class="brand">
-        <span class="brand__mark">CG</span>
-        <span class="brand__text">Caspian Games <b>2026</b></span>
+  <!-- ===== Navigation ===== -->
+  <header class="nav">
+    <div class="nav__inner">
+      <a href="#top" class="nav__brand">
+        <img src="https://global.yu.edu.kz/wp-content/uploads/2026/02/blue_logo.png" alt="" width="36" height="36">
+        <span>YESSENOV UNIVERSITY</span>
       </a>
-      <nav class="nav" aria-label="Menu">
+      <nav class="nav__links" aria-label="Menu">
+        <a href="#about" data-i18n="nav.about">Ойындар туралы</a>
+        <a href="#results" data-i18n="nav.results">Нәтижелер</a>
         <a href="#schedule" data-i18n="nav.schedule">Кесте</a>
         <a href="#sports" data-i18n="nav.sports">Спорт түрлері</a>
         <a href="#venues" data-i18n="nav.venues">Орындар</a>
         <a href="#gallery" data-i18n="nav.gallery">Афишалар</a>
       </nav>
       <div class="lang" role="group" aria-label="Language">
-        <button type="button" data-lang="kk">ҚАЗ</button>
-        <button type="button" data-lang="ru">РУС</button>
-        <button type="button" data-lang="en">ENG</button>
+        <button type="button" data-lang="kk">KZ</button>
+        <button type="button" data-lang="ru">RU</button>
+        <button type="button" data-lang="en">EN</button>
       </div>
     </div>
   </header>
 
-  <!-- Hero -->
+  <!-- ===== Hero ===== -->
   <section class="hero" id="top">
-    <div class="hero__waves" aria-hidden="true"></div>
-    <div class="container hero__inner">
-      <p class="hero__eyebrow" data-i18n="hero.eyebrow">VIII халықаралық студенттік ойындар</p>
-      <h1 class="hero__title">Caspian Games<span>2026</span></h1>
-      <p class="hero__meta">
-        <span data-i18n="hero.dates">5–9 қазан</span>
-        <span class="dot"></span>
-        <span data-i18n="hero.city">Ақтау, Yessenov University</span>
-      </p>
-
-      <div class="status" id="status">
-        <p class="status__label" id="status-label"></p>
-        <div class="countdown" id="countdown" hidden>
-          <div><b id="cd-d">0</b><span data-i18n="cd.d">күн</span></div>
-          <div><b id="cd-h">0</b><span data-i18n="cd.h">сағат</span></div>
-          <div><b id="cd-m">0</b><span data-i18n="cd.m">минут</span></div>
-          <div><b id="cd-s">0</b><span data-i18n="cd.s">секунд</span></div>
+    <div class="hero__inner">
+      <div class="hero__text">
+        <p class="eyebrow eyebrow--pill" data-i18n="hero.eyebrow">VIII халықаралық студенттік ойындар</p>
+        <h1 class="hero__title" data-i18n="hero.title">Каспий ойындары – 2026</h1>
+        <p class="hero__meta">
+          <span><i class="fa-regular fa-calendar"></i> <span data-i18n="hero.dates">5–9 қазан, 2026</span></span>
+          <span><i class="fa-solid fa-location-dot"></i> <span data-i18n="hero.city">Ақтау, Yessenov University</span></span>
+        </p>
+        <p class="hero__sub" data-i18n="hero.sub">Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері 10 спорт түрі бойынша бақ сынайды.</p>
+        <div class="hero__cta">
+          <a href="#schedule" class="btn btn--accent" data-i18n="hero.cta">Кестені көру</a>
+          <a href="#results" class="btn btn--ghost" data-i18n="hero.cta2">Нәтижелер</a>
         </div>
       </div>
 
-      <ul class="stats">
-        <li><b>5</b><span data-i18n="stats.countries">ел</span></li>
-        <li><b>10</b><span data-i18n="stats.sports">спорт түрі</span></li>
-        <li><b>9</b><span data-i18n="stats.venues">спорт нысаны</span></li>
-        <li><b>5</b><span data-i18n="stats.days">күн</span></li>
-      </ul>
-
-      <div class="flags" aria-label="Countries">
-        <span title="Kazakhstan">🇰🇿</span>
-        <span title="Azerbaijan">🇦🇿</span>
-        <span title="Iran">🇮🇷</span>
-        <span title="Russia">🇷🇺</span>
-        <span title="Turkmenistan">🇹🇲</span>
-      </div>
-
-      <a href="#schedule" class="btn" data-i18n="hero.cta">Кестені көру</a>
+      <aside class="hero__panel">
+        <p class="hero__panel-label" id="status-label"></p>
+        <div class="countdown" id="countdown" hidden>
+          <div><b id="cd-d">0</b><span data-i18n="cd.d">күн</span></div>
+          <div><b id="cd-h">00</b><span data-i18n="cd.h">сағат</span></div>
+          <div><b id="cd-m">00</b><span data-i18n="cd.m">минут</span></div>
+          <div><b id="cd-s">00</b><span data-i18n="cd.s">секунд</span></div>
+        </div>
+        <ul class="stats">
+          <li><b>5</b><span data-i18n="stats.countries">ел</span></li>
+          <li><b>10</b><span data-i18n="stats.sports">спорт түрі</span></li>
+          <li><b>9</b><span data-i18n="stats.venues">спорт нысаны</span></li>
+          <li><b>5</b><span data-i18n="stats.days">күн</span></li>
+        </ul>
+        <div class="flags" aria-label="Countries">
+          <span title="Kazakhstan">🇰🇿</span><span title="Azerbaijan">🇦🇿</span><span title="Iran">🇮🇷</span><span title="Russia">🇷🇺</span><span title="Turkmenistan">🇹🇲</span>
+        </div>
+      </aside>
     </div>
   </section>
 
-  <!-- Ceremonies -->
-  <section class="ceremonies container">
-    <article class="ceremony">
-      <div class="ceremony__date"><b>5</b><span data-i18n="month">қазан</span></div>
-      <div class="ceremony__body">
-        <h3 data-i18n="cer.open">Ашылу салтанаты</h3>
-        <p class="ceremony__time">14:00</p>
-        <p data-i18n="venue.ysc">Yessenov Спорт кешені, 32 ш/а</p>
+  <!-- ===== About + ceremonies ===== -->
+  <section class="section" id="about">
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow" data-i18n="about.eyebrow">Ойындар туралы</p>
+        <h2 class="section__title" data-i18n="about.title">Каспий маңы жастарының спорт мерекесі</h2>
       </div>
-    </article>
-    <article class="ceremony">
-      <div class="ceremony__date"><b>9</b><span data-i18n="month">қазан</span></div>
-      <div class="ceremony__body">
-        <h3 data-i18n="cer.close">Жабылу салтанаты</h3>
-        <p class="ceremony__time">17:00</p>
-        <p data-i18n="venue.ys">Yessenov Stadium, 32 ш/а</p>
+      <div class="about">
+        <div class="about__text">
+          <p class="about__lead" data-i18n="about.lead">5–9 қазан аралығында Ақтау қаласында Каспий маңы елдерінің жоғары оқу орындары студенттері арасында VIII халықаралық «Каспий ойындары – 2026» өтеді!</p>
+          <p data-i18n="about.p1">Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері спорттың 10 түрі бойынша бақ сынап, жеңіс пен командалық рухтың жарқын үлгісін көрсетеді.</p>
+          <p><strong data-i18n="about.sportsLabel">Спорт түрлері:</strong> <span data-i18n="about.sports">жеңіл атлетика, волейбол, футзал, баскетбол, жүзу, каратэ-до, бокс, шахмат, киберспорт және самбо.</span></p>
+          <p data-i18n="about.p2">Каспий маңы елдерінің жастарын біріктіретін үлкен спорт мерекесінің куәсі болыңыз!</p>
+        </div>
+        <div class="about__countries" id="countries"></div>
       </div>
-    </article>
+
+      <div class="ceremonies">
+        <article class="ceremony">
+          <div class="ceremony__date"><b>5</b><span data-i18n="month">қазан</span></div>
+          <div>
+            <h3 data-i18n="cer.open">Ашылу салтанаты</h3>
+            <p class="ceremony__time"><i class="fa-regular fa-clock"></i> 14:00</p>
+            <p class="ceremony__place"><i class="fa-solid fa-location-dot"></i> <span data-i18n="venue.ysc">Yessenov Sports Complex, 32 ш/а</span></p>
+          </div>
+        </article>
+        <article class="ceremony">
+          <div class="ceremony__date"><b>9</b><span data-i18n="month">қазан</span></div>
+          <div>
+            <h3 data-i18n="cer.close">Жабылу салтанаты</h3>
+            <p class="ceremony__time"><i class="fa-regular fa-clock"></i> 17:00</p>
+            <p class="ceremony__place"><i class="fa-solid fa-location-dot"></i> <span data-i18n="venue.ys">Yessenov Stadium, 32 ш/а</span></p>
+          </div>
+        </article>
+      </div>
+    </div>
   </section>
 
-  <!-- Schedule -->
-  <section class="section" id="schedule">
-    <div class="container">
-      <h2 class="section__title" data-i18n="schedule.title">Жарыстар кестесі</h2>
-      <p class="section__lead" data-i18n="schedule.lead">Күнді таңдаңыз — сол күні өтетін жарыстар көрсетіледі.</p>
+  <!-- ===== Results dashboard ===== -->
+  <section class="section section--alt" id="results">
+    <div class="wrap">
+      <div class="section__head section__head--row">
+        <div>
+          <p class="eyebrow" data-i18n="res.eyebrow">Тікелей нәтижелер</p>
+          <h2 class="section__title" data-i18n="res.title">Нәтижелер мен медальдар</h2>
+        </div>
+        <p class="updated" id="res-updated" hidden></p>
+      </div>
 
+      <div class="kpis" id="kpis"></div>
+
+      <div class="dash">
+        <div class="panel">
+          <div class="panel__head">
+            <h3 class="panel__title" data-i18n="res.table">Медаль кестесі</h3>
+            <div class="seg" role="group" id="medal-mode">
+              <button type="button" data-mode="country" aria-pressed="true" data-i18n="res.byCountry">Елдер</button>
+              <button type="button" data-mode="univ" aria-pressed="false" data-i18n="res.byUniv">Университеттер</button>
+            </div>
+          </div>
+          <div id="medal-table"></div>
+        </div>
+        <div class="panel">
+          <div class="panel__head">
+            <h3 class="panel__title" data-i18n="res.bySport">Спорт түрлері бойынша</h3>
+          </div>
+          <div class="results" id="sport-results"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Schedule ===== -->
+  <section class="section" id="schedule">
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow" data-i18n="schedule.eyebrow">Бағдарлама</p>
+        <h2 class="section__title" data-i18n="schedule.title">Жарыстар кестесі</h2>
+        <p class="section__sub" data-i18n="schedule.lead">Күнді таңдаңыз — сол күні өтетін жарыстар көрсетіледі.</p>
+      </div>
       <div class="days" role="tablist" id="days"></div>
       <div class="timeline" id="timeline"></div>
     </div>
   </section>
 
-  <!-- Sports -->
+  <!-- ===== Sports ===== -->
   <section class="section section--alt" id="sports">
-    <div class="container">
-      <h2 class="section__title" data-i18n="sports.title">Спорт түрлері</h2>
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow" data-i18n="sports.eyebrow">10 спорт түрі</p>
+        <h2 class="section__title" data-i18n="sports.title">Спорт түрлері</h2>
+      </div>
       <div class="sports" id="sports-grid"></div>
     </div>
   </section>
 
-  <!-- Venues -->
+  <!-- ===== Venues ===== -->
   <section class="section" id="venues">
-    <div class="container">
-      <h2 class="section__title" data-i18n="venues.title">Өтетін орындар</h2>
-      <p class="section__lead" data-i18n="venues.lead">Картадан ашу үшін нысанды басыңыз.</p>
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow" data-i18n="venues.eyebrow">Ақтау қаласы</p>
+        <h2 class="section__title" data-i18n="venues.title">Өтетін орындар</h2>
+        <p class="section__sub" data-i18n="venues.lead">Картадан ашу үшін нысанды басыңыз.</p>
+      </div>
       <div class="venues" id="venues-list"></div>
     </div>
   </section>
 
-  <!-- Gallery -->
+  <!-- ===== Gallery ===== -->
   <section class="section section--alt" id="gallery">
-    <div class="container">
-      <h2 class="section__title" data-i18n="gallery.title">Афишалар</h2>
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow" data-i18n="gallery.eyebrow">Медиа</p>
+        <h2 class="section__title" data-i18n="gallery.title">Афишалар</h2>
+      </div>
       <div class="gallery">
         <a href="img/program.jpg" target="_blank" rel="noopener" class="gallery__item gallery__item--wide">
           <img src="img/program.jpg" alt="Caspian Games 2026 — program" loading="lazy" width="1226" height="1600">
@@ -152,14 +216,43 @@
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="container footer__inner">
-      <p class="footer__cta" data-i18n="footer.cta">Трибунаға келіп, студенттерді қолдаңыз! 🏆</p>
-      <p class="footer__org">© 2026 Yessenov University · <a href="https://yu.edu.kz" target="_blank" rel="noopener">yu.edu.kz</a></p>
+  <!-- ===== CTA band ===== -->
+  <section class="cta">
+    <div class="wrap cta__inner">
+      <div>
+        <p class="eyebrow" data-i18n="cta.eyebrow">Caspian Games 2026</p>
+        <h2 class="cta__title" data-i18n="cta.title">Трибунаға келіп, студенттерді қолдаңыз!</h2>
+      </div>
+      <a href="#schedule" class="btn btn--white" data-i18n="hero.cta">Кестені көру</a>
     </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <div class="footer__brand">
+        <img src="https://global.yu.edu.kz/wp-content/uploads/2026/02/blue_logo.png" alt="" width="44" height="44">
+        <div>
+          <b>YESSENOV UNIVERSITY</b>
+          <span data-i18n="footer.games">VIII «Каспий ойындары – 2026»</span>
+        </div>
+      </div>
+      <ul class="footer__contacts">
+        <li><i class="fa-solid fa-phone"></i> <a href="tel:+77292788788">+7 (7292) 788-788</a></li>
+        <li><i class="fa-solid fa-location-dot"></i> <span data-i18n="footer.address">Ақтау, 32 шағын аудан, Yessenov University</span></li>
+        <li><i class="fa-solid fa-globe"></i> <a href="https://yu.edu.kz" target="_blank" rel="noopener">yu.edu.kz</a></li>
+      </ul>
+      <div class="footer__social">
+        <a href="https://www.instagram.com/yessenovuniversity/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="https://www.facebook.com/YessenovUniversity/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+        <a href="https://www.youtube.com/channel/UCxDXjoiLoH0At0nlzqS9Mgg" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+        <a href="https://www.linkedin.com/school/yessenov-university/" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+      </div>
+    </div>
+    <div class="wrap footer__bottom">© 2026 Yessenov University</div>
   </footer>
 
+  <script src="js/results.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
