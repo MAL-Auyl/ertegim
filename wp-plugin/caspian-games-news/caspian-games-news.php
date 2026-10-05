@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Caspian Games News Block
  * Description: Блок «Каспий ойындары – 2026»: заголовок-баннер и последние новости из рубрики или по тегу. Шорткод [caspian_news].
- * Version:     1.0.0
+ * Version:     1.1.0
  * Author:      Yessenov University
  * Text Domain: caspian-games-news
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CGN_VERSION', '1.0.0' );
+define( 'CGN_VERSION', '1.1.0' );
 
 /**
  * Styles are only enqueued on pages that actually render the block.
@@ -27,11 +27,74 @@ function cgn_register_assets() {
 add_action( 'wp_enqueue_scripts', 'cgn_register_assets' );
 
 /**
+ * Current site language: Polylang, then WPML, then the WordPress locale.
+ * Returns "kk", "ru" or "en".
+ */
+function cgn_current_lang() {
+	$code = '';
+	if ( function_exists( 'pll_current_language' ) ) {
+		$code = (string) pll_current_language( 'slug' );
+	} elseif ( defined( 'ICL_LANGUAGE_CODE' ) ) {
+		$code = (string) ICL_LANGUAGE_CODE;
+	} else {
+		$code = substr( determine_locale(), 0, 2 );
+	}
+	$code = strtolower( $code );
+	if ( 'kz' === $code ) {
+		$code = 'kk';
+	}
+	return in_array( $code, array( 'kk', 'ru', 'en' ), true ) ? $code : 'kk';
+}
+
+/**
+ * Per-language defaults: tag slug and texts.
+ */
+function cgn_defaults( $lang ) {
+	$all = array(
+		'kk' => array(
+			'tag'       => 'kaspij-ojyndary',
+			'title'     => 'Каспий ойындары – 2026',
+			'subtitle'  => 'VIII халықаралық студенттік ойындар',
+			'dates'     => '5–9 қазан · Ақтау',
+			'more_text' => 'Барлық жаңалықтар',
+			'site_url'  => 'https://sport.yu.edu.kz/?lang=kk',
+			'site_text' => 'Ойындар сайты',
+			'empty'     => 'Жаңалықтар әзірге жоқ.',
+		),
+		'ru' => array(
+			'tag'       => 'kaspijskie-igry',
+			'title'     => 'Каспийские игры – 2026',
+			'subtitle'  => 'VIII Международные студенческие игры',
+			'dates'     => '5–9 октября · Актау',
+			'more_text' => 'Все новости',
+			'site_url'  => 'https://sport.yu.edu.kz/?lang=ru',
+			'site_text' => 'Сайт игр',
+			'empty'     => 'Новостей пока нет.',
+		),
+		'en' => array(
+			'tag'       => 'caspian-games',
+			'title'     => 'Caspian Games 2026',
+			'subtitle'  => 'VIII International Student Games',
+			'dates'     => 'October 5–9 · Aktau',
+			'more_text' => 'All news',
+			'site_url'  => 'https://sport.yu.edu.kz/?lang=en',
+			'site_text' => 'Games website',
+			'empty'     => 'No news yet.',
+		),
+	);
+	return $all[ $lang ];
+}
+
+/**
  * [caspian_news]
  *
- * Attributes:
- *   tag       — tag slug (default "kaspij-ojyndary"). If no tag has this
- *               slug but a category does, the category is used.
+ * Without attributes the block picks the tag and texts for the current
+ * site language (kk: kaspij-ojyndary, ru: kaspijskie-igry, en: caspian-games).
+ *
+ * Attributes (all optional):
+ *   lang      — force a language: kk, ru or en.
+ *   tag       — tag slug. If no tag has this slug but a category does,
+ *               the category is used.
  *   category  — category slug; used instead of tag when set.
  *   count     — number of posts (default 6).
  *   title     — block heading.
@@ -42,17 +105,19 @@ add_action( 'wp_enqueue_scripts', 'cgn_register_assets' );
  *   site_text — Games website button text.
  */
 function cgn_shortcode( $atts ) {
+	$atts = (array) $atts;
+	$lang = isset( $atts['lang'] ) && in_array( $atts['lang'], array( 'kk', 'ru', 'en' ), true )
+		? $atts['lang']
+		: cgn_current_lang();
+
 	$atts = shortcode_atts(
-		array(
-			'tag'       => 'kaspij-ojyndary',
-			'category'  => '',
-			'count'     => 6,
-			'title'     => 'Каспий ойындары – 2026',
-			'subtitle'  => 'VIII халықаралық студенттік ойындар',
-			'dates'     => '5–9 қазан · Ақтау',
-			'more_text' => 'Барлық жаңалықтар',
-			'site_url'  => 'https://sport.yu.edu.kz',
-			'site_text' => 'Ойындар сайты',
+		array_merge(
+			cgn_defaults( $lang ),
+			array(
+				'lang'     => $lang,
+				'category' => '',
+				'count'    => 6,
+			)
 		),
 		$atts,
 		'caspian_news'
@@ -136,7 +201,7 @@ function cgn_shortcode( $atts ) {
 				<?php endwhile; ?>
 			</div>
 		<?php else : ?>
-			<p class="cgn-empty">Жаңалықтар әзірге жоқ.</p>
+			<p class="cgn-empty"><?php echo esc_html( $atts['empty'] ); ?></p>
 		<?php endif; ?>
 	</section>
 	<?php
