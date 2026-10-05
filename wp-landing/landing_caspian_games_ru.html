@@ -1222,7 +1222,8 @@ html { scroll-behavior: smooth; }
 /* Sticky (not fixed) nav: sits below the theme header, respects the admin bar */
 #cg { margin: 0 calc(50% - 50vw) !important; }
 #cg .nav { position: sticky; top: var(--wp-admin--admin-bar--height, 0px); }
-#cg .hero { padding-top: 72px; }
+#cg .hero { padding-top: 96px; }
+#cg .hero + .nav { margin-top: -1px; }
 html { scroll-padding-top: 72px; }
 @media (max-width: 900px) { html { scroll-padding-top: 116px; } }
 @media (max-width: 600px) { #cg .hero { padding-top: 48px; } }
@@ -1230,31 +1231,6 @@ html { scroll-padding-top: 72px; }
 </style>
 
 <div id="cg" data-lang="ru">
-<!-- ===== Navigation ===== -->
-  <header class="nav">
-    <div class="nav__inner">
-      <a href="#top" class="nav__brand">
-        <img src="https://global.yu.edu.kz/wp-content/uploads/2026/02/blue_logo.png" alt="" width="36" height="36">
-        <span>YESSENOV UNIVERSITY</span>
-        <img class="nav__cg" src="https://yu.edu.kz/wp-content/uploads/2026/10/whatsapp-image-2026-10-05-at-11.34.19.jpeg" alt="Caspian Games 2026">
-      </a>
-      <nav class="nav__links" aria-label="Menu">
-        <a href="#about" data-i18n="nav.about">Ойындар туралы</a>
-        <a href="#results" data-i18n="nav.results">Нәтижелер</a>
-        <a href="#news" data-i18n="nav.news">Жаңалықтар</a>
-        <a href="#schedule" data-i18n="nav.schedule">Кесте</a>
-        <a href="#sports" data-i18n="nav.sports">Спорт түрлері</a>
-        <a href="#venues" data-i18n="nav.venues">Орындар</a>
-        <a href="#gallery" data-i18n="nav.gallery">Афишалар</a>
-      </nav>
-      <div class="lang" role="group" aria-label="Language">
-        <button type="button" data-lang="kk">KZ</button>
-        <button type="button" data-lang="ru">RU</button>
-        <button type="button" data-lang="en">EN</button>
-      </div>
-    </div>
-  </header>
-
   <!-- ===== Hero ===== -->
   <section class="hero" id="top">
     <div class="hero__inner">
@@ -1293,6 +1269,31 @@ html { scroll-padding-top: 72px; }
       </aside>
     </div>
   </section>
+
+  <!-- ===== Navigation ===== -->
+  <header class="nav">
+    <div class="nav__inner">
+      <a href="#top" class="nav__brand">
+        <img src="https://global.yu.edu.kz/wp-content/uploads/2026/02/blue_logo.png" alt="" width="36" height="36">
+        <span>YESSENOV UNIVERSITY</span>
+        <img class="nav__cg" src="https://yu.edu.kz/wp-content/uploads/2026/10/whatsapp-image-2026-10-05-at-11.34.19.jpeg" alt="Caspian Games 2026">
+      </a>
+      <nav class="nav__links" aria-label="Menu">
+        <a href="#about" data-i18n="nav.about">Ойындар туралы</a>
+        <a href="#results" data-i18n="nav.results">Нәтижелер</a>
+        <a href="#news" data-i18n="nav.news">Жаңалықтар</a>
+        <a href="#schedule" data-i18n="nav.schedule">Кесте</a>
+        <a href="#sports" data-i18n="nav.sports">Спорт түрлері</a>
+        <a href="#venues" data-i18n="nav.venues">Орындар</a>
+        <a href="#gallery" data-i18n="nav.gallery">Афишалар</a>
+      </nav>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="kk">KZ</button>
+        <button type="button" data-lang="ru">RU</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </div>
+  </header>
 
   <!-- ===== About + ceremonies ===== -->
   <section class="section" id="about">
