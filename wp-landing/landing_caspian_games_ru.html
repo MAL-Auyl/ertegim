@@ -1,0 +1,2252 @@
+<!-- Caspian Games 2026 · WordPress landing (Русский (ru)) -->
+<!-- Вставка: страница WordPress (шаблон Full Width) → блок «Произвольный HTML». Картинки: program.jpg, swimming.jpg, basketball.jpg, boxing.jpg → Медиафайлы, путь /wp-content/uploads/2026/10/ -->
+<!-- Результаты: блок window.CG_RESULTS в первом <script>. Новости: рубрика/тег «kaspijskie-igry». -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* Break out of the theme's content column to full width */
+html, body { overflow-x: clip; }
+#cg {
+  position: relative;
+  width: 100vw;
+  max-width: 100vw;
+  text-align: left;
+}
+/* Neutralize common theme styles inside the landing */
+#cg h1, #cg h2, #cg h3, #cg p, #cg ul, #cg ol, #cg li {
+  margin: 0; font-family: inherit; text-transform: none; letter-spacing: normal; line-height: inherit; color: inherit;
+}
+#cg h1::before, #cg h2::before, #cg h3::before, #cg h1::after, #cg h2::after, #cg h3::after { content: none; }
+#cg a { box-shadow: none; text-decoration: none; }
+#cg button {
+  margin: 0; width: auto; height: auto; font: inherit; line-height: 1;
+  text-transform: none; letter-spacing: normal; box-shadow: none; background-image: none;
+}
+#cg img { height: auto; border-radius: 0; margin: 0; box-shadow: none; }
+#cg table, #cg th, #cg td { border-left: 0; border-right: 0; border-top: 0; background: none; }
+
+/* ===== Caspian Games 2026 =====
+   Yessenov University design system: Navy / Blue / Accent / Gold, Inter + JetBrains Mono. */
+
+#cg {
+  --navy: #0b2a5b;
+  --blue: #0b3d91;
+  --accent: #00aaff;
+  --gold: #f59e0b;
+  /* Text-safe variants for light backgrounds (WCAG AA >= 4.5:1 on white) */
+  --accent-ink: #0070b8;
+  --gold-ink: #b45309;
+
+  --white: #ffffff;
+  --light: #f0f5fb;
+  --page: #fafcff;
+
+  --text: #1a2a3a;
+  --muted: #64748b;
+  --dim: #6b7a8f;
+  --muted-white: rgba(255, 255, 255, 0.65);
+
+  --border: #dde6f0;
+  --border-dark: rgba(255, 255, 255, 0.08);
+
+  /* Medal colors (always shown with a label, never color alone) */
+  --m-gold: #f5b301;
+  --m-silver: #a7b4c4;
+  --m-bronze: #c47a3d;
+
+  --shadow-sm: 0 4px 12px rgba(11, 42, 91, 0.04);
+  --shadow-md: 0 12px 30px rgba(11, 42, 91, 0.08);
+  --shadow-lg: 0 20px 40px rgba(11, 42, 91, 0.16);
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --t-fast: 0.12s;
+  --t: 0.25s;
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --nav-h: 64px;
+}
+
+#cg *,
+#cg *::before,
+#cg *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+#cg {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--page);
+  -webkit-font-smoothing: antialiased;
+}
+
+#cg img { max-width: 100%; display: block; }
+#cg a { color: inherit; }
+#cg button { -webkit-tap-highlight-color: transparent; }
+#cg a { -webkit-tap-highlight-color: transparent; }
+
+/* Keyboard focus — visible, consistent, never on mouse click */
+#cg :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+#cg h1,
+#cg h2,
+#cg h3,
+#cg p { margin: 0; }
+
+#cg .wrap { max-width: 1240px; margin: 0 auto; }
+
+/* ===== Eyebrow ===== */
+#cg .eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-ink);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+#cg .hero .eyebrow,
+#cg .cta .eyebrow { color: var(--accent); }
+#cg .eyebrow--pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  border: 1px solid rgba(0, 170, 255, 0.35);
+  border-radius: 30px;
+}
+#cg .eyebrow--pill::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ===== Buttons ===== */
+#cg .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+  padding: 14px 28px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--t) var(--ease), border-color var(--t) var(--ease),
+    box-shadow var(--t) var(--ease), transform var(--t-fast) var(--ease-out);
+}
+/* Instant feedback on press, not on release */
+#cg .btn:active { transform: scale(0.97); }
+#cg .btn--accent { background: var(--accent); color: var(--navy); }
+#cg .btn--ghost { color: var(--white); border-color: rgba(255, 255, 255, 0.35); }
+#cg .btn--white { background: var(--white); color: var(--navy); }
+#cg .btn--outline { color: var(--navy); border-color: var(--navy); background: transparent; }
+@media (hover: hover) {
+  #cg .btn--accent:hover { background: #33bbff; box-shadow: 0 10px 24px rgba(0, 170, 255, 0.28); }
+  #cg .btn--ghost:hover { border-color: var(--white); background: rgba(255, 255, 255, 0.08); }
+  #cg .btn--white:hover { box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18); }
+  #cg .btn--outline:hover { background: var(--light); }
+}
+
+/* ===== Navigation ===== */
+#cg .nav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 100;
+  height: var(--nav-h);
+  /* Translucent material: content scrolls underneath */
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 1px 0 rgba(11, 42, 91, 0.08);
+}
+@media (prefers-reduced-transparency: reduce) {
+  #cg .nav { background: var(--white); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  #cg .hero__panel { background: rgba(11, 42, 91, 0.9); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  #cg .nav { background: var(--white); box-shadow: 0 1px 0 var(--navy); }
+}
+#cg .nav__inner {
+  height: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 6%;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+@media (min-width: 1400px) { #cg .nav__inner { padding: 0; } }
+#cg .nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+#cg .nav__brand img { width: 36px; height: 36px; object-fit: contain; }
+#cg .nav__links { display: flex; gap: 22px; margin-left: auto; }
+#cg .nav__links a {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--t) var(--ease);
+}
+#cg .nav__links a:hover,
+#cg .nav__links a[aria-current="true"] { color: var(--navy); }
+@media (min-width: 901px) {
+  #cg .nav__links a { position: relative; }
+  #cg .nav__links a[aria-current="true"] { font-weight: 600; }
+  #cg .nav__links a[aria-current="true"]::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -8px;
+    width: 4px;
+    height: 4px;
+    margin-left: -2px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+}
+
+#cg .lang {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--light);
+  border-radius: 30px;
+}
+#cg .lang button {
+  border: 0;
+  background: transparent;
+  font: 700 12px/1 var(--mono);
+  color: var(--muted);
+  min-width: 40px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: background-color var(--t) var(--ease), color var(--t) var(--ease), transform var(--t-fast) var(--ease-out);
+}
+#cg .lang button:active,
+#cg .seg button:active { transform: scale(0.95); }
+#cg .lang button:hover { color: var(--navy); }
+#cg .lang button[aria-pressed="true"] { background: var(--blue); color: var(--white); }
+
+/* ===== Hero ===== */
+#cg .hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: calc(var(--nav-h) + 72px) 6% 140px;
+  color: var(--white);
+  clip-path: polygon(0 0, 100% 0, 100% 92%, 0 100%);
+  background:
+    linear-gradient(135deg, rgba(11, 42, 91, 0.96), rgba(11, 61, 145, 0.88)),
+    url("/wp-content/uploads/2026/10/program.jpg") center / cover;
+}
+#cg .hero__inner {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+#cg .hero__title {
+  margin: 22px 0 18px;
+  font-size: clamp(32px, 5vw, 64px);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+#cg .hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  font-weight: 600;
+  font-size: 15px;
+}
+#cg .hero__meta i { color: var(--gold); margin-right: 6px; }
+#cg .hero__sub {
+  margin-top: 18px;
+  max-width: 540px;
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--muted-white);
+}
+#cg .hero__cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px; }
+
+#cg .hero__panel {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 32px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+#cg .hero__panel-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-white);
+  margin-bottom: 16px;
+}
+#cg .hero__panel-label.is-live { color: var(--white); }
+#cg .hero__panel-label.is-live::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  vertical-align: 1px;
+  animation: cg-pulse 1.6s infinite;
+}
+@keyframes cg-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+#cg .countdown {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+#cg .countdown div {
+  text-align: center;
+  padding: 14px 6px;
+  border-radius: 12px;
+  background: rgba(11, 42, 91, 0.5);
+  border: 1px solid var(--border-dark);
+}
+#cg .countdown b {
+  display: block;
+  font-family: var(--mono);
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.2;
+}
+#cg .countdown span {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-white);
+}
+
+#cg .stats {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  overflow: hidden;
+}
+#cg .stats li { padding: 16px 18px; background: rgba(11, 42, 91, 0.55); }
+#cg .stats b {
+  display: block;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+#cg .stats span { font-size: 13px; color: var(--muted-white); }
+#cg .flags {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 22px;
+  font-size: 26px;
+}
+
+/* ===== Sections ===== */
+#cg .section { padding: 100px 6%; background: var(--white); }
+#cg .section--alt { background: var(--light); }
+#cg .section__head { margin-bottom: 44px; }
+#cg .section__head--row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 32px;
+}
+#cg .section__title {
+  margin-top: 12px;
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--navy);
+}
+#cg .section__sub {
+  margin-top: 14px;
+  max-width: 500px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+/* ===== About ===== */
+#cg .about {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 56px;
+  align-items: start;
+}
+#cg .about__text p {
+  font-size: 17px;
+  line-height: 1.85;
+  color: var(--text);
+}
+#cg .about__text p + p { margin-top: 18px; }
+#cg .about__text strong { color: var(--navy); }
+#cg .about__lead {
+  font-size: 19px !important;
+  font-weight: 600;
+  color: var(--navy) !important;
+  padding-left: 20px;
+  border-left: 3px solid var(--accent);
+}
+#cg .about__countries {
+  display: grid;
+  gap: 10px;
+}
+#cg .country {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+#cg .country__flag { font-size: 26px; line-height: 1; }
+#cg .country__name { font-weight: 700; color: var(--navy); }
+#cg .country__code {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+}
+
+/* ===== Cards (shared) ===== */
+#cg .ceremony,
+#cg .event,
+#cg .sport,
+#cg .venue,
+#cg .panel,
+#cg .kpi {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--t) var(--ease-out), box-shadow var(--t) var(--ease), border-color var(--t) var(--ease);
+}
+/* Subtle lift only on real hover devices — avoids "stuck" hover on touch */
+@media (hover: hover) {
+  #cg .ceremony:hover,
+  #cg .sport:hover,
+  #cg .venue:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(0, 170, 255, 0.5);
+  }
+}
+#cg .venue:active { transform: scale(0.985); transition-duration: var(--t-fast); }
+
+/* ===== Ceremonies ===== */
+#cg .ceremonies {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 56px;
+}
+#cg .ceremony {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  padding: 32px;
+}
+#cg .ceremony__date {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  color: var(--white);
+  background: linear-gradient(135deg, var(--navy), var(--blue));
+}
+#cg .ceremony__date b { font-size: 40px; font-weight: 900; line-height: 1; }
+#cg .ceremony__date span {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-white);
+  margin-top: 4px;
+}
+#cg .ceremony h3 { font-size: 20px; font-weight: 800; color: var(--navy); }
+#cg .ceremony__time {
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gold-ink);
+}
+#cg .ceremony__place { margin-top: 2px; font-size: 14px; color: var(--muted); }
+#cg .ceremony__time i,
+#cg .ceremony__place i { width: 18px; color: var(--accent); }
+
+/* ===== Results dashboard ===== */
+#cg .updated {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: var(--light);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+#cg .updated i { color: var(--accent); margin-right: 6px; }
+
+#cg .kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+#cg .kpi { padding: 22px 24px; }
+#cg .kpi__label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+#cg .kpi__value {
+  margin-top: 6px;
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--navy);
+}
+#cg .kpi__value small { font-size: 18px; font-weight: 700; color: var(--dim); }
+#cg .kpi__bar {
+  margin-top: 12px;
+  height: 6px;
+  border-radius: 4px;
+  background: var(--light);
+  overflow: hidden;
+}
+#cg .kpi__bar span { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+#cg .kpi__hint { margin-top: 8px; font-size: 13px; color: var(--muted); }
+
+#cg .dash {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+#cg .panel { padding: 28px; }
+#cg .panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+#cg .panel__title { font-size: 18px; font-weight: 800; color: var(--navy); }
+
+#cg .seg {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--light);
+  border-radius: 30px;
+}
+#cg .seg button {
+  border: 0;
+  background: transparent;
+  font: 600 12px/1 var(--font);
+  color: var(--muted);
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: background-color var(--t) var(--ease), color var(--t) var(--ease), transform var(--t-fast) var(--ease-out);
+}
+#cg .seg button[aria-pressed="true"] { background: var(--blue); color: var(--white); }
+
+#cg .medals { width: 100%; border-collapse: collapse; font-size: 14px; }
+#cg .medals th {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-align: center;
+  padding: 0 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+#cg .medals th:nth-child(2) { text-align: left; }
+#cg .medals td {
+  padding: 12px 6px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text);
+}
+#cg .medals tr:last-child td { border-bottom: 0; }
+#cg .medals td.rank { width: 36px; font-family: var(--mono); font-weight: 700; color: var(--dim); }
+#cg .medals tr:first-child td.rank { color: var(--gold-ink); }
+#cg .medals td.team { text-align: left; font-weight: 700; color: var(--navy); }
+#cg .medals td.team span { margin-right: 10px; font-size: 20px; vertical-align: -3px; }
+#cg .medals td.team small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+#cg .medals td.total { font-weight: 900; color: var(--navy); }
+
+#cg .dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  vertical-align: 0;
+}
+#cg .dot--1 { background: var(--m-gold); }
+#cg .dot--2 { background: var(--m-silver); }
+#cg .dot--3 { background: var(--m-bronze); }
+
+#cg .medalbar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  margin-top: 8px;
+  max-width: 220px;
+}
+#cg .medalbar i { display: block; height: 100%; border-radius: 4px; }
+#cg .medalbar i.g { background: var(--m-gold); }
+#cg .medalbar i.s { background: var(--m-silver); }
+#cg .medalbar i.b { background: var(--m-bronze); }
+
+#cg .results {
+  display: grid;
+  gap: 12px;
+}
+#cg .result {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  background: var(--white);
+}
+#cg .result__head { display: flex; align-items: center; gap: 12px; }
+#cg .result__icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  border-radius: 10px;
+  background: var(--light);
+}
+#cg .result__name { font-weight: 800; color: var(--navy); line-height: 1.3; }
+#cg .result__when { font-size: 12px; color: var(--muted); }
+#cg .status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+#cg .status--done { background: rgba(16, 185, 129, 0.12); color: #047857; border: 1px solid rgba(16, 185, 129, 0.3); }
+#cg .status--live { background: rgba(239, 68, 68, 0.1); color: #b91c1c; border: 1px solid rgba(239, 68, 68, 0.3); }
+#cg .status--soon { background: var(--light); color: var(--muted); border: 1px solid var(--border); }
+#cg .podium { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 6px; }
+#cg .podium li {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+#cg .podium li b { font-weight: 700; color: var(--text); }
+#cg .podium li small { color: var(--muted); }
+#cg .podium li em { font-style: normal; font-size: 18px; }
+#cg .result__note { margin-top: 10px; font-size: 13px; color: var(--muted); }
+
+#cg .empty {
+  padding: 28px 20px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  color: var(--muted);
+  background: var(--light);
+  font-size: 14px;
+}
+#cg .empty i { display: block; font-size: 22px; color: var(--dim); margin-bottom: 8px; }
+
+/* ===== Schedule: day filter ===== */
+#cg .days {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 28px;
+  overflow-x: auto;
+  padding: 4px 2px 6px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+#cg .days::-webkit-scrollbar { display: none; }
+#cg .day {
+  flex: 1 0 auto;
+  min-width: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 18px;
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  background: var(--white);
+  font-family: var(--font);
+  color: var(--navy);
+  cursor: pointer;
+  position: relative;
+  scroll-snap-align: start;
+  transition: background-color var(--t) var(--ease), border-color var(--t) var(--ease),
+    color var(--t) var(--ease), transform var(--t-fast) var(--ease-out);
+}
+#cg .day:active { transform: scale(0.96); }
+#cg .day b { font-size: 22px; font-weight: 900; line-height: 1.1; }
+#cg .day span {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+#cg .day:hover { border-color: var(--accent); }
+#cg .day[aria-selected="true"] { background: var(--blue); border-color: var(--blue); color: var(--white); }
+#cg .day[aria-selected="true"] span { color: var(--muted-white); }
+#cg .day.is-today::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+/* ===== Schedule: timeline ===== */
+#cg .timeline { display: grid; gap: 12px; }
+#cg .event {
+  display: grid;
+  grid-template-columns: 88px 52px 1fr auto;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 24px;
+}
+#cg .event:hover { box-shadow: var(--shadow-md); border-color: var(--accent); }
+#cg .event--ceremony {
+  background: linear-gradient(135deg, var(--navy), var(--blue));
+  border-color: transparent;
+  color: var(--white);
+}
+#cg .event__time {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--navy);
+}
+#cg .event--ceremony .event__time { color: var(--gold); }
+#cg .event__icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  border-radius: 12px;
+  background: var(--light);
+}
+#cg .event--ceremony .event__icon { background: rgba(255, 255, 255, 0.1); }
+#cg .event__name { font-size: 17px; font-weight: 800; color: var(--navy); line-height: 1.3; }
+#cg .event--ceremony .event__name { color: var(--white); }
+#cg .event__venue { font-size: 14px; color: var(--muted); }
+#cg .event__venue i { color: var(--accent); margin-right: 6px; }
+#cg .event--ceremony .event__venue { color: var(--muted-white); }
+#cg .event__tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--light);
+  color: var(--navy);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+#cg .event--ceremony .event__tag {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--gold);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+/* ===== Sports ===== */
+#cg .sports {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+#cg .sport { padding: 28px 24px; }
+#cg .sport__icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  border-radius: 14px;
+  background: var(--light);
+  margin-bottom: 18px;
+}
+#cg .sport h3 { font-size: 18px; font-weight: 800; color: var(--navy); }
+#cg .sport__dates {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+}
+#cg .sport__dates small {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(0, 170, 255, 0.12);
+  color: var(--accent-ink);
+  border: 1px solid rgba(0, 170, 255, 0.25);
+}
+#cg .sport__venue { margin-top: 10px; font-size: 13px; line-height: 1.6; color: var(--muted); }
+
+/* ===== Venues ===== */
+#cg .venues {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+#cg .venue {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 24px;
+  text-decoration: none;
+}
+#cg .venue__pin {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--light);
+  color: var(--accent);
+  font-size: 16px;
+}
+#cg .venue__body { flex: 1; min-width: 0; }
+#cg .venue h3 { font-size: 16px; font-weight: 800; color: var(--navy); line-height: 1.35; }
+#cg .venue__addr {
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+#cg .venue__sports { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+#cg .venue__sports span {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--light);
+  color: var(--navy);
+  border: 1px solid var(--border);
+}
+#cg .venue__go {
+  flex: none;
+  color: var(--dim);
+  font-size: 13px;
+  transition: color var(--t) var(--ease), transform var(--t) var(--ease-out);
+}
+@media (hover: hover) {
+  #cg .venue:hover .venue__go { color: var(--accent-ink); transform: translate(2px, -2px); }
+}
+
+/* ===== Gallery ===== */
+#cg .gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+#cg .gallery__item {
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--navy);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--t) var(--ease-out), box-shadow var(--t) var(--ease);
+}
+@media (hover: hover) {
+  #cg .gallery__item:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+}
+#cg .gallery__item:active { transform: scale(0.985); }
+#cg .gallery__item img { width: 100%; height: 100%; object-fit: cover; }
+#cg .gallery__item--wide { grid-column: 1 / -1; justify-self: center; max-width: 760px; }
+
+/* ===== CTA band ===== */
+#cg .cta { background: var(--navy); color: var(--white); padding: 80px 6%; }
+#cg .cta__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
+#cg .cta__title {
+  margin-top: 12px;
+  font-size: clamp(24px, 3.2vw, 38px);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  max-width: 760px;
+}
+
+/* ===== Footer ===== */
+#cg .footer {
+  background: var(--navy);
+  color: var(--muted-white);
+  padding: 56px 6% 28px;
+  border-top: 1px solid var(--border-dark);
+  font-size: 14px;
+}
+#cg .footer__inner {
+  display: grid;
+  grid-template-columns: 1.2fr 1.5fr auto;
+  gap: 32px;
+  align-items: start;
+}
+#cg .footer__brand { display: flex; gap: 14px; align-items: center; }
+#cg .footer__brand img { width: 44px; height: 44px; object-fit: contain; filter: brightness(0) invert(1); }
+#cg .footer__brand b { display: block; color: var(--white); font-size: 14px; letter-spacing: 0.04em; }
+#cg .footer__brand span { font-size: 13px; }
+#cg .footer__contacts { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+#cg .footer__contacts i { width: 20px; color: var(--accent); }
+#cg .footer__contacts a { color: var(--white); text-decoration: none; }
+#cg .footer__contacts a:hover { color: var(--accent); }
+#cg .footer__social { display: flex; gap: 10px; }
+#cg .footer__social a {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-dark);
+  text-decoration: none;
+  transition: background-color var(--t) var(--ease), color var(--t) var(--ease), border-color var(--t) var(--ease);
+}
+#cg .footer__social a:hover { background: var(--accent); color: var(--navy); border-color: var(--accent); }
+#cg .footer__bottom {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-dark);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+}
+
+/* ===== Brand: Caspian Games logo ===== */
+#cg .nav__cg {
+  height: 40px; width: auto; max-width: 120px; object-fit: contain;
+  padding-left: 12px; margin-left: 2px; border-left: 1px solid var(--border);
+}
+#cg .hero__logo {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--white); border-radius: 18px; padding: 10px 14px; margin-bottom: 22px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+#cg .hero__logo img { height: 72px; width: auto; max-width: 220px; object-fit: contain; }
+
+/* ===== News ===== */
+#cg .news__chips {
+  display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  padding: 4px 2px 8px; margin-bottom: 24px;
+}
+#cg .news__chips::-webkit-scrollbar { display: none; }
+#cg .nchip {
+  flex: none; border: 1px solid var(--border); background: var(--white); color: var(--navy);
+  font: 600 13px/1 var(--font); min-height: 40px; padding: 10px 16px; border-radius: 30px; cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--t) var(--ease), color var(--t) var(--ease), border-color var(--t) var(--ease), transform var(--t-fast) var(--ease-out);
+}
+#cg .nchip:hover { border-color: var(--accent); }
+#cg .nchip:active { transform: scale(0.95); }
+#cg .nchip[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: var(--white); }
+
+#cg .news__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+#cg .news__grid > .empty { grid-column: 1 / -1; }
+#cg .ncard {
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--white); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm);
+  transition: transform var(--t) var(--ease-out), box-shadow var(--t) var(--ease), border-color var(--t) var(--ease);
+}
+@media (hover: hover) {
+  #cg .ncard:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: rgba(0, 170, 255, 0.5); }
+  #cg .ncard:hover .ncard__media img:not(.ncard__logo) { transform: scale(1.04); }
+}
+#cg .ncard--big { grid-column: span 2; grid-row: span 2; }
+#cg .ncard__media {
+  position: relative; display: block; aspect-ratio: 16 / 10; overflow: hidden;
+  background: linear-gradient(135deg, var(--light), #e3ecf7);
+}
+#cg .ncard--big .ncard__media { aspect-ratio: auto; flex: 1; min-height: 280px; }
+#cg .ncard__media img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.5s var(--ease-out);
+}
+#cg .ncard__media img.ncard__logo {
+  inset: 0; margin: auto; width: 46%; height: 70%; object-fit: contain; mix-blend-mode: multiply;
+}
+#cg .ncard__body { display: flex; flex-direction: column; gap: 10px; padding: 20px 22px 22px; }
+#cg .ncard--big .ncard__body { padding: 26px 28px 28px; }
+#cg .ncard__date {
+  align-self: flex-start; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--navy); background: var(--light); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
+}
+#cg .ncard__title { font-size: 17px; font-weight: 800; line-height: 1.35; color: var(--navy); }
+#cg .ncard--big .ncard__title { font-size: clamp(20px, 2.2vw, 26px); line-height: 1.25; letter-spacing: -0.01em; }
+#cg .ncard__title a { color: inherit; }
+#cg .ncard__title a:hover { color: var(--accent-ink); }
+#cg .ncard__excerpt { font-size: 14px; line-height: 1.65; color: var(--muted); }
+#cg .ncard--big .ncard__excerpt { font-size: 15px; }
+#cg .ncard__more { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--accent-ink); }
+#cg .ncard__more:hover { color: var(--navy); }
+#cg .nskel {
+  min-height: 300px; border-radius: 16px; border: 1px solid var(--border);
+  background: linear-gradient(90deg, var(--light) 25%, #f8fbfe 50%, var(--light) 75%);
+  background-size: 200% 100%; animation: cg-shimmer 1.2s infinite;
+}
+#cg .nskel--big { grid-column: span 2; grid-row: span 2; }
+@keyframes cg-shimmer { to { background-position: -200% 0; } }
+
+@media (max-width: 900px) {
+  #cg .news__grid { grid-template-columns: 1fr 1fr; gap: 18px; }
+  #cg .ncard--big, #cg .nskel--big { grid-row: auto; }
+  #cg .nav__cg { height: 34px; }
+}
+@media (max-width: 600px) {
+  #cg .news__grid { grid-template-columns: 1fr; }
+  #cg .ncard--big, #cg .nskel--big { grid-column: auto; }
+  #cg .ncard--big .ncard__media { aspect-ratio: 16 / 10; min-height: 0; flex: none; }
+  #cg .nskel:nth-child(n+2) { display: none; }
+  #cg .hero__logo img { height: 56px; }
+  #cg .news__head .btn { width: 100%; }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1100px) {
+  #cg .nav__links { gap: 16px; }
+  #cg .dash { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  /* Keep wayfinding on mobile: links become a swipeable second row */
+  #cg { --nav-h: 108px; }
+  #cg .nav__inner { flex-wrap: wrap; align-content: center; row-gap: 6px; }
+  #cg .nav__brand { height: 52px; }
+  #cg .lang { margin-left: auto; }
+  #cg .nav__links {
+    order: 3;
+    flex: 1 0 100%;
+    margin: 0 -6%;
+    padding: 0 6% 10px;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  }
+  #cg .nav__links::-webkit-scrollbar { display: none; }
+  #cg .nav__links a {
+    padding: 8px 14px;
+    border-radius: 30px;
+    background: rgba(240, 245, 251, 0.9);
+    font-size: 13px;
+    transition: background-color var(--t) var(--ease), color var(--t) var(--ease);
+  }
+  #cg .nav__links a[aria-current="true"] { background: var(--navy); color: var(--white); }
+  #cg .hero__inner { grid-template-columns: 1fr; gap: 40px; }
+  #cg .about { grid-template-columns: 1fr; gap: 32px; }
+  #cg .ceremonies { grid-template-columns: 1fr; }
+  #cg .kpis { grid-template-columns: repeat(2, 1fr); }
+  #cg .gallery { grid-template-columns: 1fr 1fr; }
+  #cg .footer__inner { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  #cg .event {
+    grid-template-columns: 48px 1fr auto;
+    gap: 14px;
+    padding: 16px;
+  }
+  #cg .event__icon { grid-column: 1; grid-row: 1 / span 2; width: 48px; height: 48px; font-size: 22px; }
+  #cg .event__info { grid-column: 2; grid-row: 1 / span 2; }
+  #cg .event__time { grid-column: 3; grid-row: 1; font-size: 16px; text-align: right; }
+  #cg .event__tag { grid-column: 3; grid-row: 2; justify-self: end; }
+  #cg .event__name { font-size: 15px; }
+  #cg .venues { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  #cg .nav__inner { padding: 0 5%; column-gap: 16px; }
+  #cg .nav__links { margin: 0 -5%; padding: 0 5% 10px; }
+  #cg .nav__brand span { display: none; }
+  #cg .hero { padding: calc(var(--nav-h) + 48px) 5% 110px; min-height: auto; }
+  #cg .hero__panel { padding: 22px; }
+  #cg .hero__cta .btn { flex: 1; }
+  #cg .section { padding: 72px 5%; }
+  #cg .section__head { margin-bottom: 32px; }
+  #cg .about__text p { font-size: 16px; }
+  #cg .ceremony { padding: 22px; gap: 18px; }
+  #cg .ceremony__date { width: 76px; height: 76px; }
+  #cg .ceremony__date b { font-size: 32px; }
+  #cg .kpis { gap: 10px; }
+  #cg .kpi { padding: 16px; }
+  #cg .kpi__value { font-size: 28px; }
+  #cg .panel { padding: 20px 16px; }
+  #cg .medals th,
+  #cg .medals td { padding-left: 3px; padding-right: 3px; }
+  #cg .medals td.team small { display: none; }
+  #cg .sports { grid-template-columns: 1fr 1fr; gap: 12px; }
+  #cg .sport { padding: 20px 16px; }
+  #cg .sport__icon { width: 46px; height: 46px; font-size: 22px; margin-bottom: 12px; }
+  #cg .sport h3 { font-size: 15px; }
+  #cg .gallery { grid-template-columns: 1fr; }
+  #cg .cta { padding: 64px 5%; }
+  #cg .cta .btn { width: 100%; }
+  #cg .footer { padding: 48px 5% 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  /* Keep color/opacity feedback, drop movement */
+  #cg *,
+  #cg *::before,
+  #cg *::after { animation: none !important; transform: none !important; }
+}
+
+/* Visually hidden, still read by screen readers */
+#cg .sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Sticky (not fixed) nav: sits below the theme header, respects the admin bar */
+#cg { margin: 0 calc(50% - 50vw) !important; }
+#cg .nav { position: sticky; top: var(--wp-admin--admin-bar--height, 0px); }
+#cg .hero { padding-top: 72px; }
+html { scroll-padding-top: 72px; }
+@media (max-width: 900px) { html { scroll-padding-top: 116px; } }
+@media (max-width: 600px) { #cg .hero { padding-top: 48px; } }
+#cg[data-lang] .lang { display: none; }
+</style>
+
+<div id="cg" data-lang="ru">
+<!-- ===== Navigation ===== -->
+  <header class="nav">
+    <div class="nav__inner">
+      <a href="#top" class="nav__brand">
+        <img src="https://global.yu.edu.kz/wp-content/uploads/2026/02/blue_logo.png" alt="" width="36" height="36">
+        <span>YESSENOV UNIVERSITY</span>
+        <img class="nav__cg" src="https://yu.edu.kz/wp-content/uploads/2026/10/whatsapp-image-2026-10-05-at-11.34.19.jpeg" alt="Caspian Games 2026">
+      </a>
+      <nav class="nav__links" aria-label="Menu">
+        <a href="#about" data-i18n="nav.about">Ойындар туралы</a>
+        <a href="#results" data-i18n="nav.results">Нәтижелер</a>
+        <a href="#news" data-i18n="nav.news">Жаңалықтар</a>
+        <a href="#schedule" data-i18n="nav.schedule">Кесте</a>
+        <a href="#sports" data-i18n="nav.sports">Спорт түрлері</a>
+        <a href="#venues" data-i18n="nav.venues">Орындар</a>
+        <a href="#gallery" data-i18n="nav.gallery">Афишалар</a>
+      </nav>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="kk">KZ</button>
+        <button type="button" data-lang="ru">RU</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Hero ===== -->
+  <section class="hero" id="top">
+    <div class="hero__inner">
+      <div class="hero__text">
+        <div class="hero__logo"><img src="https://yu.edu.kz/wp-content/uploads/2026/10/whatsapp-image-2026-10-05-at-11.34.19.jpeg" alt="Caspian Games 2026"></div>
+        <p class="eyebrow eyebrow--pill" data-i18n="hero.eyebrow">VIII халықаралық студенттік ойындар</p>
+        <h1 class="hero__title" data-i18n="hero.title">Каспий ойындары – 2026</h1>
+        <p class="hero__meta">
+          <span><i class="fa-regular fa-calendar"></i> <span data-i18n="hero.dates">5–9 қазан, 2026</span></span>
+          <span><i class="fa-solid fa-location-dot"></i> <span data-i18n="hero.city">Ақтау, Yessenov University</span></span>
+        </p>
+        <p class="hero__sub" data-i18n="hero.sub">Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері 10 спорт түрі бойынша бақ сынайды.</p>
+        <div class="hero__cta">
+          <a href="#schedule" class="btn btn--accent" data-i18n="hero.cta">Кестені көру</a>
+          <a href="#results" class="btn btn--ghost" data-i18n="hero.cta2">Нәтижелер</a>
+        </div>
+      </div>
+
+      <aside class="hero__panel">
+        <p class="hero__panel-label" id="status-label"></p>
+        <div class="countdown" id="countdown" hidden>
+          <div><b id="cd-d">0</b><span data-i18n="cd.d">күн</span></div>
+          <div><b id="cd-h">00</b><span data-i18n="cd.h">сағат</span></div>
+          <div><b id="cd-m">00</b><span data-i18n="cd.m">минут</span></div>
+          <div><b id="cd-s">00</b><span data-i18n="cd.s">секунд</span></div>
+        </div>
+        <ul class="stats">
+          <li><b>5</b><span data-i18n="stats.countries">ел</span></li>
+          <li><b>10</b><span data-i18n="stats.sports">спорт түрі</span></li>
+          <li><b>9</b><span data-i18n="stats.venues">спорт нысаны</span></li>
+          <li><b>5</b><span data-i18n="stats.days">күн</span></li>
+        </ul>
+        <div class="flags" aria-label="Countries">
+          <span title="Kazakhstan">🇰🇿</span><span title="Azerbaijan">🇦🇿</span><span title="Iran">🇮🇷</span><span title="Russia">🇷🇺</span><span title="Turkmenistan">🇹🇲</span>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ===== About + ceremonies ===== -->
+  <section class="section" id="about">
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow" data-i18n="about.eyebrow">Ойындар туралы</p>
+        <h2 class="section__title" data-i18n="about.title">Каспий маңы жастарының спорт мерекесі</h2>
+      </div>
+      <div class="about">
+        <div class="about__text">
+          <p class="about__lead" data-i18n="about.lead">5–9 қазан аралығында Ақтау қаласында Каспий маңы елдерінің жоғары оқу орындары студенттері арасында VIII халықаралық «Каспий ойындары – 2026» өтеді!</p>
+          <p data-i18n="about.p1">Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері спорттың 10 түрі бойынша бақ сынап, жеңіс пен командалық рухтың жарқын үлгісін көрсетеді.</p>
+          <p><strong data-i18n="about.sportsLabel">Спорт түрлері:</strong> <span data-i18n="about.sports">жеңіл атлетика, волейбол, футзал, баскетбол, жүзу, каратэ-до, бокс, шахмат, киберспорт және самбо.</span></p>
+          <p data-i18n="about.p2">Каспий маңы елдерінің жастарын біріктіретін үлкен спорт мерекесінің куәсі болыңыз!</p>
+        </div>
+        <div class="about__countries" id="countries"></div>
+      </div>
+
+      <div class="ceremonies">
+        <article class="ceremony">
+          <div class="ceremony__date"><b>5</b><span data-i18n="month">қазан</span></div>
+          <div>
+            <h3 data-i18n="cer.open">Ашылу салтанаты</h3>
+            <p class="ceremony__time"><i class="fa-regular fa-clock"></i> 14:00</p>
+            <p class="ceremony__place"><i class="fa-solid fa-location-dot"></i> <span data-i18n="venue.ysc">Yessenov Sports Complex, 32 ш/а</span></p>
+          </div>
+        </article>
+        <article class="ceremony">
+          <div class="ceremony__date"><b>9</b><span data-i18n="month">қазан</span></div>
+          <div>
+            <h3 data-i18n="cer.close">Жабылу салтанаты</h3>
+            <p class="ceremony__time"><i class="fa-regular fa-clock"></i> 17:00</p>
+            <p class="ceremony__place"><i class="fa-solid fa-location-dot"></i> <span data-i18n="venue.ys">Yessenov Stadium, 32 ш/а</span></p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Results dashboard ===== -->
+  <section class="section section--alt" id="results">
+    <div class="wrap">
+      <div class="section__head section__head--row">
+        <div>
+          <p class="eyebrow" data-i18n="res.eyebrow">Тікелей нәтижелер</p>
+          <h2 class="section__title" data-i18n="res.title">Нәтижелер мен медальдар</h2>
+        </div>
+        <p class="updated" id="res-updated" hidden></p>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="dash">
+        <div class="panel">
+          <div class="panel__head">
+            <h3 class="panel__title" data-i18n="res.table">Медаль кестесі</h3>
+            <div class="seg" role="group" id="medal-mode">
+              <button type="button" data-mode="country" aria-pressed="true" data-i18n="res.byCountry">Елдер</button>
+              <button type="button" data-mode="univ" aria-pressed="false" data-i18n="res.byUniv">Университеттер</button>
+            </div>
+          </div>
+          <div id="medal-table"></div>
+        </div>
+        <div class="panel">
+          <div class="panel__head">
+            <h3 class="panel__title" data-i18n="res.bySport">Спорт түрлері бойынша</h3>
+          </div>
+          <div class="results" id="sport-results"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== News (рубрика/тег) ===== -->
+  <section class="section" id="news">
+    <div class="wrap">
+      <div class="section__head section__head--row news__head">
+        <div>
+          <p class="eyebrow" data-i18n="news.eyebrow">Жаңалықтар</p>
+          <h2 class="section__title" data-i18n="news.title">Ойындардың соңғы жаңалықтары</h2>
+        </div>
+        <a class="btn btn--outline" id="news-all" href="#"><span data-i18n="news.allNews">Барлық жаңалықтар</span> →</a>
+      </div>
+      <div class="news__chips" id="news-chips" role="group"></div>
+      <div class="news__grid" id="news-grid"></div>
+    </div>
+  </section>
+
+
+  <!-- ===== Schedule ===== -->
+  <section class="section section--alt" id="schedule">
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow" data-i18n="schedule.eyebrow">Бағдарлама</p>
+        <h2 class="section__title" data-i18n="schedule.title">Жарыстар кестесі</h2>
+        <p class="section__sub" data-i18n="schedule.lead">Күнді таңдаңыз — сол күні өтетін жарыстар көрсетіледі.</p>
+      </div>
+      <div class="days" role="tablist" id="days" aria-label="Days"></div>
+      <div class="timeline" id="timeline" role="tabpanel" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ===== Sports ===== -->
+  <section class="section" id="sports">
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow" data-i18n="sports.eyebrow">10 спорт түрі</p>
+        <h2 class="section__title" data-i18n="sports.title">Спорт түрлері</h2>
+      </div>
+      <div class="sports" id="sports-grid"></div>
+    </div>
+  </section>
+
+  <!-- ===== Venues ===== -->
+  <section class="section section--alt" id="venues">
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow" data-i18n="venues.eyebrow">Ақтау қаласы</p>
+        <h2 class="section__title" data-i18n="venues.title">Өтетін орындар</h2>
+        <p class="section__sub" data-i18n="venues.lead">Картадан ашу үшін нысанды басыңыз.</p>
+      </div>
+      <div class="venues" id="venues-list"></div>
+    </div>
+  </section>
+
+  <!-- ===== Gallery ===== -->
+  <section class="section" id="gallery">
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow" data-i18n="gallery.eyebrow">Медиа</p>
+        <h2 class="section__title" data-i18n="gallery.title">Афишалар</h2>
+      </div>
+      <div class="gallery">
+        <a href="/wp-content/uploads/2026/10/program.jpg" target="_blank" rel="noopener" class="gallery__item gallery__item--wide">
+          <img src="/wp-content/uploads/2026/10/program.jpg" alt="Caspian Games 2026 — program" loading="lazy" width="1226" height="1600">
+        </a>
+        <a href="/wp-content/uploads/2026/10/swimming.jpg" target="_blank" rel="noopener" class="gallery__item">
+          <img src="/wp-content/uploads/2026/10/swimming.jpg" alt="Swimming" loading="lazy" width="1024" height="1280">
+        </a>
+        <a href="/wp-content/uploads/2026/10/basketball.jpg" target="_blank" rel="noopener" class="gallery__item">
+          <img src="/wp-content/uploads/2026/10/basketball.jpg" alt="Basketball" loading="lazy" width="1024" height="1280">
+        </a>
+        <a href="/wp-content/uploads/2026/10/boxing.jpg" target="_blank" rel="noopener" class="gallery__item">
+          <img src="/wp-content/uploads/2026/10/boxing.jpg" alt="Boxing" loading="lazy" width="1024" height="1280">
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA band ===== -->
+  <section class="cta">
+    <div class="wrap cta__inner">
+      <div>
+        <p class="eyebrow" data-i18n="cta.eyebrow">Caspian Games 2026</p>
+        <h2 class="cta__title" data-i18n="cta.title">Трибунаға келіп, студенттерді қолдаңыз!</h2>
+      </div>
+      <a href="#schedule" class="btn btn--white" data-i18n="hero.cta">Кестені көру</a>
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <div class="footer__brand">
+        <img src="https://global.yu.edu.kz/wp-content/uploads/2026/02/blue_logo.png" alt="" width="44" height="44">
+        <div>
+          <b>YESSENOV UNIVERSITY</b>
+          <span data-i18n="footer.games">VIII «Каспий ойындары – 2026»</span>
+        </div>
+      </div>
+      <ul class="footer__contacts">
+        <li><i class="fa-solid fa-phone"></i> <a href="tel:+77292788788">+7 (7292) 788-788</a></li>
+        <li><i class="fa-solid fa-location-dot"></i> <span data-i18n="footer.address">Ақтау, 32 шағын аудан, Yessenov University</span></li>
+        <li><i class="fa-solid fa-globe"></i> <a href="https://yu.edu.kz" target="_blank" rel="noopener">yu.edu.kz</a></li>
+      </ul>
+      <div class="footer__social">
+        <a href="https://www.instagram.com/yessenovuniversity/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="https://www.facebook.com/YessenovUniversity/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+        <a href="https://www.youtube.com/channel/UCxDXjoiLoH0At0nlzqS9Mgg" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+        <a href="https://www.linkedin.com/school/yessenov-university/" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+      </div>
+    </div>
+    <div class="wrap footer__bottom">© 2026 Yessenov University</div>
+  </footer>
+</div>
+
+<script>
+/* =====================================================================
+   НӘТИЖЕЛЕР / РЕЗУЛЬТАТЫ — меняйте только этот блок.
+   updated: когда обновили, например "5.10.2026, 18:30".
+   podium: { place: 1|2|3, name: "Команда или спортсмен", univ: "Университет", country: "kz|az|ir|ru|tm" }
+   status (необязательно): "soon" | "live" | "done".
+   note (необязательно): { kk: "...", ru: "...", en: "..." }
+   ===================================================================== */
+window.CG_RESULTS = {
+  updated: "",
+  sports: {
+    swimming:   { podium: [] },
+    boxing:     { podium: [] },
+    basketball: { podium: [] },
+    volleyball: { podium: [] },
+    athletics:  { podium: [] },
+    futsal:     { podium: [] },
+    chess:      { podium: [] },
+    esports:    { podium: [] },
+    karate:     { podium: [] },
+    sambo:      { podium: [] }
+  }
+};
+</script>
+<script>
+(function () {
+  "use strict";
+
+  var root = document.getElementById("cg");
+  if (!root) return;
+
+  // Aktau time is UTC+5 all year.
+  var TZ_OFFSET_H = 5;
+  var YEAR = 2026;
+  var MONTH = 9; // October (0-based)
+  var DAYS = [5, 6, 7, 8, 9];
+
+  // Ampersand built at runtime: WordPress editors decode HTML entities written in the source.
+  var A = String.fromCharCode(38);
+
+  // ===== Venues =====
+  var VENUES = {
+    ysc: {
+      name: { kk: "Yessenov Sports Complex", ru: "Yessenov Sports Complex", en: "Yessenov Sports Complex" },
+      addr: { kk: "32 шағын аудан", ru: "32 мкр.", en: "32nd Microdistrict" },
+      q: "Yessenov University спорт кешені Ақтау"
+    },
+    ys: {
+      name: { kk: "Yessenov Stadium", ru: "Yessenov Stadium", en: "Yessenov Stadium" },
+      addr: { kk: "32 шағын аудан", ru: "32 мкр.", en: "32nd Microdistrict" },
+      q: "Yessenov University стадион Ақтау"
+    },
+    atrium: {
+      name: { kk: "Yessenov Атриум", ru: "Атриум Yessenov", en: "Yessenov Atrium" },
+      addr: { kk: "32 шағын аудан", ru: "32 мкр.", en: "32nd Microdistrict" },
+      q: "Yessenov University Ақтау"
+    },
+    techno: {
+      name: { kk: "Yessenov Технопарк", ru: "Технопарк Yessenov", en: "Yessenov Technopark" },
+      addr: { kk: "32 шағын аудан", ru: "32 мкр.", en: "32nd Microdistrict" },
+      q: "Yessenov University технопарк Ақтау"
+    },
+    khalyk: {
+      name: { kk: "Халық Арена", ru: "Халык Арена", en: "Khalyk Arena" },
+      addr: { kk: "17 шағын аудан", ru: "17 мкр.", en: "17th Microdistrict" },
+      q: "Халык Арена Актау"
+    },
+    mangystau: {
+      name: { kk: "Маңғыстау Арена", ru: "Мангистау Арена", en: "Mangystau Arena" },
+      addr: { kk: "33 шағын аудан", ru: "33 мкр.", en: "33rd Microdistrict" },
+      q: "Мангистау Арена Актау"
+    },
+    bs: {
+      name: { kk: "BS Arena", ru: "BS Arena", en: "BS Arena" },
+      addr: { kk: "40 шағын аудан", ru: "40 мкр.", en: "40th Microdistrict" },
+      q: "BS Arena Актау"
+    },
+    volna: {
+      name: { kk: "«Волна» спорт кешені", ru: "Спорткомплекс «Волна»", en: "Volna Sports Complex" },
+      addr: { kk: "5 шағын аудан", ru: "5 мкр.", en: "5th Microdistrict" },
+      q: "спорткомплекс Волна Актау"
+    },
+    caspian: {
+      name: { kk: "«Каспий» спорт кешені", ru: "Спорткомплекс «Каспий»", en: "Caspian Sports Complex" },
+      addr: { kk: "4а шағын аудан, 47", ru: "4а мкр., 47", en: "4a Microdistrict, 47" },
+      q: "спорткомплекс Каспий Актау 4а мкр 47"
+    }
+  };
+
+  // ===== Sports (search = word used to find news about the sport) =====
+  var SPORTS = [
+    { id: "swimming",   icon: "🏊", from: 5, to: 5, time: "10:00", venue: "ysc",       name: { kk: "Жүзу", ru: "Плавание", en: "Swimming" },              search: { kk: "Жүзу", ru: "Плаван", en: "Swim" } },
+    { id: "boxing",     icon: "🥊", from: 5, to: 8, time: "10:00", venue: "khalyk",    name: { kk: "Бокс", ru: "Бокс", en: "Boxing" },                    search: { kk: "Бокс", ru: "Бокс", en: "Box" } },
+    { id: "basketball", icon: "🏀", from: 5, to: 6, time: "15:00", venue: "ysc",       name: { kk: "Баскетбол", ru: "Баскетбол", en: "Basketball" },      search: { kk: "Баскетбол", ru: "Баскетбол", en: "Basketball" } },
+    { id: "volleyball", icon: "🏐", from: 6, to: 7, time: "10:00", venue: "mangystau", name: { kk: "Волейбол", ru: "Волейбол", en: "Volleyball" },        search: { kk: "Волейбол", ru: "Волейбол", en: "Volleyball" } },
+    { id: "athletics",  icon: "🏃", from: 6, to: 7, time: "10:00", venue: "ys",        name: { kk: "Жеңіл атлетика", ru: "Лёгкая атлетика", en: "Athletics" }, search: { kk: "атлетика", ru: "атлетик", en: "Athletic" } },
+    { id: "futsal",     icon: "⚽", from: 6, to: 7, time: "10:00", venue: "bs",        name: { kk: "Футзал", ru: "Футзал", en: "Futsal" },                search: { kk: "Футзал", ru: "Футзал", en: "Futsal" } },
+    { id: "chess",      icon: "♟️", from: 6, to: 6, time: "10:00", venue: "atrium",    name: { kk: "Шахмат", ru: "Шахматы", en: "Chess" },                search: { kk: "Шахмат", ru: "Шахмат", en: "Chess" } },
+    { id: "esports",    icon: "🎮", from: 6, to: 6, time: "10:00", venue: "techno",    name: { kk: "Киберспорт", ru: "Киберспорт", en: "E-Sports" },      search: { kk: "Киберспорт", ru: "Киберспорт", en: "sport" } },
+    { id: "karate",     icon: "🥋", from: 8, to: 8, time: "10:00", venue: "volna",     name: { kk: "Каратэ-до", ru: "Каратэ-до", en: "Karate-Do" },       search: { kk: "Каратэ", ru: "Каратэ", en: "Karate" } },
+    { id: "sambo",      icon: "🤼", from: 8, to: 8, time: "10:00", venue: "caspian",   name: { kk: "Самбо", ru: "Самбо", en: "Sambo" },                   search: { kk: "Самбо", ru: "Самбо", en: "Sambo" } }
+  ];
+
+  var CEREMONIES = [
+    { day: 5, time: "14:00", venue: "ysc", key: "cer.open", icon: "🎉" },
+    { day: 9, time: "17:00", venue: "ys",  key: "cer.close", icon: "🏆" }
+  ];
+
+  // ===== Countries =====
+  var COUNTRIES = {
+    kz: { flag: "🇰🇿", name: { kk: "Қазақстан", ru: "Казахстан", en: "Kazakhstan" } },
+    az: { flag: "🇦🇿", name: { kk: "Әзербайжан", ru: "Азербайджан", en: "Azerbaijan" } },
+    ir: { flag: "🇮🇷", name: { kk: "Иран", ru: "Иран", en: "Iran" } },
+    ru: { flag: "🇷🇺", name: { kk: "Ресей", ru: "Россия", en: "Russia" } },
+    tm: { flag: "🇹🇲", name: { kk: "Түрікменстан", ru: "Туркменистан", en: "Turkmenistan" } }
+  };
+
+  // ===== News source per language: tag (or category) slug and the "all news" page =====
+  var NEWS = {
+    kk: { slug: "kaspij-ojyndary", page: "https://yu.edu.kz/kaspij-ojyndary-2026/", locale: "kk-KZ" },
+    ru: { slug: "kaspijskie-igry", page: "https://yu.edu.kz/ru/kaspijskie-igry-2026/", locale: "ru-RU" },
+    en: { slug: "caspian-games",   page: "https://yu.edu.kz/en/caspian-games-2026/", locale: "en-GB" }
+  };
+  var CG_LOGO = "https://yu.edu.kz/wp-content/uploads/2026/10/whatsapp-image-2026-10-05-at-11.34.19.jpeg";
+
+  // ===== Translations =====
+  var I18N = {
+    kk: {
+      "nav.about": "Ойындар туралы", "nav.results": "Нәтижелер", "nav.news": "Жаңалықтар",
+      "nav.schedule": "Кесте", "nav.sports": "Спорт түрлері", "nav.venues": "Орындар", "nav.gallery": "Афишалар",
+      "hero.eyebrow": "VIII халықаралық студенттік ойындар",
+      "hero.title": "Каспий ойындары – 2026", "hero.dates": "5–9 қазан, 2026", "hero.city": "Ақтау, Yessenov University",
+      "hero.sub": "Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері 10 спорт түрі бойынша бақ сынайды.",
+      "hero.cta": "Кестені көру", "hero.cta2": "Нәтижелер",
+      "cd.d": "күн", "cd.h": "сағат", "cd.m": "минут", "cd.s": "секунд",
+      "status.before": "Ашылу салтанатына дейін:",
+      "status.live": "Ойындар жүріп жатыр!",
+      "status.after": "Ойындар аяқталды. Барлық қатысушыларға рахмет!",
+      "stats.countries": "ел", "stats.sports": "спорт түрі", "stats.venues": "спорт нысаны", "stats.days": "күн",
+      "month": "қазан",
+      "about.eyebrow": "Ойындар туралы", "about.title": "Каспий маңы жастарының спорт мерекесі",
+      "about.lead": "5–9 қазан аралығында Ақтау қаласында Каспий маңы елдерінің жоғары оқу орындары студенттері арасында VIII халықаралық «Каспий ойындары – 2026» өтеді!",
+      "about.p1": "Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері спорттың 10 түрі бойынша бақ сынап, жеңіс пен командалық рухтың жарқын үлгісін көрсетеді.",
+      "about.sportsLabel": "Спорт түрлері:",
+      "about.sports": "жеңіл атлетика, волейбол, футзал, баскетбол, жүзу, каратэ-до, бокс, шахмат, киберспорт және самбо.",
+      "about.p2": "Каспий маңы елдерінің жастарын біріктіретін үлкен спорт мерекесінің куәсі болыңыз!",
+      "cer.open": "Ашылу салтанаты", "cer.close": "Жабылу салтанаты",
+      "venue.ysc": "Yessenov Sports Complex, 32 ш/а", "venue.ys": "Yessenov Stadium, 32 ш/а",
+      "res.eyebrow": "Тікелей нәтижелер", "res.title": "Нәтижелер мен медальдар",
+      "res.table": "Медаль кестесі", "res.byCountry": "Елдер", "res.byUniv": "Университеттер",
+      "res.bySport": "Спорт түрлері бойынша", "res.updated": "Жаңартылды:",
+      "kpi.done": "Аяқталған жарыстар", "kpi.medals": "Берілген медальдар", "kpi.leader": "Көшбасшы", "kpi.today": "Бүгін",
+      "kpi.todayHint": "жарыс бүгін өтеді", "kpi.noLeader": "Әзірге жоқ", "kpi.notToday": "Бүгін жарыс жоқ",
+      "col.team": "Команда", "col.g": "Алтын", "col.s": "Күміс", "col.b": "Қола", "col.t": "Барлығы",
+      "st.done": "Аяқталды", "st.live": "Жүріп жатыр", "st.soon": "Алда",
+      "res.empty": "Медальдар жарыстар аяқталғаннан кейін пайда болады.",
+      "res.wait": "Нәтижелер жарыс аяқталғаннан кейін жарияланады.",
+      "news.eyebrow": "Жаңалықтар", "news.title": "Ойындардың соңғы жаңалықтары",
+      "news.all": "Барлығы", "news.allNews": "Барлық жаңалықтар", "news.read": "Толығырақ →",
+      "news.empty": "Бұл тақырып бойынша жаңалықтар әзірге жоқ.", "news.error": "Жаңалықтарды жүктеу мүмкін болмады.",
+      "schedule.eyebrow": "Бағдарлама", "schedule.title": "Жарыстар кестесі",
+      "schedule.lead": "Күнді таңдаңыз — сол күні өтетін жарыстар көрсетіледі.",
+      "sports.eyebrow": "10 спорт түрі", "sports.title": "Спорт түрлері",
+      "venues.eyebrow": "Ақтау қаласы", "venues.title": "Өтетін орындар",
+      "venues.lead": "Картадан ашу үшін нысанды басыңыз.",
+      "gallery.eyebrow": "Медиа", "gallery.title": "Афишалар",
+      "cta.eyebrow": "Caspian Games 2026", "cta.title": "Каспий маңы елдерінің жастарын біріктіретін үлкен спорт мерекесінің куәсі болыңыз!",
+      "footer.games": "VIII «Каспий ойындары – 2026»",
+      "footer.address": "Ақтау, 32 шағын аудан, Yessenov University",
+      "tag.ceremony": "Салтанат", "tag.final": "Соңғы күн", "tag.day": "{n}-күн",
+      "weekdays": ["Жс", "Дс", "Сс", "Ср", "Бс", "Жм", "Сб"]
+    },
+    ru: {
+      "nav.about": "Об Играх", "nav.results": "Результаты", "nav.news": "Новости",
+      "nav.schedule": "Расписание", "nav.sports": "Виды спорта", "nav.venues": "Площадки", "nav.gallery": "Афиши",
+      "hero.eyebrow": "VIII Международные студенческие игры",
+      "hero.title": "Каспийские игры – 2026", "hero.dates": "5–9 октября 2026", "hero.city": "Актау, Yessenov University",
+      "hero.sub": "Студенты вузов Казахстана, Азербайджана, Ирана, России и Туркменистана поборются за победу в 10 видах спорта.",
+      "hero.cta": "Смотреть расписание", "hero.cta2": "Результаты",
+      "cd.d": "дней", "cd.h": "часов", "cd.m": "минут", "cd.s": "секунд",
+      "status.before": "До церемонии открытия:",
+      "status.live": "Игры идут прямо сейчас!",
+      "status.after": "Игры завершены. Спасибо всем участникам!",
+      "stats.countries": "стран", "stats.sports": "видов спорта", "stats.venues": "площадок", "stats.days": "дней",
+      "month": "октября",
+      "about.eyebrow": "Об Играх", "about.title": "Спортивный праздник молодёжи Каспия",
+      "about.lead": "С 5 по 9 октября в Актау пройдут VIII Международные студенческие «Каспийские игры – 2026»!",
+      "about.p1": "Студенты вузов Казахстана, Азербайджана, Ирана, России и Туркменистана встретятся на одной спортивной площадке и поборются за победу в 10 видах спорта.",
+      "about.sportsLabel": "Виды спорта:",
+      "about.sports": "лёгкая атлетика, волейбол, футзал, баскетбол, плавание, каратэ-до, бокс, шахматы, киберспорт и самбо.",
+      "about.p2": "Станьте частью большого спортивного события, объединяющего молодёжь стран Каспийского региона!",
+      "cer.open": "Церемония открытия", "cer.close": "Церемония закрытия",
+      "venue.ysc": "Yessenov Sports Complex, 32 мкр.", "venue.ys": "Yessenov Stadium, 32 мкр.",
+      "res.eyebrow": "Результаты онлайн", "res.title": "Результаты и медали",
+      "res.table": "Медальный зачёт", "res.byCountry": "Страны", "res.byUniv": "Университеты",
+      "res.bySport": "По видам спорта", "res.updated": "Обновлено:",
+      "kpi.done": "Завершено соревнований", "kpi.medals": "Вручено медалей", "kpi.leader": "Лидер", "kpi.today": "Сегодня",
+      "kpi.todayHint": "соревнований сегодня", "kpi.noLeader": "Пока нет", "kpi.notToday": "Сегодня соревнований нет",
+      "col.team": "Команда", "col.g": "Золото", "col.s": "Серебро", "col.b": "Бронза", "col.t": "Всего",
+      "st.done": "Завершено", "st.live": "Идёт", "st.soon": "Впереди",
+      "res.empty": "Медали появятся после завершения соревнований.",
+      "res.wait": "Результаты будут опубликованы после завершения соревнований.",
+      "news.eyebrow": "Новости", "news.title": "Последние новости Игр",
+      "news.all": "Все", "news.allNews": "Все новости", "news.read": "Подробнее →",
+      "news.empty": "Новостей по этой теме пока нет.", "news.error": "Не удалось загрузить новости.",
+      "schedule.eyebrow": "Программа", "schedule.title": "Расписание соревнований",
+      "schedule.lead": "Выберите день — покажем соревнования, которые пройдут в этот день.",
+      "sports.eyebrow": "10 видов спорта", "sports.title": "Виды спорта",
+      "venues.eyebrow": "Город Актау", "venues.title": "Площадки",
+      "venues.lead": "Нажмите на площадку, чтобы открыть её на карте.",
+      "gallery.eyebrow": "Медиа", "gallery.title": "Афиши",
+      "cta.eyebrow": "Caspian Games 2026", "cta.title": "Станьте частью большого спортивного события, объединяющего молодёжь стран Каспийского региона!",
+      "footer.games": "VIII «Каспийские игры – 2026»",
+      "footer.address": "Актау, 32 микрорайон, Yessenov University",
+      "tag.ceremony": "Церемония", "tag.final": "Финальный день", "tag.day": "{n}-й день",
+      "weekdays": ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
+    },
+    en: {
+      "nav.about": "About", "nav.results": "Results", "nav.news": "News",
+      "nav.schedule": "Schedule", "nav.sports": "Sports", "nav.venues": "Venues", "nav.gallery": "Posters",
+      "hero.eyebrow": "VIII International Student Games",
+      "hero.title": "Caspian Games 2026", "hero.dates": "October 5–9, 2026", "hero.city": "Aktau, Yessenov University",
+      "hero.sub": "University students from Kazakhstan, Azerbaijan, Iran, Russia and Turkmenistan compete for victory in 10 sports.",
+      "hero.cta": "View schedule", "hero.cta2": "Results",
+      "cd.d": "days", "cd.h": "hours", "cd.m": "min", "cd.s": "sec",
+      "status.before": "Until the opening ceremony:",
+      "status.live": "The Games are on now!",
+      "status.after": "The Games are over. Thank you to all participants!",
+      "stats.countries": "countries", "stats.sports": "sports", "stats.venues": "venues", "stats.days": "days",
+      "month": "October",
+      "about.eyebrow": "About the Games", "about.title": "A sports festival of Caspian youth",
+      "about.lead": "From October 5 to 9, Aktau hosts the VIII International Student Caspian Games 2026!",
+      "about.p1": "University students from Kazakhstan, Azerbaijan, Iran, Russia and Turkmenistan meet on one sporting stage to compete for victory in 10 sports.",
+      "about.sportsLabel": "Sports:",
+      "about.sports": "athletics, volleyball, futsal, basketball, swimming, karate-do, boxing, chess, e-sports and sambo.",
+      "about.p2": "Be part of a major sporting event that brings together young people from across the Caspian region!",
+      "cer.open": "Opening Ceremony", "cer.close": "Closing Ceremony",
+      "venue.ysc": "Yessenov Sports Complex, 32nd Micr.", "venue.ys": "Yessenov Stadium, 32nd Micr.",
+      "res.eyebrow": "Live results", "res.title": "Results and medals",
+      "res.table": "Medal table", "res.byCountry": "Countries", "res.byUniv": "Universities",
+      "res.bySport": "By sport", "res.updated": "Updated:",
+      "kpi.done": "Events completed", "kpi.medals": "Medals awarded", "kpi.leader": "Leader", "kpi.today": "Today",
+      "kpi.todayHint": "events today", "kpi.noLeader": "None yet", "kpi.notToday": "No events today",
+      "col.team": "Team", "col.g": "Gold", "col.s": "Silver", "col.b": "Bronze", "col.t": "Total",
+      "st.done": "Finished", "st.live": "In progress", "st.soon": "Upcoming",
+      "res.empty": "Medals will appear once events are finished.",
+      "res.wait": "Results will be published after the event.",
+      "news.eyebrow": "News", "news.title": "Latest from the Games",
+      "news.all": "All", "news.allNews": "All news", "news.read": "Read more →",
+      "news.empty": "No news on this topic yet.", "news.error": "Could not load news.",
+      "schedule.eyebrow": "Program", "schedule.title": "Competition schedule",
+      "schedule.lead": "Pick a day to see the competitions held on it.",
+      "sports.eyebrow": "10 sports", "sports.title": "Sports",
+      "venues.eyebrow": "Aktau", "venues.title": "Venues",
+      "venues.lead": "Tap a venue to open it on the map.",
+      "gallery.eyebrow": "Media", "gallery.title": "Posters",
+      "cta.eyebrow": "Caspian Games 2026", "cta.title": "Be part of a major sporting event that brings together the youth of the Caspian region!",
+      "footer.games": "VIII Caspian Games 2026",
+      "footer.address": "Aktau, 32nd Microdistrict, Yessenov University",
+      "tag.ceremony": "Ceremony", "tag.final": "Final day", "tag.day": "Day {n}",
+      "weekdays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    }
+  };
+
+  var LANGS = ["kk", "ru", "en"];
+  var lang = LANGS.indexOf(root.getAttribute("data-lang")) !== -1 ? root.getAttribute("data-lang") : "kk";
+  var selectedDay = null;
+
+  // ===== Helpers =====
+  function $(sel) { return root.querySelector(sel); }
+  function $$(sel) { return Array.prototype.slice.call(root.querySelectorAll(sel)); }
+  function t(key) { return I18N[lang][key]; }
+
+  function esc(s) {
+    return String(s)
+      .split(A).join(A + "amp;")
+      .split("<").join(A + "lt;")
+      .split(">").join(A + "gt;")
+      .split('"').join(A + "quot;");
+  }
+
+  // Date in Aktau for a given day of October 2026 at HH:MM, as a UTC timestamp.
+  function aktauTime(day, hhmm) {
+    var p = hhmm.split(":");
+    return Date.UTC(YEAR, MONTH, day, +p[0] - TZ_OFFSET_H, +p[1]);
+  }
+
+  // Current day-of-month in Aktau if it falls inside the Games, else null.
+  function aktauToday() {
+    var d = new Date(Date.now() + TZ_OFFSET_H * 3600 * 1000);
+    if (d.getUTCFullYear() !== YEAR || d.getUTCMonth() !== MONTH) return null;
+    var day = d.getUTCDate();
+    return DAYS.indexOf(day) !== -1 ? day : null;
+  }
+
+  function dateRange(s) {
+    var m = t("month");
+    if (s.from === s.to) return lang === "en" ? m + " " + s.from : s.from + " " + m;
+    return lang === "en" ? m + " " + s.from + "–" + s.to : s.from + "–" + s.to + " " + m;
+  }
+
+  function venueText(id) {
+    var v = VENUES[id];
+    return v.name[lang] + ", " + v.addr[lang];
+  }
+
+  // ===== Render: static texts =====
+  function applyStatic() {
+    $$("[data-i18n]").forEach(function (el) {
+      var v = t(el.getAttribute("data-i18n"));
+      if (typeof v === "string") el.textContent = v;
+    });
+  }
+
+  // ===== Render: day tabs =====
+  function renderDays() {
+    var today = aktauToday();
+    var wd = t("weekdays");
+    $("#days").innerHTML = DAYS.map(function (d) {
+      var w = wd[new Date(Date.UTC(YEAR, MONTH, d)).getUTCDay()];
+      var cls = "day" + (d === today ? " is-today" : "");
+      var sel = d === selectedDay;
+      return '<button type="button" role="tab" class="' + cls + '" data-day="' + d + '" aria-selected="' + sel +
+        '" aria-controls="timeline" tabindex="' + (sel ? 0 : -1) + '">' +
+        "<b>" + d + "<\/b><span>" + esc(w) + " · " + esc(t("month")) + "<\/span><\/button>";
+    }).join("");
+  }
+
+  // ===== Render: timeline for a day =====
+  function renderTimeline() {
+    var d = selectedDay;
+    var items = [];
+
+    CEREMONIES.forEach(function (c) {
+      if (c.day === d) items.push({ ceremony: true, time: c.time, icon: c.icon, name: t(c.key), venue: c.venue, tag: t("tag.ceremony") });
+    });
+
+    SPORTS.forEach(function (s) {
+      if (d < s.from || d > s.to) return;
+      var tag;
+      if (s.from === s.to) tag = dateRange(s);
+      else if (d === s.to) tag = t("tag.final");
+      else tag = t("tag.day").replace("{n}", d - s.from + 1);
+      items.push({ time: s.time, icon: s.icon, name: s.name[lang], venue: s.venue, tag: tag });
+    });
+
+    items.sort(function (a, b) { return a.time.localeCompare(b.time); });
+
+    $("#timeline").innerHTML = items.map(function (it) {
+      return '<article class="event' + (it.ceremony ? " event--ceremony" : "") + '">' +
+        '<div class="event__time">' + esc(it.time) + "<\/div>" +
+        '<div class="event__icon" aria-hidden="true">' + it.icon + "<\/div>" +
+        '<div class="event__info"><h3 class="event__name">' + esc(it.name) + "<\/h3>" +
+        '<p class="event__venue"><i class="fa-solid fa-location-dot"><\/i>' + esc(venueText(it.venue)) + "<\/p><\/div>" +
+        '<span class="event__tag">' + esc(it.tag) + "<\/span><\/article>";
+    }).join("");
+  }
+
+  // ===== Render: sports grid =====
+  function renderSports() {
+    $("#sports-grid").innerHTML = SPORTS.map(function (s) {
+      return '<article class="sport">' +
+        '<div class="sport__icon" aria-hidden="true">' + s.icon + "<\/div>" +
+        "<h3>" + esc(s.name[lang]) + "<\/h3>" +
+        '<p class="sport__dates">' + esc(dateRange(s)) + "<small>" + esc(s.time) + "<\/small><\/p>" +
+        '<p class="sport__venue">' + esc(venueText(s.venue)) + "<\/p><\/article>";
+    }).join("");
+  }
+
+  // ===== Render: venues =====
+  function renderVenues() {
+    $("#venues-list").innerHTML = Object.keys(VENUES).map(function (id) {
+      var v = VENUES[id];
+      var used = SPORTS.filter(function (s) { return s.venue === id; }).map(function (s) { return s.name[lang]; });
+      CEREMONIES.forEach(function (c) { if (c.venue === id) used.push(t(c.key)); });
+      var url = "https://2gis.kz/aktau/search/" + encodeURIComponent(v.q);
+      return '<a class="venue" href="' + url + '" target="_blank" rel="noopener">' +
+        '<span class="venue__pin" aria-hidden="true"><i class="fa-solid fa-location-dot"><\/i><\/span><div class="venue__body">' +
+        "<h3>" + esc(v.name[lang]) + '<\/h3><p class="venue__addr">' + esc(v.addr[lang]) + "<\/p>" +
+        '<div class="venue__sports">' + used.map(function (n) { return "<span>" + esc(n) + "<\/span>"; }).join("") + "<\/div>" +
+        '<\/div><i class="fa-solid fa-arrow-up-right-from-square venue__go" aria-hidden="true"><\/i><\/a>';
+    }).join("");
+  }
+
+  // ===== Render: countries (About) =====
+  function renderCountries() {
+    $("#countries").innerHTML = Object.keys(COUNTRIES).map(function (c) {
+      var k = COUNTRIES[c];
+      return '<div class="country"><span class="country__flag">' + k.flag + "<\/span>" +
+        '<span class="country__name">' + esc(k.name[lang]) + "<\/span>" +
+        '<span class="country__code">' + c.toUpperCase() + "<\/span><\/div>";
+    }).join("");
+  }
+
+  // ===== Results dashboard =====
+  var DATA = window.CG_RESULTS || { sports: {} };
+  var medalMode = "country";
+  var MEDAL = { 1: "🥇", 2: "🥈", 3: "🥉" };
+
+  function sportResult(s) {
+    var r = DATA.sports[s.id] || {};
+    var podium = (r.podium || []).filter(function (p) { return p ? p.place : false; })
+      .sort(function (a, b) { return a.place - b.place; });
+    var status = r.status;
+    if (!status) {
+      var today = aktauToday();
+      if (podium.length) status = "done";
+      else if (today ? today >= s.from ? today <= s.to : false : false) status = "live";
+      else if (Date.now() > aktauTime(s.to, "23:59")) status = "done";
+      else status = "soon";
+    }
+    return { status: status, podium: podium, note: r.note };
+  }
+
+  function medalRows() {
+    var rows = {};
+    function row(key, label, country) {
+      if (!rows[key]) rows[key] = { key: key, label: label, country: country, g: 0, s: 0, b: 0 };
+      return rows[key];
+    }
+    if (medalMode === "country") {
+      Object.keys(COUNTRIES).forEach(function (c) { row(c, COUNTRIES[c].name[lang], c); });
+    }
+    SPORTS.forEach(function (s) {
+      sportResult(s).podium.forEach(function (p) {
+        var r = medalMode === "country"
+          ? (COUNTRIES[p.country] ? row(p.country, COUNTRIES[p.country].name[lang], p.country) : null)
+          : row(p.univ || p.name, p.univ || p.name, p.country);
+        if (!r) return;
+        if (p.place === 1) r.g++; else if (p.place === 2) r.s++; else if (p.place === 3) r.b++;
+      });
+    });
+    return Object.keys(rows).map(function (k) { return rows[k]; })
+      .sort(function (a, b) { return (b.g - a.g) || (b.s - a.s) || (b.b - a.b) || a.label.localeCompare(b.label); });
+  }
+
+  function renderKpis() {
+    var done = 0, medals = { g: 0, s: 0, b: 0 }, today = aktauToday(), todayCount = 0;
+    SPORTS.forEach(function (s) {
+      var r = sportResult(s);
+      if (r.status === "done") done++;
+      r.podium.forEach(function (p) {
+        if (p.place === 1) medals.g++; else if (p.place === 2) medals.s++; else if (p.place === 3) medals.b++;
+      });
+      if (today) { if (today >= s.from) { if (today <= s.to) todayCount++; } }
+    });
+    var total = medals.g + medals.s + medals.b;
+
+    var saved = medalMode; medalMode = "country";
+    var top = medalRows()[0];
+    medalMode = saved;
+    var hasLeader = top ? (top.g + top.s + top.b) > 0 : false;
+
+    var pct = Math.round(done / SPORTS.length * 100);
+    $("#kpis").innerHTML =
+      '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.done")) + "<\/p>" +
+        '<p class="kpi__value">' + done + "<small> / " + SPORTS.length + "<\/small><\/p>" +
+        '<div class="kpi__bar" role="img" aria-label="' + pct + '%"><span style="width:' + pct + '%"><\/span><\/div><\/div>' +
+      '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.medals")) + "<\/p>" +
+        '<p class="kpi__value">' + total + "<\/p>" +
+        '<p class="kpi__hint"><span class="dot dot--1"><\/span> ' + medals.g + ' · <span class="dot dot--2"><\/span> ' + medals.s +
+        ' · <span class="dot dot--3"><\/span> ' + medals.b + "<\/p><\/div>" +
+      '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.leader")) + "<\/p>" +
+        (hasLeader
+          ? '<p class="kpi__value">' + COUNTRIES[top.key].flag + '<\/p><p class="kpi__hint">' + esc(top.label) + " · " + top.g + " 🥇<\/p>"
+          : '<p class="kpi__value">—<\/p><p class="kpi__hint">' + esc(t("kpi.noLeader")) + "<\/p>") + "<\/div>" +
+      '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.today")) + "<\/p>" +
+        (today
+          ? '<p class="kpi__value">' + todayCount + '<\/p><p class="kpi__hint">' + esc(t("kpi.todayHint")) + "<\/p>"
+          : '<p class="kpi__value">—<\/p><p class="kpi__hint">' + esc(t("kpi.notToday")) + "<\/p>") + "<\/div>";
+
+    var up = $("#res-updated");
+    if (DATA.updated) {
+      up.innerHTML = '<i class="fa-regular fa-clock"><\/i>' + esc(t("res.updated")) + " " + esc(DATA.updated);
+      up.hidden = false;
+    } else {
+      up.hidden = true;
+    }
+  }
+
+  function renderMedalTable() {
+    $$("#medal-mode button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-mode") === medalMode));
+    });
+    var rows = medalRows();
+    var any = rows.some(function (r) { return r.g + r.s + r.b > 0; });
+    if (!any) {
+      if (medalMode === "univ") {
+        $("#medal-table").innerHTML = '<p class="empty"><i class="fa-solid fa-medal"><\/i>' + esc(t("res.empty")) + "<\/p>";
+        return;
+      }
+    }
+    var max = Math.max.apply(null, rows.map(function (r) { return r.g + r.s + r.b; }).concat([1]));
+    var html = '<table class="medals"><thead><tr><th>#<\/th><th>' + esc(t("col.team")) + "<\/th>" +
+      '<th><span class="dot dot--1"><\/span><span class="sr">' + esc(t("col.g")) + "<\/span><\/th>" +
+      '<th><span class="dot dot--2"><\/span><span class="sr">' + esc(t("col.s")) + "<\/span><\/th>" +
+      '<th><span class="dot dot--3"><\/span><span class="sr">' + esc(t("col.b")) + "<\/span><\/th>" +
+      "<th>" + esc(t("col.t")) + "<\/th><\/tr><\/thead><tbody>";
+    rows.forEach(function (r, i) {
+      var tot = r.g + r.s + r.b;
+      var flag = COUNTRIES[r.country] ? COUNTRIES[r.country].flag : "🏳️";
+      var sub = (medalMode === "univ" ? COUNTRIES[r.country] : null) ? "<small>" + esc(COUNTRIES[r.country].name[lang]) + "<\/small>" : "";
+      var bar = tot ? '<div class="medalbar">' +
+        (r.g ? '<i class="g" style="width:' + (r.g / max * 100) + '%"><\/i>' : "") +
+        (r.s ? '<i class="s" style="width:' + (r.s / max * 100) + '%"><\/i>' : "") +
+        (r.b ? '<i class="b" style="width:' + (r.b / max * 100) + '%"><\/i>' : "") + "<\/div>" : "";
+      html += '<tr><td class="rank">' + (tot ? i + 1 : "–") + "<\/td>" +
+        '<td class="team"><span>' + flag + "<\/span>" + esc(r.label) + sub + bar + "<\/td>" +
+        "<td>" + r.g + "<\/td><td>" + r.s + "<\/td><td>" + r.b + '<\/td><td class="total">' + tot + "<\/td><\/tr>";
+    });
+    html += "<\/tbody><\/table>";
+    if (!any) html += '<p class="empty" style="margin-top:16px"><i class="fa-solid fa-medal"><\/i>' + esc(t("res.empty")) + "<\/p>";
+    $("#medal-table").innerHTML = html;
+  }
+
+  function renderSportResults() {
+    var order = { live: 0, done: 1, soon: 2 };
+    var list = SPORTS.map(function (s) { return { s: s, r: sportResult(s) }; })
+      .sort(function (a, b) { return (order[a.r.status] - order[b.r.status]) || (a.s.from - b.s.from); });
+
+    $("#sport-results").innerHTML = list.map(function (x) {
+      var s = x.s, r = x.r;
+      var icon = { done: "fa-circle-check", live: "fa-circle-dot", soon: "fa-clock" }[r.status];
+      var body;
+      if (r.podium.length) {
+        body = '<ol class="podium">' + r.podium.map(function (p) {
+          var c = COUNTRIES[p.country];
+          var two = p.name ? (p.univ ? p.name !== p.univ : false) : false;
+          var who = two ? esc(p.name) + " <small>· " + esc(p.univ) + "<\/small>" : esc(p.name || p.univ || "");
+          return "<li><em>" + (MEDAL[p.place] || "") + "<\/em><b>" + who + "<\/b><span>" + (c ? c.flag : "") + "<\/span><\/li>";
+        }).join("") + "<\/ol>";
+      } else if (r.status !== "soon") {
+        body = '<p class="result__note">' + esc(t("res.wait")) + "<\/p>";
+      } else {
+        body = "";
+      }
+      var note = (r.note ? r.note[lang] : "") ? '<p class="result__note">' + esc(r.note[lang]) + "<\/p>" : "";
+      return '<article class="result"><div class="result__head">' +
+        '<span class="result__icon" aria-hidden="true">' + s.icon + "<\/span>" +
+        '<div><p class="result__name">' + esc(s.name[lang]) + '<\/p><p class="result__when">' + esc(dateRange(s)) + " · " + esc(s.time) + "<\/p><\/div>" +
+        '<span class="status status--' + r.status + '"><i class="fa-solid ' + icon + '"><\/i>' + esc(t("st." + r.status)) + "<\/span>" +
+        "<\/div>" + body + note + "<\/article>";
+    }).join("");
+  }
+
+  function renderResults() {
+    renderKpis();
+    renderMedalTable();
+    renderSportResults();
+  }
+
+  // ===== News (WordPress REST API, tag or category by slug) =====
+  var NEWS_PER = 6;
+  var news = { term: null, sport: "", token: 0 };
+
+  function plain(html) {
+    var d = document.createElement("div");
+    d.innerHTML = html || "";
+    return (d.textContent || "").replace(/\s+/g, " ").trim();
+  }
+  function trimWords(s, n) {
+    var w = s.split(" ");
+    return w.length > n ? w.slice(0, n).join(" ") + "…" : s;
+  }
+  function fmtDate(iso) {
+    try { return new Date(iso).toLocaleDateString(NEWS[lang].locale, { day: "numeric", month: "long", year: "numeric" }); }
+    catch (e) { return iso.slice(0, 10); }
+  }
+  function getJSON(url) {
+    return fetch(url, { credentials: "same-origin" }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status + " " + url);
+      return r.json();
+    });
+  }
+  function wp(path) {
+    return "/wp-json/wp/v2/" + path;
+  }
+
+  function newsCard(p, big) {
+    var m = ((p._embedded || {})["wp:featuredmedia"] || [])[0];
+    var img;
+    if ((m || {}).source_url) {
+      var s = (m.media_details || {}).sizes || {};
+      var src = (s.large || s.medium_large || s.medium || {}).source_url || m.source_url;
+      img = '<img src="' + esc(src) + '" alt="" loading="lazy">';
+    } else {
+      img = '<img class="ncard__logo" src="' + CG_LOGO + '" alt="">';
+    }
+    return '<article class="ncard' + (big ? " ncard--big" : "") + '">' +
+      '<a class="ncard__media" href="' + esc(p.link) + '" tabindex="-1" aria-hidden="true">' + img + "<\/a>" +
+      '<div class="ncard__body">' +
+        '<time class="ncard__date" datetime="' + esc(p.date) + '">' + esc(fmtDate(p.date)) + "<\/time>" +
+        '<h3 class="ncard__title"><a href="' + esc(p.link) + '">' + esc(plain((p.title || {}).rendered)) + "<\/a><\/h3>" +
+        '<p class="ncard__excerpt">' + esc(trimWords(plain((p.excerpt || {}).rendered), big ? 34 : 18)) + "<\/p>" +
+        '<a class="ncard__more" href="' + esc(p.link) + '">' + esc(t("news.read")) + "<\/a>" +
+      "<\/div><\/article>";
+  }
+
+  function renderNewsChips() {
+    var chips = '<button type="button" class="nchip" data-q="" aria-pressed="' + (news.sport === "") + '">' + esc(t("news.all")) + "<\/button>";
+    SPORTS.forEach(function (s) {
+      var q = s.search[lang];
+      chips += '<button type="button" class="nchip" data-q="' + esc(q) + '" aria-pressed="' + (news.sport === q) + '">' +
+        s.icon + " " + esc(s.name[lang]) + "<\/button>";
+    });
+    $("#news-chips").innerHTML = chips;
+    $("#news-all").href = NEWS[lang].page;
+  }
+
+  function loadNews() {
+    var grid = $("#news-grid");
+    var my = ++news.token;
+    grid.innerHTML = '<div class="nskel nskel--big"><\/div><div class="nskel"><\/div><div class="nskel"><\/div>';
+    var q = "posts?" + news.term.tax + "=" + news.term.id + A + "per_page=" + NEWS_PER + A + "_embed=wp:featuredmedia";
+    if (news.sport) q += A + "search=" + encodeURIComponent(news.sport);
+    getJSON(wp(q)).then(function (posts) {
+      if (my !== news.token) return;
+      if (!posts.length) {
+        grid.innerHTML = '<p class="empty"><i class="fa-regular fa-newspaper"><\/i>' + esc(t("news.empty")) + "<\/p>";
+        return;
+      }
+      grid.innerHTML = posts.map(function (p, i) { return newsCard(p, i === 0); }).join("");
+    }).catch(function (e) {
+      if (my !== news.token) return;
+      console.error("[cg news]", e);
+      grid.innerHTML = '<p class="empty">' + esc(t("news.error")) + "<\/p>";
+    });
+  }
+
+  function initNews() {
+    renderNewsChips();
+    var slug = NEWS[lang].slug;
+    getJSON(wp("tags?slug=" + encodeURIComponent(slug)))
+      .then(function (tags) {
+        if (tags.length) return { tax: "tags", id: tags[0].id };
+        return getJSON(wp("categories?slug=" + encodeURIComponent(slug))).then(function (cats) {
+          return cats.length ? { tax: "categories", id: cats[0].id } : null;
+        });
+      })
+      .then(function (term) {
+        if (!term) {
+          $("#news-grid").innerHTML = '<p class="empty">' + esc(t("news.empty")) + "<\/p>";
+          return;
+        }
+        news.term = term;
+        loadNews();
+      })
+      .catch(function (e) {
+        console.error("[cg news]", e);
+        $("#news-grid").innerHTML = '<p class="empty">' + esc(t("news.error")) + "<\/p>";
+      });
+  }
+
+  // ===== Status / countdown =====
+  var OPEN = aktauTime(5, "14:00");
+  var CLOSE_END = aktauTime(9, "20:00");
+  var timer = null;
+
+  function pad(n) { return n < 10 ? "0" + n : String(n); }
+
+  function tick() {
+    var now = Date.now();
+    var label = $("#status-label");
+    var cd = $("#countdown");
+    label.classList.remove("is-live");
+
+    if (now < OPEN) {
+      var diff = Math.floor((OPEN - now) / 1000);
+      label.textContent = t("status.before");
+      cd.hidden = false;
+      $("#cd-d").textContent = Math.floor(diff / 86400);
+      $("#cd-h").textContent = pad(Math.floor(diff % 86400 / 3600));
+      $("#cd-m").textContent = pad(Math.floor(diff % 3600 / 60));
+      $("#cd-s").textContent = pad(diff % 60);
+    } else if (now < CLOSE_END) {
+      label.textContent = t("status.live");
+      label.classList.add("is-live");
+      cd.hidden = true;
+    } else {
+      label.textContent = t("status.after");
+      cd.hidden = true;
+      clearInterval(timer);
+    }
+  }
+
+  // ===== Wiring =====
+  root.addEventListener("click", function (e) {
+    var dayBtn = e.target.closest(".day");
+    if (dayBtn) {
+      selectedDay = +dayBtn.getAttribute("data-day");
+      renderDays();
+      renderTimeline();
+      return;
+    }
+    var modeBtn = e.target.closest("#medal-mode button");
+    if (modeBtn) {
+      medalMode = modeBtn.getAttribute("data-mode");
+      renderMedalTable();
+      return;
+    }
+    var chip = e.target.closest(".nchip");
+    if (chip) {
+      if (!news.term) return;
+      news.sport = chip.getAttribute("data-q");
+      $$(".nchip").forEach(function (b) { b.setAttribute("aria-pressed", String(b === chip)); });
+      loadNews();
+    }
+  });
+
+  // Day tabs: arrow keys / Home / End (WAI-ARIA tabs pattern, roving tabindex)
+  $("#days").addEventListener("keydown", function (e) {
+    var keys = { ArrowLeft: -1, ArrowRight: 1, Home: "first", End: "last" };
+    if (!(e.key in keys)) return;
+    if (!e.target.closest(".day")) return;
+    e.preventDefault();
+    var i = DAYS.indexOf(selectedDay);
+    var k = keys[e.key];
+    i = k === "first" ? 0 : k === "last" ? DAYS.length - 1 : (i + k + DAYS.length) % DAYS.length;
+    selectedDay = DAYS[i];
+    renderDays();
+    renderTimeline();
+    var btn = $('#days [data-day="' + selectedDay + '"]');
+    btn.focus({ preventScroll: true });
+    scrollIntoRow(btn);
+  });
+
+  // Keep an element visible inside a horizontal scroller without moving the page
+  function scrollIntoRow(el) {
+    var row = el.parentElement;
+    var left = el.offsetLeft - row.offsetLeft;
+    if (left < row.scrollLeft || left + el.offsetWidth > row.scrollLeft + row.clientWidth) {
+      row.scrollTo({ left: left - (row.clientWidth - el.offsetWidth) / 2, behavior: "smooth" });
+    }
+  }
+
+  // Scroll-spy: highlight the nav link of the section currently in view
+  var navLinks = $$(".nav__links a");
+  if ("IntersectionObserver" in window) {
+    var visible = {};
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { visible[en.target.id] = en.isIntersecting; });
+      var current = null;
+      navLinks.forEach(function (a) {
+        var id = a.getAttribute("href").slice(1);
+        if (!current) { if (visible[id]) current = a; }
+      });
+      navLinks.forEach(function (a) {
+        if (a === current) a.setAttribute("aria-current", "true");
+        else a.removeAttribute("aria-current");
+      });
+      if (current) scrollIntoRow(current);
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    navLinks.forEach(function (a) {
+      var sec = document.getElementById(a.getAttribute("href").slice(1));
+      if (sec) spy.observe(sec);
+    });
+  }
+
+  selectedDay = aktauToday() || DAYS[0];
+  applyStatic();
+  renderDays();
+  renderTimeline();
+  renderSports();
+  renderVenues();
+  renderCountries();
+  renderResults();
+  initNews();
+  tick();
+  timer = setInterval(tick, 1000);
+})();
+</script>
