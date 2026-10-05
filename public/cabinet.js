@@ -27,6 +27,15 @@ const SKILL_LABEL = {
   letter: "буква", plus: "сложение", minus: "вычитание", write: "письмо",
 };
 
+// Tales (story.js TALES) add their own titles and skill labels.
+(function addTaleLabels() {
+  const tales = typeof TALES !== "undefined" ? TALES : (typeof require === "function" ? require("./story.js").TALES : {});
+  for (const [id, t] of Object.entries(tales || {})) {
+    ACTIVITY_TITLES[id] = `Сказка: ${t.titleRu || t.title}`;
+    for (const [k, v] of Object.entries(t.skills || {})) SKILL_LABEL[k] = v.ru;
+  }
+})();
+
 function activityTitle(id) {
   return ACTIVITY_TITLES[id] || id || "—";
 }

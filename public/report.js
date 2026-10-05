@@ -28,6 +28,14 @@ const SKILL_META = {
   write: { icon: "✏️", name: "Жазу" },
 };
 
+// Tales bring their own skill rows (story.js TALES[...].skills). In the
+// browser TALES is a global from story.js; under tests it is require()'d.
+const TALES_FOR_REPORT = typeof TALES !== "undefined" ? TALES
+  : (typeof require === "function" ? require("./story.js").TALES : {});
+for (const t of Object.values(TALES_FOR_REPORT || {})) {
+  for (const [k, v] of Object.entries(t.skills || {})) SKILL_META[k] = { icon: v.icon, name: v.kk };
+}
+
 // Only the rows this session actually had: summarize() keys `skills` by the
 // activity's own list, so a letter lesson never shows the tale's four rows
 // (all "skipped") and the tale never shows the lesson's.

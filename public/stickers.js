@@ -21,6 +21,18 @@ const STICKER_CATALOG = {
   star: { kk: "Жұлдыз", ru: "Всё с первого раза", img: "/images/sticker-star.svg", hint_kk: "Барлық сұраққа бірден жауап бер" },
 };
 
+// Every tale of story.js TALES earns its own sticker (same id as the
+// activity), shelved right after the fox tale's heroes.
+(function addTaleStickers() {
+  const tales = typeof TALES !== "undefined" ? TALES : (typeof require === "function" ? require("./story.js").TALES : {});
+  const entries = Object.entries(STICKER_CATALOG);
+  const at = entries.findIndex(([id]) => id === "bear") + 1;
+  const taleEntries = Object.entries(tales || {}).filter(([, t]) => t.sticker).map(([id, t]) => [id, t.sticker]);
+  const merged = [...entries.slice(0, at), ...taleEntries, ...entries.slice(at)];
+  for (const k of Object.keys(STICKER_CATALOG)) delete STICKER_CATALOG[k];
+  for (const [k, v] of merged) STICKER_CATALOG[k] = v;
+})();
+
 // Which stickers a finished session earns. `summary` is Session.finish()'s
 // result; a blocked or unfinished run earns nothing — stickers are for
 // getting to the end, never for being judged on the way.

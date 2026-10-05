@@ -63,7 +63,7 @@ const parentBtn = document.getElementById("parentBtn");
 // q_a_), so every NODES[...] lookup below is the same for either.
 const pageParams = new URLSearchParams(location.search);
 const ACTIVITY = ACTIVITIES[pageParams.get("lesson")] || ACTIVITIES.story;
-const NODES = Object.assign({}, STORY, ...Object.values(LETTER_LESSONS).map((l) => l.nodes));
+const NODES = Object.assign({}, STORY, ...Object.values(LETTER_LESSONS).map((l) => l.nodes), ...Object.values(TALES).map((t) => t.nodes));
 
 // --- Gentle mode ----------------------------------------------------------
 // For children with a speech delay / dysarthria / ASD: longer pauses before
@@ -219,6 +219,8 @@ const LESSON_PICTURES = {
   ushaq: { src: "/images/lesson-u/ushaq.svg", kk: "ұшақ", ru: "самолёт" },
   unaidy: { src: "/images/lesson-u/unaidy.svg", kk: "ұнайды", ru: "нравится" },
 };
+// Tale picture cards come with each tale (story.js TALES[...].pictures).
+for (const t of Object.values(TALES)) Object.assign(LESSON_PICTURES, t.pictures || {});
 
 function pictureCardHTML(picId, { kk, ru, choiceId } = {}) {
   const pic = LESSON_PICTURES[picId];
@@ -306,15 +308,18 @@ function renderLessonOverlay(spec) {
     : "";
   // `plus: n` adds a "+" and n more apples after the base row; `minus: n`
   // fades the last n apples out once the row has landed ("the fox ate it").
-  const base = spec.apples || 0;
+  // `items` + `emoji` count anything (bees, stars, balloons); `apples` is the
+  // lessons' original spelling of the same row.
+  const base = spec.items || spec.apples || 0;
+  const icon = spec.emoji || "🍎";
   const step = spec.slow ? 900 : 160;
   const size = "font-size:clamp(34px,9vw,58px);";
   const pop = (i) => (still ? "" : `opacity:0;animation:lessonPop 420ms ${i * step}ms both;`);
   const apple = (i) => {
     const eaten = spec.minus && i >= base - spec.minus;
     const inner = eaten
-      ? `<span style="display:inline-block;${still ? "opacity:.25;filter:grayscale(1);" : `animation:lessonEaten 600ms ${base * step + 500}ms both;`}">🍎</span>`
-      : "🍎";
+      ? `<span style="display:inline-block;${still ? "opacity:.25;filter:grayscale(1);" : `animation:lessonEaten 600ms ${base * step + 500}ms both;`}">${icon}</span>`
+      : icon;
     return `<span style="${size}filter:drop-shadow(0 4px 8px rgba(46,32,19,.35));${pop(i)}">${inner}</span>`;
   };
   let row = Array.from({ length: base }, (_, i) => apple(i)).join("");
@@ -2159,7 +2164,9 @@ document.getElementById("btnAdvance").addEventListener("click", () => {
 // renderState() call in the app already runs inside a click handler;
 // this "Бастау" gate makes the first one no exception.
 function startStateForMemory() {
-  const played = ACTIVITY.kind === "lesson" ? Session.lessonRuns(ACTIVITY.id) : Session.memory().runs;
+  // The fox tale keeps its original counter; every other activity (lessons,
+  // the tales of TALES) has its own under memory().lessons[id].
+  const played = ACTIVITY.id !== "story" ? Session.lessonRuns(ACTIVITY.id) : Session.memory().runs;
   return played > 0 ? ACTIVITY.startAgain : ACTIVITY.start;
 }
 
@@ -2170,9 +2177,10 @@ document.getElementById("startTitle").textContent = ACTIVITY.title;
 document.getElementById("startSubKk").textContent = ACTIVITY.subtitleKk;
 document.getElementById("startSubRu").textContent = ACTIVITY.subtitleRu;
 document.getElementById("endLine").textContent = ACTIVITY.endLineKk;
-if (ACTIVITY.kind === "lesson") {
+if (ACTIVITY.kind === "lesson" || ACTIVITY.kind === "tale") {
   document.title = `Ертегім — ${ACTIVITY.title}`;
-  document.getElementById("startSky")?.classList.add("sky-day"); // a lesson starts in daylight, not at dusk
+  // A lesson starts in daylight, not at dusk; a tale says which it needs.
+  if (ACTIVITY.kind === "lesson" || ACTIVITY.startSky === "day") document.getElementById("startSky")?.classList.add("sky-day");
 }
 if (ACTIVITY.id !== "story") log(`активность из URL: ${ACTIVITY.id} (${ACTIVITY.kind})`);
 

@@ -137,6 +137,126 @@
    "hash": "bac761f9a800"
   },
   {
+   "url": "/audio/bh_bear.wav",
+   "bytes": 234718,
+   "hash": "b696af41a674"
+  },
+  {
+   "url": "/audio/bh_bee.wav",
+   "bytes": 200506,
+   "hash": "78663a9e6c9e"
+  },
+  {
+   "url": "/audio/bh_bees_ok.wav",
+   "bytes": 115368,
+   "hash": "f65d7592cfb3"
+  },
+  {
+   "url": "/audio/bh_bees_reask.wav",
+   "bytes": 95130,
+   "hash": "23c2e6ce807f"
+  },
+  {
+   "url": "/audio/bh_bees_reveal.wav",
+   "bytes": 170450,
+   "hash": "e6b548d97bba"
+  },
+  {
+   "url": "/audio/bh_buzz_ok.wav",
+   "bytes": 156344,
+   "hash": "5005f1999a86"
+  },
+  {
+   "url": "/audio/bh_buzz_reask.wav",
+   "bytes": 98072,
+   "hash": "92b92206b743"
+  },
+  {
+   "url": "/audio/bh_buzz_reveal.wav",
+   "bytes": 161514,
+   "hash": "edbb95eab42a"
+  },
+  {
+   "url": "/audio/bh_end.wav",
+   "bytes": 285562,
+   "hash": "c2ebc1a967b4"
+  },
+  {
+   "url": "/audio/bh_find.wav",
+   "bytes": 198238,
+   "hash": "84ac739233b5"
+  },
+  {
+   "url": "/audio/bh_help_ok.wav",
+   "bytes": 154354,
+   "hash": "eabc9e795f68"
+  },
+  {
+   "url": "/audio/bh_help_reask.wav",
+   "bytes": 148572,
+   "hash": "8f29d5954e6b"
+  },
+  {
+   "url": "/audio/bh_help_reveal.wav",
+   "bytes": 131466,
+   "hash": "257062fa1466"
+  },
+  {
+   "url": "/audio/bh_intro.wav",
+   "bytes": 228012,
+   "hash": "7c1662444480"
+  },
+  {
+   "url": "/audio/bh_intro_again.wav",
+   "bytes": 173826,
+   "hash": "6326df230e6b"
+  },
+  {
+   "url": "/audio/bh_pick_ok.wav",
+   "bytes": 121748,
+   "hash": "b02942de2d55"
+  },
+  {
+   "url": "/audio/bh_pick_other.wav",
+   "bytes": 218662,
+   "hash": "38557ff91b41"
+  },
+  {
+   "url": "/audio/bh_pick_reask.wav",
+   "bytes": 101822,
+   "hash": "345952f3c8a6"
+  },
+  {
+   "url": "/audio/bh_pick_reveal.wav",
+   "bytes": 115580,
+   "hash": "44184acea20d"
+  },
+  {
+   "url": "/audio/bh_share.wav",
+   "bytes": 144096,
+   "hash": "f27eeddf0937"
+  },
+  {
+   "url": "/audio/bh_thanks_ok.wav",
+   "bytes": 119438,
+   "hash": "2c201adf5f70"
+  },
+  {
+   "url": "/audio/bh_thanks_reask.wav",
+   "bytes": 101272,
+   "hash": "7f62b06db7c4"
+  },
+  {
+   "url": "/audio/bh_thanks_reveal.wav",
+   "bytes": 155542,
+   "hash": "80e808731825"
+  },
+  {
+   "url": "/audio/bh_tree.wav",
+   "bytes": 161510,
+   "hash": "36cd1b356eef"
+  },
+  {
    "url": "/audio/cave_arrive.wav",
    "bytes": 103506,
    "hash": "a6498ff21ee2"
@@ -170,6 +290,116 @@
    "url": "/audio/echo_reveal.wav",
    "bytes": 203242,
    "hash": "b048ec9ebb20"
+  },
+  {
+   "url": "/audio/fb_balloons.wav",
+   "bytes": 146466,
+   "hash": "67065f6a06fc"
+  },
+  {
+   "url": "/audio/fb_blow_ok.wav",
+   "bytes": 100422,
+   "hash": "689a5a1e0e62"
+  },
+  {
+   "url": "/audio/fb_blow_reask.wav",
+   "bytes": 122554,
+   "hash": "6f8ac321f351"
+  },
+  {
+   "url": "/audio/fb_blow_reveal.wav",
+   "bytes": 105192,
+   "hash": "9aa9e3b7ea8d"
+  },
+  {
+   "url": "/audio/fb_cake.wav",
+   "bytes": 142216,
+   "hash": "2a914d73d406"
+  },
+  {
+   "url": "/audio/fb_color.wav",
+   "bytes": 94730,
+   "hash": "c14d679b75cc"
+  },
+  {
+   "url": "/audio/fb_congrats_ok.wav",
+   "bytes": 99988,
+   "hash": "b355a977b546"
+  },
+  {
+   "url": "/audio/fb_congrats_reask.wav",
+   "bytes": 114054,
+   "hash": "d956bbec8c0a"
+  },
+  {
+   "url": "/audio/fb_congrats_reveal.wav",
+   "bytes": 152438,
+   "hash": "d2347dc7c737"
+  },
+  {
+   "url": "/audio/fb_count_ok.wav",
+   "bytes": 111784,
+   "hash": "ca2fcae72b83"
+  },
+  {
+   "url": "/audio/fb_count_reask.wav",
+   "bytes": 97078,
+   "hash": "e2f58c261e9f"
+  },
+  {
+   "url": "/audio/fb_count_reveal.wav",
+   "bytes": 183800,
+   "hash": "ad97f66df74b"
+  },
+  {
+   "url": "/audio/fb_end.wav",
+   "bytes": 229950,
+   "hash": "15989f1337df"
+  },
+  {
+   "url": "/audio/fb_gift_ok.wav",
+   "bytes": 116722,
+   "hash": "849717eadbed"
+  },
+  {
+   "url": "/audio/fb_gift_reask.wav",
+   "bytes": 145332,
+   "hash": "35be62fde7ec"
+  },
+  {
+   "url": "/audio/fb_gift_reveal.wav",
+   "bytes": 134802,
+   "hash": "472ce716397d"
+  },
+  {
+   "url": "/audio/fb_intro.wav",
+   "bytes": 153646,
+   "hash": "0d594ea14872"
+  },
+  {
+   "url": "/audio/fb_intro_again.wav",
+   "bytes": 148240,
+   "hash": "4387858ddda0"
+  },
+  {
+   "url": "/audio/fb_pick_ok.wav",
+   "bytes": 82528,
+   "hash": "4683b816df66"
+  },
+  {
+   "url": "/audio/fb_pick_other.wav",
+   "bytes": 146028,
+   "hash": "80bc4ea68fea"
+  },
+  {
+   "url": "/audio/fb_pick_reask.wav",
+   "bytes": 148998,
+   "hash": "e60c8c3bf0df"
+  },
+  {
+   "url": "/audio/fb_pick_reveal.wav",
+   "bytes": 136128,
+   "hash": "3e9c13a1207b"
   },
   {
    "url": "/audio/fork_intro.wav",
@@ -447,6 +677,121 @@
    "hash": "6bb04d399041"
   },
   {
+   "url": "/audio/os_end.wav",
+   "bytes": 268208,
+   "hash": "61cdda50ff32"
+  },
+  {
+   "url": "/audio/os_find.wav",
+   "bytes": 185236,
+   "hash": "4c98466d8712"
+  },
+  {
+   "url": "/audio/os_hello_ok.wav",
+   "bytes": 126592,
+   "hash": "9f3eb4468d04"
+  },
+  {
+   "url": "/audio/os_hello_reask.wav",
+   "bytes": 122562,
+   "hash": "f5f26a4fd007"
+  },
+  {
+   "url": "/audio/os_hello_reveal.wav",
+   "bytes": 160126,
+   "hash": "38f5ac3b4367"
+  },
+  {
+   "url": "/audio/os_hoot.wav",
+   "bytes": 123946,
+   "hash": "c8b9be34ac59"
+  },
+  {
+   "url": "/audio/os_hoot_ok.wav",
+   "bytes": 111116,
+   "hash": "dc4c7fab0d42"
+  },
+  {
+   "url": "/audio/os_hoot_reask.wav",
+   "bytes": 94970,
+   "hash": "0be26d818ae5"
+  },
+  {
+   "url": "/audio/os_hoot_reveal.wav",
+   "bytes": 126438,
+   "hash": "5e78d874a786"
+  },
+  {
+   "url": "/audio/os_intro.wav",
+   "bytes": 231338,
+   "hash": "14e3f90cc744"
+  },
+  {
+   "url": "/audio/os_intro_again.wav",
+   "bytes": 207876,
+   "hash": "fc8b08c972f0"
+  },
+  {
+   "url": "/audio/os_owl.wav",
+   "bytes": 240832,
+   "hash": "1d67e5d61253"
+  },
+  {
+   "url": "/audio/os_pick_ok.wav",
+   "bytes": 159170,
+   "hash": "7b944213f0ed"
+  },
+  {
+   "url": "/audio/os_pick_other.wav",
+   "bytes": 250398,
+   "hash": "e5560598d9f5"
+  },
+  {
+   "url": "/audio/os_pick_reask.wav",
+   "bytes": 127926,
+   "hash": "9f9db0c4a1c7"
+  },
+  {
+   "url": "/audio/os_pick_reveal.wav",
+   "bytes": 90894,
+   "hash": "ebbf1272b267"
+  },
+  {
+   "url": "/audio/os_sky.wav",
+   "bytes": 163842,
+   "hash": "34506356c1dd"
+  },
+  {
+   "url": "/audio/os_stars_ok.wav",
+   "bytes": 102946,
+   "hash": "19deb0915fca"
+  },
+  {
+   "url": "/audio/os_stars_reask.wav",
+   "bytes": 102262,
+   "hash": "cf31a4c2a617"
+  },
+  {
+   "url": "/audio/os_stars_reveal.wav",
+   "bytes": 179814,
+   "hash": "87f69f0e0d46"
+  },
+  {
+   "url": "/audio/os_wish_ok.wav",
+   "bytes": 130426,
+   "hash": "cc6681c64294"
+  },
+  {
+   "url": "/audio/os_wish_reask.wav",
+   "bytes": 170482,
+   "hash": "cd091bb25d56"
+  },
+  {
+   "url": "/audio/os_wish_reveal.wav",
+   "bytes": 163982,
+   "hash": "02ba558503fa"
+  },
+  {
    "url": "/audio/owl_meet.wav",
    "bytes": 272422,
    "hash": "a28cb041ee7c"
@@ -472,6 +817,31 @@
    "hash": "9a25d9d99e15"
   },
   {
+   "url": "/audio/q_bh_bees.wav",
+   "bytes": 90412,
+   "hash": "74da8d721f6d"
+  },
+  {
+   "url": "/audio/q_bh_buzz.wav",
+   "bytes": 103302,
+   "hash": "edb518174a1b"
+  },
+  {
+   "url": "/audio/q_bh_help.wav",
+   "bytes": 162306,
+   "hash": "3286ace84c7b"
+  },
+  {
+   "url": "/audio/q_bh_pick.wav",
+   "bytes": 138256,
+   "hash": "b34fd90042e5"
+  },
+  {
+   "url": "/audio/q_bh_thanks.wav",
+   "bytes": 73700,
+   "hash": "f6984c4287e6"
+  },
+  {
    "url": "/audio/q_count5.wav",
    "bytes": 119218,
    "hash": "4e51334f5b26"
@@ -490,6 +860,31 @@
    "url": "/audio/q_echo_mysyq.wav",
    "bytes": 256524,
    "hash": "ff33e4d06ad5"
+  },
+  {
+   "url": "/audio/q_fb_blow.wav",
+   "bytes": 123668,
+   "hash": "3f69db7f9540"
+  },
+  {
+   "url": "/audio/q_fb_congrats.wav",
+   "bytes": 137698,
+   "hash": "036ed097c5ae"
+  },
+  {
+   "url": "/audio/q_fb_count.wav",
+   "bytes": 96084,
+   "hash": "191c9b203e62"
+  },
+  {
+   "url": "/audio/q_fb_gift.wav",
+   "bytes": 133004,
+   "hash": "5b725eeeb06e"
+  },
+  {
+   "url": "/audio/q_fb_pick.wav",
+   "bytes": 151254,
+   "hash": "73c488d17dd7"
   },
   {
    "url": "/audio/q_fork.wav",
@@ -525,6 +920,31 @@
    "url": "/audio/q_o_toy.wav",
    "bytes": 249860,
    "hash": "5c80648404b0"
+  },
+  {
+   "url": "/audio/q_os_hello.wav",
+   "bytes": 139264,
+   "hash": "fa54c85d51cf"
+  },
+  {
+   "url": "/audio/q_os_hoot.wav",
+   "bytes": 108600,
+   "hash": "53e4842d2ba9"
+  },
+  {
+   "url": "/audio/q_os_pick.wav",
+   "bytes": 197554,
+   "hash": "78695fec870a"
+  },
+  {
+   "url": "/audio/q_os_stars.wav",
+   "bytes": 119814,
+   "hash": "490fa4822d3d"
+  },
+  {
+   "url": "/audio/q_os_wish.wav",
+   "bytes": 240334,
+   "hash": "fea9b9e85512"
   },
   {
    "url": "/audio/q_plus.wav",
@@ -840,6 +1260,41 @@
    "url": "/images/sticker-star.svg",
    "bytes": 717,
    "hash": "56fcb7158353"
+  },
+  {
+   "url": "/images/tales/ai.svg",
+   "bytes": 560,
+   "hash": "558985badac1"
+  },
+  {
+   "url": "/images/tales/ara.svg",
+   "bytes": 1135,
+   "hash": "f02590e022d2"
+  },
+  {
+   "url": "/images/tales/bal.svg",
+   "bytes": 973,
+   "hash": "149e67b0731d"
+  },
+  {
+   "url": "/images/tales/juldyz.svg",
+   "bytes": 697,
+   "hash": "74fce3148d2c"
+  },
+  {
+   "url": "/images/tales/shar-kok.svg",
+   "bytes": 655,
+   "hash": "4f9d696d7d8e"
+  },
+  {
+   "url": "/images/tales/shar-qyzyl.svg",
+   "bytes": 663,
+   "hash": "d4fa19cea987"
+  },
+  {
+   "url": "/images/tales/tort.svg",
+   "bytes": 1449,
+   "hash": "26e75610f4ad"
   }
  ]
 }

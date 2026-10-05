@@ -1094,12 +1094,575 @@ for (const [id, l] of Object.entries(LESSONS)) {
   };
 }
 
+// ---- База сказок (TALES) ---------------------------------------------------
+// Every tale after the first one is DATA here; the engine, the library
+// shelf, stickers, the parent report, the cabinet, the server-side answer
+// picker (lib/tale-forms.js, generated) and the voice-over all read this
+// registry, so a new tale needs no engine change. Node shape is the same as
+// the lessons': narration / question with mode "imitate" | "pick" | "open" |
+// "exact" (+ `count` and an `overlay: { items, emoji }` row to count).
+// Extra per-question field `hint`: the Whisper vocabulary prompt.
+// Ids are prefixed per tale (bh_, os_, fb_ …) and share public/audio/.
+const taleNode = (base, node) => ({ speaker: FOX, character: "fox", ...base, ...node });
+
+// «Аю мен бал» — the bear is hungry; buzz like a bee, count the bees,
+// find the honey, say thank you.
+const bhNode = (node) => taleNode({ bg: "forest" }, node);
+const TALE_BEAR_HONEY = {
+  bh_intro: bhNode({ kind: "narration", pose: "talk",
+    kk: "Сәлем! Бүгін орманда менің досым аюмен кездесеміз. Тыңдашы, біреу күрсініп отыр…",
+    ru: "Привет! Сегодня в лесу мы встретим моего друга медведя. Слышишь, кто-то вздыхает…",
+    next: "bh_bear" }),
+  bh_intro_again: bhNode({ kind: "narration", pose: "talk",
+    kk: "Сен тағы келдің! Аю сені күтіп отыр. Жүр, орманға барайық!",
+    ru: "Ты снова пришёл! Медведь тебя ждёт. Пойдём в лес!",
+    next: "bh_bear" }),
+  bh_bear: bhNode({ kind: "narration", speaker: BEAR, character: "bear", pose: "talk",
+    kk: "Сәлем, балақай! Менің қарным ашты. Мен бал іздеп жүрмін, бірақ таба алмай жүрмін.",
+    ru: "Привет, малыш! Я проголодался. Я ищу мёд, но никак не могу найти.",
+    next: "q_bh_help" }),
+
+  q_bh_help: bhNode({ kind: "question", mode: "open", skill: "bh_help", pose: "talk",
+    kk: "Аюға көмектесейік пе? Айтшы: иә, көмектесемін!",
+    ru: "Поможем медведю? Скажи: да, помогу!",
+    accept: ["иә", "ия", "иа", "көмектесемін", "көмектесейік", "да", "давай", "помогу", "поможем"],
+    hint: "иә, ия, көмектесемін, көмектесейік, да, давай, помогу",
+    criterion:
+      "Лисёнок спрашивает, поможет ли ребёнок медведю. Верно (correct) — любое согласие («иә», «да», «давай», " +
+      "«көмектесемін», «помогу») и вообще любая речь по теме: цель — чтобы ребёнок заговорил. unclear — только " +
+      "тишина или шум без слов.",
+    onCorrect: "bh_help_ok", onReask: "bh_help_reask", onReveal: "bh_help_reveal" }),
+  bh_help_reask: bhNode({ kind: "narration", pose: "confused",
+    kk: "Аю өте мұңды. Оған айтшы: «Иә, көмектесемін!»",
+    ru: "Медведь очень грустит. Скажи ему: «Да, помогу!»",
+    next: "q_bh_help" }),
+  bh_help_reveal: bhNode({ kind: "narration", pose: "think",
+    kk: "Иә, көмектесеміз! Біз бірге бал табамыз!",
+    ru: "Да, поможем! Вместе мы найдём мёд!",
+    next: "bh_bee" }),
+  bh_help_ok: bhNode({ kind: "narration", speaker: BEAR, character: "bear", pose: "happy",
+    kk: "Рақмет, досым! Сен нағыз мейірімді баласың!",
+    ru: "Спасибо, дружок! Ты настоящий добрый малыш!",
+    next: "bh_bee" }),
+
+  bh_bee: bhNode({ kind: "narration", pose: "talk", picture: "ara",
+    kk: "Тыңда! Ара ұшып жүр: ж-ж-ж! Аралар балдың қайда екенін біледі.",
+    ru: "Слушай! Летит пчела: ж-ж-ж! Пчёлы знают, где мёд.",
+    next: "q_bh_buzz" }),
+  q_bh_buzz: bhNode({ kind: "question", mode: "imitate", skill: "bh_buzz", pose: "talk", picture: "ara",
+    kk: "Арадай ызыңдап көрші: ж-ж-ж!",
+    ru: "Пожужжи как пчела: ж-ж-ж!",
+    accept: ["ж", "жж", "жжж", "жу", "жуу", "з", "зз", "ззз", "бзз", "ш", "шш"], acceptPrefix: ["ж", "з"],
+    hint: "ж-ж-ж, жжж, з-з-з, ззз, ара, пчела",
+    criterion:
+      "Ребёнок жужжит как пчела: протяжный звук [ж] («ж-ж-ж»). Засчитывай верным (correct) любое жужжание: " +
+      "«ж», «жжж», «з-з-з», «бзз», а также «ш-ш» — это сказка, а не проверка звука. Тишина или посторонний " +
+      "ответ — unclear.",
+    onCorrect: "bh_buzz_ok", onReask: "bh_buzz_reask", onReveal: "bh_buzz_reveal" }),
+  bh_buzz_reask: bhNode({ kind: "narration", pose: "confused", picture: "ara",
+    kk: "Тістеріңді жұмып, ызыңда: ж-ж-ж!",
+    ru: "Сомкни зубки и пожужжи: ж-ж-ж!",
+    next: "q_bh_buzz" }),
+  bh_buzz_reveal: bhNode({ kind: "narration", pose: "think", picture: "ara",
+    kk: "Ж-ж-ж! Міне, ара осылай ызыңдайды. Жарайсың!",
+    ru: "Ж-ж-ж! Вот так жужжит пчела. Молодец!",
+    next: "bh_tree" }),
+  bh_buzz_ok: bhNode({ kind: "narration", pose: "happy", picture: "ara",
+    kk: "Керемет! Ара сені естіді — ол бізге жол көрсетеді!",
+    ru: "Здорово! Пчела тебя услышала — она покажет нам дорогу!",
+    next: "bh_tree" }),
+
+  bh_tree: bhNode({ kind: "narration", pose: "talk",
+    kk: "Міне, үлкен ағаш! Қара, ағаштың басында аралар ұшып жүр.",
+    ru: "Вот большое дерево! Смотри, у верхушки летают пчёлы.",
+    next: "q_bh_bees" }),
+  q_bh_bees: bhNode({ kind: "question", mode: "exact", skill: "bh_count", count: 3, pose: "talk",
+    overlay: { items: 3, emoji: "🐝" },
+    kk: "Неше ара бар? Санап көрші!",
+    ru: "Сколько пчёл? Посчитай!",
+    hint: "ара, санау, бір, екі, үш, төрт, бес, один, два, три, четыре, пять",
+    criterion:
+      "Правильный ответ — число три (3). Засчитывай верным любое произношение этого числа на казахском («үш») " +
+      "или русском («три», «3»), в том числе счёт вслух, который заканчивается на трёх. Другое число, " +
+      "молчание или посторонний ответ — unclear.",
+    onCorrect: "bh_bees_ok", onReask: "bh_bees_reask", onReveal: "bh_bees_reveal" }),
+  bh_bees_reask: bhNode({ kind: "narration", pose: "confused", overlay: { items: 3, emoji: "🐝" },
+    kk: "Араларды саусағыңмен санап көрші.",
+    ru: "Посчитай пчёл пальчиком.",
+    next: "q_bh_bees" }),
+  bh_bees_reveal: bhNode({ kind: "narration", pose: "think", overlay: { items: 3, emoji: "🐝", slow: true },
+    kk: "Бірге санайық: бір, екі, үш! Үш ара!",
+    ru: "Посчитаем вместе: один, два, три! Три пчелы!",
+    next: "bh_find" }),
+  bh_bees_ok: bhNode({ kind: "narration", pose: "happy", overlay: { items: 3, emoji: "🐝" },
+    kk: "Дұрыс! Үш ара! Сен санауды білесің!",
+    ru: "Правильно! Три пчелы! Ты умеешь считать!",
+    next: "bh_find" }),
+
+  bh_find: bhNode({ kind: "narration", speaker: BEAR, character: "bear", pose: "talk",
+    kk: "Ағаштың түбінде екі нәрсе тұр. Біреуі — бал, екіншісі — алма.",
+    ru: "Под деревом две вещи. Одна — мёд, другая — яблоко.",
+    next: "q_bh_pick" }),
+  q_bh_pick: bhNode({ kind: "question", mode: "pick", skill: "bh_pick", speaker: BEAR, character: "bear", pose: "talk",
+    kk: "Бал қайсысы? Айтшы немесе саусағыңмен көрсет!",
+    ru: "Где мёд? Скажи или покажи пальчиком!",
+    choices: [
+      { id: "bal", kk: "бал", ru: "мёд", picture: "bal", forms: ["бал", "балы", "мёд", "мед", "мёдик", "медик"] },
+      { id: "alma", kk: "алма", ru: "яблоко", picture: "alma", forms: ["алма", "ама", "альма", "яблоко", "ябоко", "яблако"] },
+    ],
+    hint: "бал, алма, мёд, яблоко",
+    criterion:
+      "На экране две картинки: горшочек мёда (бал) и яблоко (алма). Ребёнок должен назвать мёд. " +
+      'Если он сказал «бал»/«мёд» — верни label "correct" и reason ровно "bal". Если «алма»/«яблоко» — ' +
+      'label "correct" и reason ровно "alma" (медведь мягко поправит). Иначе — "unclear".',
+    onAnswer: { bal: "bh_pick_ok" }, onOther: { alma: "bh_pick_other" },
+    onReask: "bh_pick_reask", onReveal: "bh_pick_reveal" }),
+  bh_pick_other: bhNode({ kind: "narration", speaker: BEAR, character: "bear", pose: "talk", picture: "alma",
+    kk: "Бұл — алма. Алма да дәмді! Бірақ мен балды іздеп жүрмін. Бал қайсысы?",
+    ru: "Это яблоко. Яблоко тоже вкусное! Но я ищу мёд. Где мёд?",
+    next: "q_bh_pick" }),
+  bh_pick_reask: bhNode({ kind: "narration", speaker: BEAR, character: "bear", pose: "talk",
+    kk: "Сары, тәтті бал қайда? Көрсетші!",
+    ru: "Где жёлтый сладкий мёд? Покажи!",
+    next: "q_bh_pick" }),
+  bh_pick_reveal: bhNode({ kind: "narration", speaker: BEAR, character: "bear", pose: "happy", picture: "bal",
+    kk: "Міне, бал! Сары, тәтті бал! Рақмет!",
+    ru: "Вот мёд! Жёлтый сладкий мёд! Спасибо!",
+    next: "bh_share" }),
+  bh_pick_ok: bhNode({ kind: "narration", speaker: BEAR, character: "bear", pose: "happy", picture: "bal",
+    kk: "Иә, бұл бал! Сен таптың! Ура!",
+    ru: "Да, это мёд! Ты нашёл! Ура!",
+    next: "bh_share" }),
+
+  bh_share: bhNode({ kind: "narration", pose: "talk", picture: "bal",
+    kk: "Аралар балдарын бөлісті. Оларға рақмет айтайық!",
+    ru: "Пчёлы поделились мёдом. Давай скажем им спасибо!",
+    next: "q_bh_thanks" }),
+  q_bh_thanks: bhNode({ kind: "question", mode: "imitate", skill: "bh_thanks", pose: "talk", picture: "ara",
+    kk: "Араларға айтшы: рақмет!",
+    ru: "Скажи пчёлам: рақмет — спасибо!",
+    accept: ["рақмет", "рахмет", "ракмет", "рахмед", "рахмат", "рақ", "спасибо", "пасиба", "сибо"],
+    hint: "рақмет, рахмет, спасибо",
+    criterion:
+      "Ребёнок благодарит пчёл. Засчитывай верным (correct) «рақмет», «рахмет», «спасибо» и детские " +
+      "искажения («ракмет», «пасиба», «сибо»). Тишина или посторонний ответ — unclear.",
+    onCorrect: "bh_thanks_ok", onReask: "bh_thanks_reask", onReveal: "bh_thanks_reveal" }),
+  bh_thanks_reask: bhNode({ kind: "narration", pose: "confused", picture: "ara",
+    kk: "Ақырын бірге айтайық: рақ-мет!",
+    ru: "Скажем вместе, медленно: рақ-мет!",
+    next: "q_bh_thanks" }),
+  bh_thanks_reveal: bhNode({ kind: "narration", pose: "think",
+    kk: "Рақмет, аралар! Біз әдепті болдық. Жарайсың!",
+    ru: "Спасибо, пчёлы! Мы были вежливыми. Молодец!",
+    next: "bh_end" }),
+  bh_thanks_ok: bhNode({ kind: "narration", pose: "happy",
+    kk: "Қандай әдепті бала! Аралар қуанып қалды!",
+    ru: "Какой вежливый малыш! Пчёлы обрадовались!",
+    next: "bh_end" }),
+
+  bh_end: bhNode({ kind: "narration", speaker: BEAR, character: "bear", pose: "happy", bg: "dawn",
+    kk: "Енді менің балым бар! Сен маған көмектестің. Рақмет, досым! Ертең тағы кел, бірге ойнаймыз!",
+    ru: "Теперь у меня есть мёд! Ты мне помог. Спасибо, дружок! Приходи завтра, поиграем!",
+    next: "parent_report" }),
+};
+
+// «Үкі жұлдыз іздейді» — the owl lost her little star; greet her, hoot
+// «у-у-у», count the stars, find the star, make a wish.
+const osNode = (node) => taleNode({ bg: "night" }, node);
+const TALE_OWL_STAR = {
+  os_intro: osNode({ kind: "narration", pose: "talk",
+    kk: "Сәлем! Қара, түн болды. Аспанда жұлдыздар жарқырап тұр. Бірақ біреу жылап отыр…",
+    ru: "Привет! Смотри, наступила ночь. В небе сияют звёзды. Но кто-то плачет…",
+    next: "os_owl" }),
+  os_intro_again: osNode({ kind: "narration", pose: "talk",
+    kk: "Сен тағы келдің! Үкі сені сағынды. Жүр, түнгі орманға барайық!",
+    ru: "Ты снова пришёл! Совёнок по тебе скучал. Пойдём в ночной лес!",
+    next: "os_owl" }),
+  os_owl: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "confused",
+    kk: "Мен — үкімін. Менің кішкентай жұлдызым аспаннан түсіп кетті. Ол маған жол көрсететін еді…",
+    ru: "Я совёнок. Моя маленькая звёздочка упала с неба. Она показывала мне дорогу…",
+    next: "q_os_hello" }),
+
+  q_os_hello: osNode({ kind: "question", mode: "imitate", skill: "os_hello", pose: "talk",
+    kk: "Үкімен амандасайық. Айтшы: сәлем, үкі!",
+    ru: "Поздороваемся с совёнком. Скажи: сәлем — привет, совёнок!",
+    accept: ["сәлем", "салем", "сәлам", "салам", "сәлеметсіз", "привет", "здравствуй", "здрасте", "прив"],
+    hint: "сәлем, сәлем үкі, сәлеметсіз бе, привет, здравствуй",
+    criterion:
+      "Ребёнок здоровается с совёнком. Засчитывай верным (correct) «сәлем», «салем», «сәлеметсіз бе», " +
+      "«привет», «здравствуй» и детские искажения. Тишина или посторонний ответ — unclear.",
+    onCorrect: "os_hello_ok", onReask: "os_hello_reask", onReveal: "os_hello_reveal" }),
+  os_hello_reask: osNode({ kind: "narration", pose: "confused",
+    kk: "Үкі ұялып тұр. Ақырын айтшы: сә-лем!",
+    ru: "Совёнок стесняется. Скажи тихонько: сә-лем!",
+    next: "q_os_hello" }),
+  os_hello_reveal: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "happy",
+    kk: "Сәлем! Сәлем! Маған дос керек еді. Рақмет!",
+    ru: "Привет! Привет! Мне так нужен был друг. Спасибо!",
+    next: "os_hoot" }),
+  os_hello_ok: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "happy",
+    kk: "Сәлем, досым! Сен келгеніңе қуаныштымын!",
+    ru: "Привет, дружок! Как я рад, что ты пришёл!",
+    next: "os_hoot" }),
+
+  os_hoot: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "talk",
+    kk: "Үкілер түнде бір-бірін былай шақырады: у-у-у!",
+    ru: "Совы ночью зовут друг друга вот так: у-у-у!",
+    next: "q_os_hoot" }),
+  q_os_hoot: osNode({ kind: "question", mode: "imitate", skill: "os_hoot", speaker: OWL, character: "owl", pose: "talk",
+    kk: "Менімен бірге жұлдызды шақыр: у-у-у!",
+    ru: "Позови звёздочку вместе со мной: у-у-у!",
+    accept: ["у", "уу", "ууу", "ұ", "ұұ", "ух", "угу", "уху", "ху"], acceptPrefix: ["у", "ұ"],
+    hint: "у-у-у, ууу, ұ-ұ-ұ, угу, уху",
+    criterion:
+      "Ребёнок кричит как сова: протяжный звук [у] («у-у-у», по-казахски «ұ»). Засчитывай верным (correct) " +
+      "«у», «у-у-у», «угу», «уху», «ху» и любое слово на «у»/«ұ». Тишина или посторонний ответ — unclear.",
+    onCorrect: "os_hoot_ok", onReask: "os_hoot_reask", onReveal: "os_hoot_reveal" }),
+  os_hoot_reask: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "confused",
+    kk: "Ерініңді түтікше қылып созшы: у-у-у!",
+    ru: "Вытяни губы трубочкой: у-у-у!",
+    next: "q_os_hoot" }),
+  os_hoot_reveal: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "think",
+    kk: "У-у-у! Міне, осылай. Жұлдыз бізді естіді!",
+    ru: "У-у-у! Вот так. Звёздочка нас услышала!",
+    next: "os_sky" }),
+  os_hoot_ok: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "happy",
+    kk: "Керемет! Сен нағыз үкі сияқты шақырдың!",
+    ru: "Здорово! Ты позвал совсем как настоящая сова!",
+    next: "os_sky" }),
+
+  os_sky: osNode({ kind: "narration", pose: "talk",
+    kk: "Аспанға қарашы! Жұлдыздар жауап беріп, жарқырай бастады.",
+    ru: "Посмотри на небо! Звёзды откликнулись и засияли.",
+    next: "q_os_stars" }),
+  q_os_stars: osNode({ kind: "question", mode: "exact", skill: "os_count", count: 4, pose: "talk",
+    overlay: { items: 4, emoji: "⭐" },
+    kk: "Аспанда неше жұлдыз бар? Санап көрші!",
+    ru: "Сколько звёзд на небе? Посчитай!",
+    hint: "жұлдыз, санау, бір, екі, үш, төрт, бес, один, два, три, четыре, пять",
+    criterion:
+      "Правильный ответ — число четыре (4). Засчитывай верным любое произношение этого числа на казахском " +
+      "(«төрт») или русском («четыре», «4»), в том числе счёт вслух, который заканчивается на четырёх. Другое " +
+      "число, молчание или посторонний ответ — unclear.",
+    onCorrect: "os_stars_ok", onReask: "os_stars_reask", onReveal: "os_stars_reveal" }),
+  os_stars_reask: osNode({ kind: "narration", pose: "confused", overlay: { items: 4, emoji: "⭐" },
+    kk: "Жұлдыздарды саусағыңмен санап көрші.",
+    ru: "Посчитай звёзды пальчиком.",
+    next: "q_os_stars" }),
+  os_stars_reveal: osNode({ kind: "narration", pose: "think", overlay: { items: 4, emoji: "⭐", slow: true },
+    kk: "Бірге санайық: бір, екі, үш, төрт! Төрт жұлдыз!",
+    ru: "Посчитаем вместе: один, два, три, четыре! Четыре звезды!",
+    next: "os_find" }),
+  os_stars_ok: osNode({ kind: "narration", pose: "happy", overlay: { items: 4, emoji: "⭐" },
+    kk: "Дұрыс! Төрт жұлдыз! Жарайсың!",
+    ru: "Правильно! Четыре звезды! Молодец!",
+    next: "os_find" }),
+
+  os_find: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "think",
+    kk: "Ал менің кішкентай жұлдызым қайда? Шөптің ішінде бірдеңе жарқырап тұр…",
+    ru: "А где моя маленькая звёздочка? В траве что-то блестит…",
+    next: "q_os_pick" }),
+  q_os_pick: osNode({ kind: "question", mode: "pick", skill: "os_pick", speaker: OWL, character: "owl", pose: "talk",
+    kk: "Қара: жұлдыз бен ай. Үкінің жұлдызы қайсысы? Айтшы немесе көрсет!",
+    ru: "Смотри: звёздочка и месяц. Где звёздочка совёнка? Скажи или покажи!",
+    choices: [
+      { id: "juldyz", kk: "жұлдыз", ru: "звёздочка", picture: "juldyz", forms: ["жұлдыз", "жулдыз", "жұлдызым", "жұлдызша", "звезда", "звёздочка", "звездочка", "звезду"] },
+      { id: "ai", kk: "ай", ru: "месяц", picture: "ai", forms: ["ай", "айды", "луна", "луну", "месяц"] },
+    ],
+    hint: "жұлдыз, ай, звезда, звёздочка, луна, месяц",
+    criterion:
+      "На экране две картинки: звёздочка (жұлдыз) и месяц (ай). Ребёнок должен назвать звёздочку. " +
+      'Если он сказал «жұлдыз»/«звезда»/«звёздочка» — верни label "correct" и reason ровно "juldyz". Если ' +
+      '«ай»/«луна»/«месяц» — label "correct" и reason ровно "ai" (совёнок мягко поправит). Иначе — "unclear".',
+    onAnswer: { juldyz: "os_pick_ok" }, onOther: { ai: "os_pick_other" },
+    onReask: "os_pick_reask", onReveal: "os_pick_reveal" }),
+  os_pick_other: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "talk", picture: "ai",
+    kk: "Бұл — ай. Ай үлкен, ол аспанда тұрады. Ал менің жұлдызым кішкентай. Тағы қарашы!",
+    ru: "Это месяц. Он большой и живёт в небе. А моя звёздочка маленькая. Посмотри ещё!",
+    next: "q_os_pick" }),
+  os_pick_reask: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "confused",
+    kk: "Кішкентай, жарқыраған жұлдыз қайда? Көрсетші!",
+    ru: "Где маленькая блестящая звёздочка? Покажи!",
+    next: "q_os_pick" }),
+  os_pick_reveal: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "happy", picture: "juldyz",
+    kk: "Міне, менің жұлдызым! Таптық!",
+    ru: "Вот моя звёздочка! Нашли!",
+    next: "q_os_wish" }),
+  os_pick_ok: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "happy", picture: "juldyz",
+    kk: "Иә, бұл менің жұлдызым! Сен таптың! Рақмет!",
+    ru: "Да, это моя звёздочка! Ты нашёл! Спасибо!",
+    next: "q_os_wish" }),
+
+  q_os_wish: osNode({ kind: "question", mode: "open", skill: "os_wish", speaker: OWL, character: "owl", pose: "talk", picture: "juldyz",
+    kk: "Жұлдыз аспанға қайтар алдында бір тілекті орындайды. Сен не қалайсың? Айтшы!",
+    ru: "Перед тем как вернуться на небо, звёздочка исполнит одно желание. Чего ты хочешь? Скажи!",
+    accept: ["ойыншық", "доп", "мама", "ана", "торт", "ит", "мысық", "собака", "кошка", "машина", "мяч"],
+    hint: "ойыншық, доп, қуыршақ, машина, торт, ит, мысық, игрушка, мяч, собака, кошка",
+    criterion:
+      "Совёнок просит ребёнка загадать желание. Это узел контакта, не проверка: любая речь — correct, " +
+      "включая одно слово («доп», «мама», «торт», «собака»). Только тишина или шум без слов — unclear. Будь щедрым.",
+    onCorrect: "os_wish_ok", onReask: "os_wish_reask", onReveal: "os_wish_reveal" }),
+  os_wish_reask: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "confused", picture: "juldyz",
+    kk: "Ойлашы, не қалайсың? Ойыншық па? Тәтті ме? Айтшы!",
+    ru: "Подумай, чего тебе хочется? Игрушку? Сладкое? Скажи!",
+    next: "q_os_wish" }),
+  os_wish_reveal: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "think", picture: "juldyz",
+    kk: "Мен досымның әрқашан қасымда болғанын қалаймын. Сен сияқты!",
+    ru: "А я хочу, чтобы мой друг всегда был рядом. Как ты!",
+    next: "os_end" }),
+  os_wish_ok: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "happy", picture: "juldyz",
+    kk: "Қандай тамаша тілек! Жұлдыз оны естіді!",
+    ru: "Какое чудесное желание! Звёздочка его услышала!",
+    next: "os_end" }),
+
+  os_end: osNode({ kind: "narration", speaker: OWL, character: "owl", pose: "happy",
+    kk: "Жұлдыз аспанға қайтып, маған тағы жол көрсетіп тұр. Рақмет, досым! Тыныш түн! Ертең тағы кел!",
+    ru: "Звёздочка вернулась на небо и снова светит мне. Спасибо, дружок! Спокойной ночи! Приходи завтра!",
+    next: "parent_report" }),
+};
+
+// «Түлкінің туған күні» — the fox's birthday: congratulate, count the
+// balloons, find the red one, blow out the candles (a breathing exercise),
+// think of a present.
+const fbNode = (node) => taleNode({ bg: "lesson" }, node);
+const TALE_FOX_BIRTHDAY = {
+  fb_intro: fbNode({ kind: "narration", pose: "happy",
+    kk: "Сәлем! Бүгін — менің туған күнім! Мерекеге қош келдің!",
+    ru: "Привет! Сегодня мой день рождения! Добро пожаловать на праздник!",
+    next: "q_fb_congrats" }),
+  fb_intro_again: fbNode({ kind: "narration", pose: "happy",
+    kk: "Сен тағы келдің! Бүгін тағы да мереке жасайық!",
+    ru: "Ты снова пришёл! Давай опять устроим праздник!",
+    next: "q_fb_congrats" }),
+
+  q_fb_congrats: fbNode({ kind: "question", mode: "open", skill: "fb_congrats", pose: "talk",
+    kk: "Мені құттықташы! Айтшы: туған күніңмен!",
+    ru: "Поздравь меня! Скажи: туған күніңмен — с днём рождения!",
+    accept: ["туған", "күніңмен", "құттықтаймын", "поздравляю", "рождения", "рождением"],
+    hint: "туған күніңмен, құттықтаймын, с днём рождения, поздравляю",
+    criterion:
+      "Ребёнок поздравляет лисёнка с днём рождения. Верно (correct) — «туған күніңмен», «құттықтаймын», «с днём " +
+      "рождения», «поздравляю» и вообще любая доброжелательная речь: цель — чтобы ребёнок заговорил. unclear — " +
+      "только тишина или шум без слов.",
+    onCorrect: "fb_congrats_ok", onReask: "fb_congrats_reask", onReveal: "fb_congrats_reveal" }),
+  fb_congrats_reask: fbNode({ kind: "narration", pose: "confused",
+    kk: "Туған күні не айтады? «Туған күніңмен!»",
+    ru: "Что говорят в день рождения? «С днём рождения!»",
+    next: "q_fb_congrats" }),
+  fb_congrats_reveal: fbNode({ kind: "narration", pose: "happy",
+    kk: "«Туған күніңмен!» деп айтамыз. Рақмет, досым!",
+    ru: "Говорят: «С днём рождения!» Спасибо, дружок!",
+    next: "fb_balloons" }),
+  fb_congrats_ok: fbNode({ kind: "narration", pose: "happy",
+    kk: "Рақмет! Қандай жақсы құттықтау!",
+    ru: "Спасибо! Какое хорошее поздравление!",
+    next: "fb_balloons" }),
+
+  fb_balloons: fbNode({ kind: "narration", pose: "talk",
+    kk: "Қара, қандай әдемі шарлар! Достарым маған әкелді.",
+    ru: "Смотри, какие красивые шарики! Мне их принесли друзья.",
+    next: "q_fb_count" }),
+  q_fb_count: fbNode({ kind: "question", mode: "exact", skill: "fb_count", count: 5, pose: "talk",
+    overlay: { items: 5, emoji: "🎈" },
+    kk: "Неше шар бар? Санап көрші!",
+    ru: "Сколько шариков? Посчитай!",
+    hint: "шар, санау, бір, екі, үш, төрт, бес, один, два, три, четыре, пять",
+    criterion:
+      "Правильный ответ — число пять (5). Засчитывай верным любое произношение этого числа на казахском («бес») " +
+      "или русском («пять», «5»), в том числе счёт вслух, который заканчивается на пяти. Другое число, молчание " +
+      "или посторонний ответ — unclear.",
+    onCorrect: "fb_count_ok", onReask: "fb_count_reask", onReveal: "fb_count_reveal" }),
+  fb_count_reask: fbNode({ kind: "narration", pose: "confused", overlay: { items: 5, emoji: "🎈" },
+    kk: "Шарларды саусағыңмен санап көрші.",
+    ru: "Посчитай шарики пальчиком.",
+    next: "q_fb_count" }),
+  fb_count_reveal: fbNode({ kind: "narration", pose: "think", overlay: { items: 5, emoji: "🎈", slow: true },
+    kk: "Бірге санайық: бір, екі, үш, төрт, бес! Бес шар!",
+    ru: "Посчитаем вместе: один, два, три, четыре, пять! Пять шариков!",
+    next: "fb_color" }),
+  fb_count_ok: fbNode({ kind: "narration", pose: "happy", overlay: { items: 5, emoji: "🎈" },
+    kk: "Дұрыс! Бес шар! Сен жақсы санайсың!",
+    ru: "Правильно! Пять шариков! Ты хорошо считаешь!",
+    next: "fb_color" }),
+
+  fb_color: fbNode({ kind: "narration", pose: "talk",
+    kk: "Менің ең сүйікті түсім — қызыл!",
+    ru: "Мой самый любимый цвет — красный!",
+    next: "q_fb_pick" }),
+  q_fb_pick: fbNode({ kind: "question", mode: "pick", skill: "fb_pick", pose: "talk",
+    kk: "Қызыл шар қайсысы? Айтшы немесе саусағыңмен көрсет!",
+    ru: "Где красный шарик? Скажи или покажи пальчиком!",
+    choices: [
+      { id: "qyzyl", kk: "қызыл", ru: "красный", picture: "shar_qyzyl", forms: ["қызыл", "кызыл", "қызылы", "красный", "красненький", "красная"] },
+      { id: "kok", kk: "көк", ru: "синий", picture: "shar_kok", forms: ["көк", "кок", "синий", "голубой", "синенький"] },
+    ],
+    hint: "қызыл, көк, красный, синий, голубой, шар",
+    criterion:
+      "На экране два шарика: красный (қызыл) и синий (көк). Ребёнок должен назвать красный. " +
+      'Если он сказал «қызыл»/«красный» — верни label "correct" и reason ровно "qyzyl". Если «көк»/«синий»/' +
+      '«голубой» — label "correct" и reason ровно "kok" (лисёнок мягко поправит). Иначе — "unclear".',
+    onAnswer: { qyzyl: "fb_pick_ok" }, onOther: { kok: "fb_pick_other" },
+    onReask: "fb_pick_reask", onReveal: "fb_pick_reveal" }),
+  fb_pick_other: fbNode({ kind: "narration", pose: "talk", picture: "shar_kok",
+    kk: "Бұл — көк шар. Көк те әдемі! Ал қызыл шар қайда?",
+    ru: "Это синий шарик. Синий тоже красивый! А где красный?",
+    next: "q_fb_pick" }),
+  fb_pick_reask: fbNode({ kind: "narration", pose: "confused",
+    kk: "Қызыл — алма сияқты түс. Қызыл шарды көрсетші!",
+    ru: "Красный — как яблоко. Покажи красный шарик!",
+    next: "q_fb_pick" }),
+  fb_pick_reveal: fbNode({ kind: "narration", pose: "happy", picture: "shar_qyzyl",
+    kk: "Міне, қызыл шар! Қызыл — менің сүйікті түсім!",
+    ru: "Вот красный шарик! Красный — мой любимый цвет!",
+    next: "fb_cake" }),
+  fb_pick_ok: fbNode({ kind: "narration", pose: "happy", picture: "shar_qyzyl",
+    kk: "Иә, қызыл шар! Жарайсың!",
+    ru: "Да, красный шарик! Молодец!",
+    next: "fb_cake" }),
+
+  fb_cake: fbNode({ kind: "narration", pose: "happy", picture: "tort",
+    kk: "Міне, тәтті торт! Үстінде шамдар жанып тұр.",
+    ru: "Вот сладкий торт! На нём горят свечки.",
+    next: "q_fb_blow" }),
+  q_fb_blow: fbNode({ kind: "question", mode: "imitate", skill: "fb_blow", pose: "talk", picture: "tort",
+    kk: "Шамдарды бірге үрлейік: ф-ф-фу!",
+    ru: "Задуем свечки вместе: ф-ф-фу!",
+    accept: ["фу", "фуу", "ф", "фф", "ффф", "пу", "пуу", "уф", "фух", "ху", "пф"], acceptPrefix: ["ф", "п"],
+    hint: "фу, ф-ф-фу, пу, фух, ху",
+    criterion:
+      "Ребёнок задувает свечи: длинный выдох «ф-ф-фу», «пу-у», «фух», «ху». Это дыхательное упражнение, не " +
+      "проверка слова: засчитывай верным (correct) любой такой выдох или звук. Тишина — unclear.",
+    onCorrect: "fb_blow_ok", onReask: "fb_blow_reask", onReveal: "fb_blow_reveal" }),
+  fb_blow_reask: fbNode({ kind: "narration", pose: "confused", picture: "tort",
+    kk: "Ауаны көп жұтып, қатты үрле: фу-у-у!",
+    ru: "Набери побольше воздуха и подуй сильно: фу-у-у!",
+    next: "q_fb_blow" }),
+  fb_blow_reveal: fbNode({ kind: "narration", pose: "happy",
+    kk: "Фу-у-у! Шамдар сөнді! Жарайсың!",
+    ru: "Фу-у-у! Свечки погасли! Молодец!",
+    next: "q_fb_gift" }),
+  fb_blow_ok: fbNode({ kind: "narration", pose: "happy",
+    kk: "Барлық шам сөнді! Сен өте күштісің!",
+    ru: "Все свечки погасли! Ты такой сильный!",
+    next: "q_fb_gift" }),
+
+  q_fb_gift: fbNode({ kind: "question", mode: "open", skill: "fb_gift", pose: "talk",
+    kk: "Менің туған күніме не сыйлар едің? Айтшы!",
+    ru: "Что бы ты подарил мне на день рождения? Скажи!",
+    accept: ["доп", "мяч", "ойыншық", "гүл", "цветок", "машина", "кітап", "книга", "торт", "алма"],
+    hint: "доп, ойыншық, гүл, машина, кітап, торт, алма, мяч, игрушка, цветок, книга",
+    criterion:
+      "Лисёнок спрашивает, что ребёнок подарил бы ему. Это узел контакта, не проверка: любая речь — correct, " +
+      "включая одно слово («доп», «гүл», «машина», «книга»). Только тишина или шум без слов — unclear. Будь щедрым.",
+    onCorrect: "fb_gift_ok", onReask: "fb_gift_reask", onReveal: "fb_gift_reveal" }),
+  fb_gift_reask: fbNode({ kind: "narration", pose: "confused",
+    kk: "Сыйлық ойлап көрші: доп па? Гүл ме? Айтшы!",
+    ru: "Придумай подарок: мяч? Цветок? Скажи!",
+    next: "q_fb_gift" }),
+  fb_gift_reveal: fbNode({ kind: "narration", pose: "happy",
+    kk: "Маған ең жақсы сыйлық — сенің досым болғаның!",
+    ru: "Мой лучший подарок — что ты мой друг!",
+    next: "fb_end" }),
+  fb_gift_ok: fbNode({ kind: "narration", pose: "happy",
+    kk: "Қандай керемет сыйлық! Рақмет, досым!",
+    ru: "Какой замечательный подарок! Спасибо, дружок!",
+    next: "fb_end" }),
+
+  fb_end: fbNode({ kind: "narration", pose: "happy",
+    kk: "Бұл менің ең жақсы туған күнім болды! Келгеніңе рақмет. Ертең тағы ойнайық!",
+    ru: "Это был мой самый лучший день рождения! Спасибо, что пришёл. Поиграем завтра ещё!",
+    next: "parent_report" }),
+};
+
+// The registry. `skills`: report row (icon + Kazakh name) and the cabinet's
+// Russian label for each question's skill, in the order they are asked.
+// `pictures`: card id → SVG (app.js LESSON_PICTURES picks these up).
+// `sticker`: what finishing the tale earns. `card`: the library shelf.
+const TALES = {
+  "bear-honey": {
+    nodes: TALE_BEAR_HONEY, prefix: "bh", start: "bh_intro", startAgain: "bh_intro_again", end: "bh_end",
+    title: "Аю мен бал", titleRu: "Медведь и мёд",
+    subtitleKk: "Аюға бал табуға көмектес — арадай ызыңда, санап, тауып ал",
+    subtitleRu: "Помоги медведю найти мёд — жужжи, считай, находи",
+    endLineKk: "Аю балын тапты — рақмет саған!",
+    cover: "/images/cover-bear-fullbody.png", theme: "theme-forest",
+    cardDescRu: "Жужжать как пчела «ж-ж-ж», посчитать пчёл, найти мёд, сказать «рақмет».",
+    sticker: { kk: "Бал", ru: "Мёд", img: "/images/tales/bal.svg", hint_kk: "«Аю мен бал» ертегісін өт" },
+    skills: {
+      bh_help: { icon: "🤝", kk: "Көмектесуге келісті", ru: "согласился помочь" },
+      bh_buzz: { icon: "🐝", kk: "Арадай ызыңдады (ж-ж-ж)", ru: "жужжал «ж-ж-ж»" },
+      bh_count: { icon: "🔢", kk: "Араларды санады (3)", ru: "счёт до 3" },
+      bh_pick: { icon: "🍯", kk: "Балды тапты", ru: "нашёл мёд (картинка)" },
+      bh_thanks: { icon: "🙏", kk: "«Рақмет» айтты", ru: "сказал «рақмет»" },
+    },
+    pictures: {
+      ara: { src: "/images/tales/ara.svg", kk: "ара", ru: "пчела" },
+      bal: { src: "/images/tales/bal.svg", kk: "бал", ru: "мёд" },
+    },
+  },
+  "owl-star": {
+    nodes: TALE_OWL_STAR, prefix: "os", start: "os_intro", startAgain: "os_intro_again", end: "os_end",
+    title: "Үкі жұлдыз іздейді", titleRu: "Совёнок ищет звёздочку",
+    subtitleKk: "Үкіге жұлдызын табуға көмектес — амандас, шақыр, сана",
+    subtitleRu: "Помоги совёнку найти звёздочку — здоровайся, зови, считай",
+    endLineKk: "Үкі жұлдызын тапты — тыныш түн!",
+    cover: "/images/cover-owl.png", theme: "theme-dusk",
+    cardDescRu: "Поздороваться «сәлем», позвать по-совиному «у-у-у», посчитать звёзды, загадать желание.",
+    sticker: { kk: "Жұлдызша", ru: "Звёздочка", img: "/images/tales/juldyz.svg", hint_kk: "«Үкі жұлдыз іздейді» ертегісін өт" },
+    skills: {
+      os_hello: { icon: "👋", kk: "«Сәлем» айтты", ru: "поздоровался" },
+      os_hoot: { icon: "🦉", kk: "Үкідей шақырды (у-у-у)", ru: "звал «у-у-у»" },
+      os_count: { icon: "🔢", kk: "Жұлдыздарды санады (4)", ru: "счёт до 4" },
+      os_pick: { icon: "⭐", kk: "Жұлдызды тапты", ru: "нашёл звёздочку (картинка)" },
+      os_wish: { icon: "💛", kk: "Тілек айтты", ru: "загадал желание" },
+    },
+    pictures: {
+      juldyz: { src: "/images/tales/juldyz.svg", kk: "жұлдыз", ru: "звёздочка" },
+      ai: { src: "/images/tales/ai.svg", kk: "ай", ru: "месяц" },
+    },
+  },
+  "fox-birthday": {
+    nodes: TALE_FOX_BIRTHDAY, prefix: "fb", start: "fb_intro", startAgain: "fb_intro_again", end: "fb_end",
+    title: "Түлкінің туған күні", titleRu: "День рождения лисёнка",
+    subtitleKk: "Түлкіні құттықта — шарларды сана, шамдарды үрле",
+    subtitleRu: "Поздравь лисёнка — считай шарики, задувай свечки",
+    endLineKk: "Ең жақсы туған күн болды!",
+    cover: "/images/fox-happy.png", theme: "theme-sun", startSky: "day",
+    cardDescRu: "Поздравить лисёнка, посчитать шарики, найти красный, задуть свечки «ф-ф-фу» — упражнение на выдох.",
+    sticker: { kk: "Торт", ru: "Торт", img: "/images/tales/tort.svg", hint_kk: "«Түлкінің туған күні» ертегісін өт" },
+    skills: {
+      fb_congrats: { icon: "🎉", kk: "Құттықтады", ru: "поздравил" },
+      fb_count: { icon: "🔢", kk: "Шарларды санады (5)", ru: "счёт до 5" },
+      fb_pick: { icon: "🎈", kk: "Қызыл шарды тапты", ru: "нашёл красный (картинка)" },
+      fb_blow: { icon: "🕯️", kk: "Шамдарды үрледі (ф-ф-фу)", ru: "выдох «ф-ф-фу»" },
+      fb_gift: { icon: "🎁", kk: "Сыйлық ойлады", ru: "придумал подарок" },
+    },
+    pictures: {
+      shar_qyzyl: { src: "/images/tales/shar-qyzyl.svg", kk: "қызыл", ru: "красный" },
+      shar_kok: { src: "/images/tales/shar-kok.svg", kk: "көк", ru: "синий" },
+      tort: { src: "/images/tales/tort.svg", kk: "торт", ru: "торт" },
+    },
+  },
+};
+
+for (const [id, t] of Object.entries(TALES)) {
+  ACTIVITIES[id] = {
+    id, kind: "tale",
+    start: t.start, startAgain: t.startAgain,
+    finalIds: new Set([t.end, "parent_report"]), limitTarget: t.end,
+    skills: Object.keys(t.skills),
+    gentle: false,
+    title: t.title, subtitleKk: t.subtitleKk, subtitleRu: t.subtitleRu,
+    endLineKk: t.endLineKk, cover: t.cover, startSky: t.startSky || null,
+  };
+}
+
 if (typeof module !== "undefined") {
   module.exports = {
     STORY, START_STATE, START_STATE_AGAIN, FINAL_IDS, LESSONS, NUM_KK, NUM_RU, BROTHER_NAMES, trackLines, echoLines,
     LESSON_A, ACTIVITIES, LESSON_A_SOUND_FORMS, LESSON_A_ALMA_FORMS, LESSON_A_PICK_FORMS, LESSON_A_ANA_FORMS,
     LESSON_O, LESSON_O_SOUND_FORMS, LESSON_O_OT_FORMS, LESSON_O_PICK_FORMS,
     LESSON_U, LESSON_U_SOUND_FORMS, LESSON_U_USHAQ_FORMS, LESSON_U_PICK_FORMS,
-    LETTER_LESSONS,
+    LETTER_LESSONS, TALES,
   };
 }

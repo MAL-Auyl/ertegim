@@ -3,7 +3,7 @@
 // synthesise. story.js is a classic browser script with a module.exports
 // tail, so a plain require() works here.
 const path = require("path");
-const { STORY, LETTER_LESSONS, trackLines, echoLines, BROTHER_NAMES } = require(path.join(__dirname, "..", "public", "story.js"));
+const { STORY, LETTER_LESSONS, TALES, trackLines, echoLines, BROTHER_NAMES } = require(path.join(__dirname, "..", "public", "story.js"));
 
 const out = {};
 for (const [id, node] of Object.entries(STORY)) {
@@ -15,6 +15,12 @@ for (const [id, node] of Object.entries(STORY)) {
 // share the flat public/audio/ directory with the tale without collisions.
 for (const lesson of Object.values(LETTER_LESSONS)) {
   for (const [id, node] of Object.entries(lesson.nodes)) {
+    if (node.kk) out[id] = node.kk;
+  }
+}
+// Tales (TALES): same flat directory, prefixed ids (bh_*, os_*, fb_* …).
+for (const tale of Object.values(TALES)) {
+  for (const [id, node] of Object.entries(tale.nodes)) {
     if (node.kk) out[id] = node.kk;
   }
 }
