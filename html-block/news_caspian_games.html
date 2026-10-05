@@ -1,7 +1,10 @@
 <!-- Yessenov University · Caspian Games 2026 · блок новостей (KK)
-     Woody: сниппет типа HTML (или блок «Произвольный HTML»).
-     Работает вместе с JS-сниппетом news_caspian_games.js (один на весь сайт). -->
+     Вставка: Custom HTML блок. Новости по ярлыку «kaspij-ojyndary» (тег, если нет — рубрика).
+     Настройки у <section>: data-count="6" · data-slug="..." · data-api="/?rest_route=/wp/v2/" (если нет «красивых» ссылок) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
 <style>
 .yucgn{--n:#0b2a5b;--b:#0b3d91;--a:#00aaff;--g:#f59e0b;--l:#f0f5fb;--t:#1a2a3a;--m:#64748b;--d:#94a3b8;--bd:#dde6f0;
   --ease:cubic-bezier(.4,0,.2,1);--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
@@ -9,6 +12,7 @@
   color:var(--t);background:#fff;padding:96px 6%;line-height:1.7;-webkit-font-smoothing:antialiased}
 .yucgn *,.yucgn *::before,.yucgn *::after{box-sizing:border-box}
 .yucgn-wrap{max-width:1240px;margin:0 auto}
+
 /* ===== Section head: eyebrow + title + sub ===== */
 .yucgn-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px 40px;margin-bottom:48px}
 .yucgn-eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono)!important;font-size:11px!important;font-weight:700!important;
@@ -19,6 +23,7 @@
 .yucgn-sub{font-size:16px;color:var(--m);max-width:520px;line-height:1.75;margin:0!important}
 .yucgn-sub b{color:var(--g);font-weight:700}
 .yucgn-actions{display:flex;flex-wrap:wrap;gap:14px}
+
 .yucgn-btn{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono)!important;font-size:13px!important;font-weight:700!important;
   line-height:1.2!important;padding:14px 32px;border-radius:8px;text-decoration:none!important;transition:all .3s var(--ease);white-space:nowrap}
 .yucgn-btn--primary{background:var(--n)!important;color:#fff!important;border:1.5px solid var(--n)}
@@ -26,6 +31,7 @@
 .yucgn-btn--outline{background:transparent!important;color:var(--n)!important;border:1.5px solid var(--n)}
 .yucgn-btn--outline:hover{background:var(--l)!important}
 .yucgn-btn[hidden]{display:none!important}
+
 /* ===== Grid ===== */
 .yucgn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
 .yucgn-card{display:flex;flex-direction:column;background:#fff;border:1px solid var(--bd);border-radius:16px;overflow:hidden;
@@ -39,6 +45,7 @@
 .yucgn-ph img{width:96px!important;height:auto!important;object-fit:contain;filter:brightness(0) invert(1);opacity:.9}
 .yucgn-tag{position:absolute;left:16px;top:16px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
   color:#fff;background:rgba(11,42,91,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:5px 10px;border-radius:4px}
+
 .yucgn-body{display:flex;flex-direction:column;gap:12px;padding:24px 26px 28px;flex:1}
 .yucgn-date{align-self:flex-start;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--n);
   background:var(--l);border:1px solid var(--bd);border-radius:6px;padding:4px 10px}
@@ -48,29 +55,118 @@
 .yucgn-excerpt{font-size:14px;line-height:1.7;color:var(--m);margin:0!important}
 .yucgn-more{margin-top:auto;padding-top:6px;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--a)!important;text-decoration:none!important;letter-spacing:.04em}
 .yucgn-more:hover{color:var(--n)!important}
+
 .yucgn-empty{padding:40px 24px;text-align:center;border:1px dashed var(--bd);border-radius:16px;color:var(--m);background:var(--l);margin:0}
+
 .yucgn-skel{min-height:380px;border:1px solid var(--bd);border-radius:16px;
   background:linear-gradient(90deg,var(--l) 25%,#f8fbfe 50%,var(--l) 75%);background-size:200% 100%;animation:yucgn-sh 1.2s infinite}
 @keyframes yucgn-sh{to{background-position:-200% 0}}
+
 /* ===== Responsive ===== */
 @media (max-width:900px){.yucgn-grid{grid-template-columns:repeat(2,1fr);gap:20px}}
 @media (max-width:768px){.yucgn-grid{grid-template-columns:1fr}.yucgn-skel:nth-child(n+2){display:none}}
 @media (max-width:600px){.yucgn{padding:72px 5%}.yucgn-head{margin-bottom:32px}.yucgn-actions{width:100%}.yucgn-btn{flex:1;justify-content:center;padding:14px 18px}}
 @media (prefers-reduced-motion:reduce){.yucgn *{transition:none!important;animation:none!important}}
 </style>
-<section class="yucgn" data-lang="kk" data-slug="kaspij-ojyndary" data-count="6">
-<div class="yucgn-wrap">
-<header class="yucgn-head">
-<div>
-<p class="yucgn-eyebrow">VIII халықаралық студенттік ойындар</p>
-<h2 class="yucgn-title">Каспий ойындары – 2026</h2>
-<p class="yucgn-sub"><b>5–9 қазан · Ақтау.</b> Каспий маңы елдерінің студенттері 10 спорт түрі бойынша бақ сынайды. Ойындардың соңғы жаңалықтары.</p>
-</div>
-<div class="yucgn-actions">
-<a class="yucgn-btn yucgn-btn--outline" href="#" hidden>Барлық жаңалықтар</a>
-<a class="yucgn-btn yucgn-btn--primary" href="https://sport.yu.edu.kz/?lang=kk" target="_blank" rel="noopener">Ойындар сайты →</a>
-</div>
-</header>
-<div class="yucgn-grid"><div class="yucgn-skel"></div><div class="yucgn-skel"></div><div class="yucgn-skel"></div></div>
-</div>
+
+<section class="yucgn" id="yucgn-kk" data-slug="kaspij-ojyndary" data-count="6">
+  <div class="yucgn-wrap">
+    <header class="yucgn-head">
+      <div>
+        <p class="yucgn-eyebrow">VIII халықаралық студенттік ойындар</p>
+        <h2 class="yucgn-title">Каспий ойындары – 2026</h2>
+        <p class="yucgn-sub"><b>5–9 қазан · Ақтау.</b> Каспий маңы елдерінің студенттері 10 спорт түрі бойынша бақ сынайды. Ойындардың соңғы жаңалықтары.</p>
+      </div>
+      <div class="yucgn-actions">
+        <a class="yucgn-btn yucgn-btn--outline" href="#" hidden>Барлық жаңалықтар</a>
+      </div>
+    </header>
+    <div class="yucgn-grid">
+      <div class="yucgn-skel"></div><div class="yucgn-skel"></div><div class="yucgn-skel"></div>
+    </div>
+  </div>
 </section>
+
+<script>
+(function () {
+  var root = document.getElementById("yucgn-kk");
+  if (!root) return;
+  var API = root.getAttribute("data-api") || "/wp-json/wp/v2/";
+  var COUNT = parseInt(root.getAttribute("data-count"), 10) || 6;
+  var SLUG = root.getAttribute("data-slug");
+  var T = {"locale": "kk-KZ", "read": "Толығырақ →", "tag": "Caspian Games", "empty": "Жаңалықтар әзірге жоқ.", "error": "Жаңалықтарды жүктеу мүмкін болмады."};
+  var LOGO = "https://global.yu.edu.kz/wp-content/uploads/2026/02/blue_logo.png";
+
+  var grid = root.querySelector(".yucgn-grid");
+  var moreBtn = root.querySelector(".yucgn-btn--outline");
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function text(html) {
+    var d = document.createElement("div");
+    d.innerHTML = html || "";
+    return (d.textContent || "").replace(/\s+/g, " ").trim();
+  }
+  function trimWords(s, n) {
+    var w = s.split(" ");
+    return w.length > n ? w.slice(0, n).join(" ") + "…" : s;
+  }
+  function fmtDate(iso) {
+    try { return new Date(iso).toLocaleDateString(T.locale, { day: "numeric", month: "long", year: "numeric" }); }
+    catch (e) { return iso.slice(0, 10); }
+  }
+  function getJSON(url) {
+    return fetch(url, { credentials: "same-origin" }).then(function (r) {
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    });
+  }
+  function api(path) {
+    return API + path.replace("?", API.indexOf("?") === -1 ? "?" : "&");
+  }
+  function message(msg) {
+    grid.outerHTML = '<p class="yucgn-empty">' + esc(msg) + "</p>";
+  }
+
+  getJSON(api("tags?slug=" + encodeURIComponent(SLUG)))
+    .then(function (tags) {
+      if (tags.length) return { tax: "tags", term: tags[0] };
+      return getJSON(api("categories?slug=" + encodeURIComponent(SLUG))).then(function (cats) {
+        return cats.length ? { tax: "categories", term: cats[0] } : null;
+      });
+    })
+    .then(function (found) {
+      if (!found) return [];
+      moreBtn.href = found.term.link;
+      moreBtn.hidden = false;
+      return getJSON(api("posts?" + found.tax + "=" + found.term.id + "&per_page=" + COUNT + "&_embed=wp:featuredmedia"));
+    })
+    .then(function (posts) {
+      if (!posts.length) return message(T.empty);
+      grid.innerHTML = posts.map(function (p) {
+        var m = p._embedded && p._embedded["wp:featuredmedia"] && p._embedded["wp:featuredmedia"][0];
+        var img;
+        if (m && m.source_url) {
+          var s = (m.media_details && m.media_details.sizes) || {};
+          var src = (s.medium_large || s.large || s.medium || {}).source_url || m.source_url;
+          img = '<img src="' + esc(src) + '" alt="" loading="lazy">';
+        } else {
+          img = '<span class="yucgn-ph"><img src="' + LOGO + '" alt=""></span>';
+        }
+        return '<article class="yucgn-card">' +
+          '<a class="yucgn-media" href="' + esc(p.link) + '" tabindex="-1" aria-hidden="true">' + img +
+            '<span class="yucgn-tag">' + esc(T.tag) + "</span></a>" +
+          '<div class="yucgn-body">' +
+            '<time class="yucgn-date" datetime="' + esc(p.date) + '">' + esc(fmtDate(p.date)) + "</time>" +
+            '<h3><a href="' + esc(p.link) + '">' + esc(text(p.title && p.title.rendered)) + "</a></h3>" +
+            '<p class="yucgn-excerpt">' + esc(trimWords(text(p.excerpt && p.excerpt.rendered), 20)) + "</p>" +
+            '<a class="yucgn-more" href="' + esc(p.link) + '">' + esc(T.read) + "</a>" +
+          "</div></article>";
+      }).join("");
+    })
+    .catch(function () { message(T.error); });
+})();
+</script>
