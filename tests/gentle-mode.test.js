@@ -78,5 +78,13 @@ test("a tapped picture card is a full answer with source \"tap\" and no mic", ()
 test("a line with no audio at all is held for reading time instead of flashing past", () => {
   expect(SRC).toMatch(/function readingTimeMs/);
   const speak = SRC.slice(SRC.indexOf("async function speakLine"), SRC.indexOf("let mediaRecorder"));
-  expect(speak.match(/await sleep\(readingTimeMs\(text\)\)/g)?.length).toBe(2);
+  expect(speak.match(/await sleep\(readingTimeMs\(text\)\)/g)?.length).toBe(1);
+});
+
+test("a line plays its pre-rendered file first, live synthesis only without one", () => {
+  const speak = SRC.slice(SRC.indexOf("async function speakLine"), SRC.indexOf("let mediaRecorder"));
+  const file = speak.indexOf("playClip(`/audio/${stateId}.wav`");
+  const live = speak.indexOf("speakLive(text");
+  expect(file).toBeGreaterThan(0);
+  expect(live).toBeGreaterThan(file);
 });

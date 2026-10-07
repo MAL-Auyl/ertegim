@@ -661,10 +661,13 @@ function awaitLineEnd() {
   });
 }
 
-// Next Steps #7: pre-rendered fallback audio (tools/prerender.py output,
-// served from /audio/<stateId>.wav) — stage-risk hedge in case live Piper
-// or the request itself lags. Live call gets a short leash (2.5s); on any
-// failure or timeout we fall back to the static file for that state.
+// Every line plays its pre-rendered file first (public/audio/<stateId>.wav —
+// Piper via tools/prerender.py, or per-hero VoiceStudio voices via
+// tools/prerender_voicestudio.py). Live Piper (/api/speak, local server
+// only) is the fallback for a line with no file yet; with neither, the text
+// stays up for its reading time. File-first means the voices chosen for the
+// heroes are what the child hears everywhere — not only on the deployed site
+// where /api/speak does not exist — and no line waits on a synthesis call.
 // The echo only ever starts on heroVoice's `ended` event. If the line
 // finished on its leash instead (broken blob, stalled element), the echo will
 // never play — settle it right away rather than waiting out its own leash.
@@ -698,6 +701,35 @@ function stopEchoPlayback() {
 
 // Awaits the echo too when the node has one: the resolved promise means
 // "the fox has stopped making noise", which is what arming the mic waits on.
+async function playClip(src, echo) {
+  heroVoice.src = src;
+  const echoDone = echo && ECHO_IDS.has(currentId) ? scheduleEcho(heroVoice.src) : null;
+  // play() can hang indefinitely instead of rejecting in some browser/
+  // automation contexts — never let audio playback stall the demo.
+  await playWithTimeout(3000);
+  await awaitLineEnd();
+  await settleEcho(echoDone);
+}
+
+async function speakLive(text, echo) {
+  const controller = new AbortController();
+  const abortTimer = setTimeout(() => controller.abort(), 2500);
+  const res = await fetch("/api/speak", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+    signal: controller.signal,
+  });
+  clearTimeout(abortTimer);
+  if (!res.ok) throw new Error(`live TTS ${res.status}`);
+  const ms = res.headers.get("X-Synth-Ms");
+  // The echo replays this very same object URL — do not revoke it while an
+  // echo may still be playing (it outlives the main line by ~0.45s + its
+  // own duration).
+  await playClip(URL.createObjectURL(await res.blob()), echo);
+  return ms;
+}
+
 async function speakLine(text, stateId, { echo = false } = {}) {
   speakGen++;
   // An operator override can switch nodes mid-line — the new line must cut
@@ -707,53 +739,26 @@ async function speakLine(text, stateId, { echo = false } = {}) {
   stopEchoPlayback();
   if (!text) return;
   setStage("tts", "running", "");
-  try {
-    const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), 2500);
-    const res = await fetch("/api/speak", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-      signal: controller.signal,
-    });
-    clearTimeout(abortTimer);
-    if (!res.ok) throw new Error((await res.json()).error || res.statusText);
-    const ms = res.headers.get("X-Synth-Ms");
-    const blob = await res.blob();
-    // The echo replays this very same object URL — do not revoke it while an
-    // echo may still be playing (it outlives the main line by ~0.45s + its
-    // own duration).
-    heroVoice.src = URL.createObjectURL(blob);
-    const echoDone = echo && ECHO_IDS.has(currentId) ? scheduleEcho(heroVoice.src) : null;
-    // play() can hang indefinitely instead of rejecting in some browser/
-    // automation contexts — never let audio playback stall the demo.
-    await playWithTimeout(3000);
-    await awaitLineEnd();
-    await settleEcho(echoDone);
-    log(`voice: "${text.slice(0, 40)}${text.length > 40 ? "…" : ""}" (${ms}ms synth)`);
-    setStage("tts", "ok", `${ms}ms live`);
-  } catch (err) {
-    if (stateId) {
-      try {
-        heroVoice.src = `/audio/${stateId}.wav`;
-        const echoDone = echo && ECHO_IDS.has(currentId) ? scheduleEcho(heroVoice.src) : null;
-        await playWithTimeout(3000);
-        await awaitLineEnd();
-        await settleEcho(echoDone);
-        log(`voice: fallback pre-rendered audio for "${stateId}" (live TTS: ${err.message})`);
-        setStage("tts", "skip", "fallback wav");
-        return;
-      } catch (fallbackErr) {
-        log(`voice error, fallback also failed: ${fallbackErr.message} — держу реплику ${readingTimeMs(text)}мс текстом`);
-        noteError(`voice: /audio/${stateId}.wav — ${fallbackErr.message}`, "speakLine");
-        setStage("tts", "err", "live + fallback failed");
-        await sleep(readingTimeMs(text));
-        return;
-      }
+  let fileErr = null;
+  if (stateId) {
+    try {
+      await playClip(`/audio/${stateId}.wav`, echo);
+      log(`voice: /audio/${stateId}.wav`);
+      setStage("tts", "ok", "wav");
+      return;
+    } catch (err) {
+      fileErr = err;
     }
-    // Non-fatal — the WoZ operator still has the on-screen text either way.
-    log(`voice error (text still shown): ${err.message}`);
-    setStage("tts", "err", err.message);
+  }
+  try {
+    const ms = await speakLive(text, echo);
+    log(`voice: live "${text.slice(0, 40)}${text.length > 40 ? "…" : ""}" (${ms}ms synth${fileErr ? `; wav: ${fileErr.message}` : ""})`);
+    setStage("tts", "skip", `${ms}ms live`);
+  } catch (err) {
+    // Neither a file nor live synthesis: the text is all the child gets.
+    log(`voice error: ${fileErr ? `wav ${fileErr.message}; ` : ""}live ${err.message} — держу реплику ${readingTimeMs(text)}мс текстом`);
+    if (stateId) noteError(`voice: /audio/${stateId}.wav — ${(fileErr || err).message}`, "speakLine");
+    setStage("tts", "err", "no wav, no live");
     await sleep(readingTimeMs(text));
   }
 }
