@@ -1,0 +1,221 @@
+<!doctype html>
+<!-- Pilot report: an anonymised summary of every child on this device
+     (public/pilot.js) — for the pilot's results and a grant application.
+     Print/PDF, CSV for a spreadsheet, JSON to merge several therapists'
+     reports into one. Reads the same localStorage as the cabinet. -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ертегім — отчёт пилота</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32 48x48">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#ff7a2f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="design-system.css">
+<style>
+  /* Chart roles (dataviz skill: one hue, two validated shades — before
+     recedes, after stands out; light and dark both checked). */
+  .viz-root { --viz-before: #86b6ef; --viz-after: #1c5cab; --viz-grid: #e4e2dc; --viz-axis: #8a8780; }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root { --viz-before: #5598e7; --viz-after: #9ec5f4; --viz-grid: #3a3934; --viz-axis: #8f8d86; }
+  }
+  :root[data-theme="dark"] .viz-root { --viz-before: #5598e7; --viz-after: #9ec5f4; --viz-grid: #3a3934; --viz-axis: #8f8d86; }
+
+  body { display: flex; flex-direction: column; align-items: center; padding: 12px 12px 60px; }
+  .wrap { width: 100%; max-width: 920px; }
+  .topbar { max-width: 920px; }
+  .sheet { background: var(--card-solid); border: 3px solid var(--ink); border-radius: var(--radius-xl); box-shadow: 0 7px 0 0 var(--ink-shadow); padding: var(--space-5); margin-top: var(--space-4); }
+  h1.title { margin: var(--space-4) 0 0; font-size: 1.6rem; font-weight: 900; letter-spacing: -0.02em; }
+  .sub { color: var(--ink-soft); font-weight: 700; margin: 4px 0 0; }
+  h2 { margin: 0 0 var(--space-3); font-size: 1.15rem; font-weight: 900; }
+  h2 small { font-size: 0.8rem; font-weight: 700; color: var(--ink-soft); margin-left: 6px; }
+  .muted { color: var(--ink-soft); font-size: 0.86rem; }
+  .tools { display: flex; flex-wrap: wrap; gap: 10px; margin-top: var(--space-4); }
+  .tools .btn { padding: 11px 16px; border-radius: 999px; font-size: 0.92rem; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+  @media (max-width: 640px) { .tiles { grid-template-columns: 1fr 1fr; } }
+  .tile { padding: var(--space-3); border: 2.5px solid var(--ink); border-radius: var(--radius-md); background: var(--paper); }
+  .tile .num { font-size: 1.7rem; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .tile .lbl { font-size: 0.78rem; font-weight: 800; color: var(--ink-soft); }
+  .tile .note { font-size: 0.72rem; font-weight: 700; color: var(--ink-soft); margin-top: 2px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.82rem; font-weight: 800; color: var(--ink-soft); margin-bottom: 6px; }
+  .legend svg { vertical-align: -3px; margin-right: 4px; }
+  svg.dumbbell { width: 100%; height: auto; display: block; }
+  svg.dumbbell text { font: 700 12px "Nunito", system-ui, sans-serif; fill: var(--ink-soft); }
+  svg.dumbbell text.code { fill: var(--ink); font-weight: 900; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table.t { width: 100%; border-collapse: collapse; font-size: 0.84rem; min-width: 560px; }
+  table.t th, table.t td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+  table.t th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); border-top: none; }
+  table.t td.n { font-variant-numeric: tabular-nums; font-weight: 800; text-align: right; white-space: nowrap; }
+  table.t th.n { text-align: right; }
+  .up { color: var(--ok); } .down { color: var(--warn); }
+  .empty { padding: var(--space-5); text-align: center; color: var(--ink-soft); font-weight: 800; }
+  #mergeStatus { font-weight: 800; }
+  ul.method { margin: 0; padding-left: 18px; font-size: 0.86rem; line-height: 1.5; }
+  @media print {
+    body { padding: 0; background: #fff; }
+    .topbar, .tools, .no-print { display: none !important; }
+    .sheet { box-shadow: none; border: 1px solid #999; border-radius: 8px; break-inside: avoid; margin-top: 10px; padding: 14px; }
+    .viz-root { --viz-before: #86b6ef; --viz-after: #1c5cab; --viz-grid: #e4e2dc; }
+    table.t { font-size: 0.76rem; min-width: 0; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <a class="topbar-back" href="/cabinet.html" aria-label="В кабинет">←</a>
+      <h1 class="topbar-logo">📊 Отчёт пилота</h1>
+    </div>
+    <span class="muted">Ертегім · обезличенно</span>
+  </div>
+
+  <div class="wrap viz-root">
+    <h1 class="title">Ертегім: итоги пилота</h1>
+    <p class="sub" id="period"></p>
+    <div class="tools">
+      <button type="button" class="btn btn-primary" id="printBtn">🖨 Печать / PDF</button>
+      <button type="button" class="btn" id="csvBtn">⬇ Таблица CSV</button>
+      <button type="button" class="btn" id="jsonBtn">⬇ Файл для объединения</button>
+      <label class="btn" style="cursor:pointer;">➕ Добавить отчёты других логопедов<input type="file" id="mergeFile" accept="application/json,.json" multiple hidden></label>
+      <span id="mergeStatus" class="muted"></span>
+    </div>
+
+    <div id="content"></div>
+  </div>
+
+  <script src="errlog.js"></script>
+  <script src="story.js"></script>
+  <script src="profiles.js"></script>
+  <script src="session.js"></script>
+  <script src="cabinet.js"></script>
+  <script src="pilot.js"></script>
+  <script>
+    (function () {
+      const $ = (id) => document.getElementById(id);
+      const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      const MONTHS = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"];
+      const month = (ym) => { const [y, m] = ym.split("-").map(Number); return `${MONTHS[m - 1]} ${y}`; };
+      const num = (x, suffix = "") => (x == null ? "—" : `${String(x).replace(".", ",")}${suffix}`);
+
+      // Only age and history leave the profile; names and notes never do.
+      const local = Pilot.pilotReport(Profiles.list().map((p) => ({ age: p.age, history: Session.historyFor(p.id) })));
+      let report = local;
+
+      function download(name, text, type) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([text], { type }));
+        a.download = name;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      }
+
+      // Before → after per child: a dumbbell, one hue in two shades, plus
+      // shape (hollow → filled) so it survives grayscale print.
+      function dumbbell(rows) {
+        const data = rows.filter((r) => r.firstTryBefore != null).sort((a, b) => b.changePp - a.changePp);
+        if (!data.length) return '<p class="muted">Нужно хотя бы 2 занятия с вопросами у ребёнка, чтобы показать «было → стало».</p>';
+        const W = 760, left = 92, right = 64, rowH = 30, top = 26;
+        const H = top + data.length * rowH + 10;
+        const x = (v) => left + (v / 100) * (W - left - right);
+        const grid = [0, 25, 50, 75, 100].map((v) => `<line x1="${x(v)}" x2="${x(v)}" y1="${top - 8}" y2="${H - 6}" stroke="var(--viz-grid)" stroke-width="1"/><text x="${x(v)}" y="${top - 12}" text-anchor="middle">${v}%</text>`).join("");
+        const rowsSvg = data.map((r, i) => {
+          const y = top + i * rowH + rowH / 2;
+          const a = x(r.firstTryBefore), b = x(r.firstTryAfter);
+          const tip = `${r.code} (${r.ageGroup}): было ${num(r.firstTryBefore, "%")} → стало ${num(r.firstTryAfter, "%")}, ${r.changePp > 0 ? "+" : ""}${num(r.changePp)} п.п., занятий ${r.sessions}`;
+          const sign = r.changePp > 0 ? "+" : "";
+          return `<g><title>${esc(tip)}</title>
+            <rect x="0" y="${y - rowH / 2}" width="${W}" height="${rowH}" fill="transparent"/>
+            <text class="code" x="8" y="${y + 4}">${esc(r.code)}</text><text x="48" y="${y + 4}">${esc(r.ageGroup)}</text>
+            <line x1="${a}" x2="${b}" y1="${y}" y2="${y}" stroke="var(--viz-before)" stroke-width="2"/>
+            <circle cx="${a}" cy="${y}" r="5" fill="var(--card-solid)" stroke="var(--viz-before)" stroke-width="2.5"/>
+            <circle cx="${b}" cy="${y}" r="6" fill="var(--viz-after)" stroke="var(--card-solid)" stroke-width="2"/>
+            <text x="${Math.max(a, b) + 12}" y="${y + 4}">${sign}${num(r.changePp)} п.п.</text></g>`;
+        }).join("");
+        return `<div class="legend">
+            <span><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="var(--card-solid)" stroke="var(--viz-before)" stroke-width="2.5"/></svg>было — первые занятия</span>
+            <span><svg width="14" height="14"><circle cx="7" cy="7" r="6" fill="var(--viz-after)"/></svg>стало — последние занятия</span>
+          </div>
+          <svg class="dumbbell" viewBox="0 0 ${W} ${H}" role="img" aria-label="Доля ответов с первого раза: было и стало по каждому ребёнку">${grid}${rowsSvg}</svg>`;
+      }
+
+      function render() {
+        const t = report.totals;
+        $("period").textContent = report.months
+          ? `Период: ${month(report.months.from)}${report.months.to !== report.months.from ? ` — ${month(report.months.to)}` : ""} · сформирован ${report.generatedAt}${report.sources.length > 1 ? ` · логопедов: ${report.sources.length}` : ""}`
+          : "Занятий пока нет.";
+        if (!t.children) { $("content").innerHTML = '<div class="sheet empty">На этом устройстве ещё нет занятий. Отчёт появится после первых сессий.</div>'; return; }
+        const tiles = [
+          [t.children, "детей занимались", ""],
+          [t.sessions, "занятий всего", `медиана ${num(t.medianSessions)} на ребёнка · ${num(t.medianPerWeek)} в неделю`],
+          [num(t.firstTryOverall, "%"), "ответов с первого раза", "по всем вопросам всех занятий"],
+          [t.measuredChildren ? `${t.improvedChildren} из ${t.measuredChildren}` : "—", "детей улучшили результат", `доля с первого раза выросла больше чем на ${Pilot.PILOT_IMPROVED_PP} п.п.`],
+          [t.medianChangePp == null ? "—" : `${t.medianChangePp > 0 ? "+" : ""}${num(t.medianChangePp)} п.п.`, "медианное изменение", "доли ответов с первого раза"],
+          [t.medianReactionChangeSec == null ? "—" : `${t.medianReactionChangeSec > 0 ? "+" : ""}${num(t.medianReactionChangeSec)} с`, "время реакции", "медианное изменение, минус — быстрее"],
+        ].map(([n, l, note]) => `<div class="tile"><div class="num">${esc(n)}</div><div class="lbl">${esc(l)}</div>${note ? `<div class="note">${esc(note)}</div>` : ""}</div>`).join("");
+
+        const rows = report.rows.filter((r) => r.sessions > 0).map((r) => `<tr>
+          <td><b>${esc(r.code)}</b></td><td>${esc(r.ageGroup)}</td>
+          <td class="n">${r.sessions}</td><td class="n">${num(r.perWeek)}</td>
+          <td class="n">${num(r.firstTryBefore, "%")}</td><td class="n">${num(r.firstTryAfter, "%")}</td>
+          <td class="n ${r.changePp > Pilot.PILOT_IMPROVED_PP ? "up" : r.changePp < -Pilot.PILOT_IMPROVED_PP ? "down" : ""}">${r.changePp == null ? "—" : `${r.changePp > 0 ? "+" : ""}${num(r.changePp)}`}</td>
+          <td class="n">${num(r.reactionBefore, " с")} → ${num(r.reactionAfter, " с")}</td>
+          <td class="n">${r.gestureAnswers}</td><td class="n">${r.adultAnswers}</td></tr>`).join("");
+
+        const skills = Object.entries(report.skills).sort((a, b) => b[1].asked - a[1].asked).map(([k, c]) => `<tr>
+          <td>${esc(SKILL_LABEL[k] || k)}</td><td class="n">${c.asked}</td>
+          <td class="n">${num(Math.round((c.first / c.asked) * 100), "%")}</td>
+          <td class="n">${num(Math.round((c.reask / c.asked) * 100), "%")}</td>
+          <td class="n">${num(Math.round((c.reveal / c.asked) * 100), "%")}</td></tr>`).join("");
+
+        const acts = Object.entries(report.activities).sort((a, b) => b[1] - a[1]).map(([id, n]) =>
+          `<tr><td>${esc(activityTitle(id))}</td><td class="n">${n}</td></tr>`).join("");
+
+        $("content").innerHTML = `
+          <section class="sheet"><h2>Главное</h2><div class="tiles">${tiles}</div>
+            <p class="muted" style="margin:10px 0 0;">Жестом ответили на ${num(t.gestureShare, "%")} вопросов, взрослый оценил ${num(t.adultShare, "%")} — без интернета или для детей, которым трудно говорить.</p></section>
+          <section class="sheet"><h2>Ответы с первого раза: было → стало <small>по каждому ребёнку</small></h2>${dumbbell(report.rows)}</section>
+          <section class="sheet"><h2>Дети <small>коды вместо имён</small></h2><div class="table-wrap"><table class="t">
+            <thead><tr><th>Код</th><th>Возраст</th><th class="n">Занятий</th><th class="n">В неделю</th><th class="n">Было</th><th class="n">Стало</th><th class="n">Изм., п.п.</th><th class="n">Реакция</th><th class="n">Жестом</th><th class="n">Взрослый</th></tr></thead>
+            <tbody>${rows}</tbody></table></div></section>
+          <section class="sheet"><h2>Навыки <small>в скольких занятиях встретился и как прошёл</small></h2><div class="table-wrap"><table class="t">
+            <thead><tr><th>Навык</th><th class="n">Занятий</th><th class="n">Сразу</th><th class="n">С переспросом</th><th class="n">Показал герой</th></tr></thead>
+            <tbody>${skills}</tbody></table></div></section>
+          <section class="sheet"><h2>Что занимались</h2><div class="table-wrap"><table class="t" style="min-width:0;">
+            <thead><tr><th>Сказка или урок</th><th class="n">Занятий</th></tr></thead><tbody>${acts}</tbody></table></div></section>
+          <section class="sheet"><h2>Как считали</h2><ul class="method">
+            <li><b>«Было» и «стало»</b> — доля вопросов, на которые ребёнок ответил с первого раза, в первых и последних занятиях (по 3, а если занятий меньше 6 — по половине). Один удачный или неудачный день так не решает результат.</li>
+            <li><b>Улучшил результат</b> — доля выросла больше чем на ${Pilot.PILOT_IMPROVED_PP} процентных пунктов.</li>
+            <li><b>Время реакции</b> — от конца вопроса до начала ответа, в среднем за занятие; ответы, которые оценил взрослый, не учитываются.</li>
+            <li><b>Обезличено.</b> В отчёте нет имён, заметок, сказанных слов и дат занятий — только коды детей, возрастные группы и месяцы пилота. Коды присвоены по порядку первых занятий.</li>
+            <li>Это показатели занятий в приложении, а не клиническая оценка: выводы о динамике речи делает специалист.</li>
+          </ul></section>`;
+      }
+
+      $("printBtn").onclick = () => window.print();
+      $("csvBtn").onclick = () => download(`ertegim-pilot-${report.generatedAt}.csv`, Pilot.toCsv(report), "text/csv;charset=utf-8");
+      $("jsonBtn").onclick = () => download(`ertegim-pilot-${report.generatedAt}.json`, JSON.stringify(report, null, 1), "application/json");
+      $("mergeFile").onchange = async (e) => {
+        const files = [...(e.target.files || [])];
+        e.target.value = "";
+        const others = [];
+        let bad = 0;
+        for (const f of files) {
+          try { const r = JSON.parse(await f.text()); if (r && r.kind === "pilot-report") others.push(r); else bad++; } catch { bad++; }
+        }
+        if (!others.length) { $("mergeStatus").textContent = "Это не файлы отчёта пилота Ертегім."; return; }
+        report = Pilot.mergeReports([local, ...others]);
+        $("mergeStatus").textContent = `Объединено отчётов: ${others.length + 1}${bad ? ` · пропущено файлов: ${bad}` : ""}.`;
+        render();
+      };
+      render();
+    })();
+  </script>
+  <script src="offline.js"></script>
+  <script>OfflineKit.register();</script>
+</body>
+</html>

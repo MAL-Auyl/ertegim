@@ -23,6 +23,8 @@
   "/index.html",
   "/manifest.webmanifest",
   "/offline.js",
+  "/pilot-report.html",
+  "/pilot.js",
   "/preroll.js",
   "/profiles.js",
   "/report.js",
