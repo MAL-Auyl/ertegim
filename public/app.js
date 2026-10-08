@@ -1408,6 +1408,7 @@ function renderState(id) {
     pinInput.value = "";
     lastSummary = Session.finish({ completed: true });
     revealStickers(Stickers.award(stickersFor(ACTIVITY.id, lastSummary)));
+    revealAdventure(lastSummary);
     endScreen.classList.add("show");
     log(`→ ${id}: балаға арналған соңғы экран (PIN жасырын)`);
     return;
@@ -1568,6 +1569,38 @@ function revealStickers(ids) {
   }).join("");
   box.hidden = !ids || ids.length === 0;
   if (ids && ids.length) log(`жапсырма: ${ids.join(", ")}`);
+}
+
+// Adventure map (adventure.js): a finished run may open the day's treasure
+// chest and the next tale on the path — both shown on the end screen. A
+// blocked or unfinished run records nothing.
+function revealAdventure(summary) {
+  const box = document.getElementById("endChest");
+  const next = document.getElementById("endNext");
+  if (box) box.hidden = true;
+  if (next) next.hidden = true;
+  if (typeof Adventure === "undefined" || !summary || !summary.completed || summary.blocked) return;
+  let r;
+  try { r = Adventure.record(ACTIVITY.id); } catch (err) { log(`adventure: ${err.message}`); return; }
+  if (box && r.chest) {
+    const items = r.treasures.map((id, i) => {
+      const t = TREASURES[id];
+      return `<div class="end-treasure" style="animation-delay:${1100 + i * 300}ms"><span class="t-icon">${t.icon}</span>${esc(t.kk)}</div>`;
+    });
+    if (r.coins) items.push(`<div class="end-treasure" style="animation-delay:1100ms"><span class="t-icon">🪙</span>+${r.coins}</div>`);
+    document.getElementById("endTreasures").innerHTML = items.join("");
+    const st = document.getElementById("endStreak");
+    st.hidden = r.streak < 2;
+    st.textContent = `🔥 ${r.streak} күн қатарынан`;
+    box.hidden = false;
+  }
+  if (next && r.unlocked) {
+    const title = r.unlocked === "story" ? "Түлкі інісін іздейді" : (TALES[r.unlocked] && TALES[r.unlocked].title) || r.unlocked;
+    next.href = r.unlocked === "story" ? "/story.html" : `/story.html?lesson=${encodeURIComponent(r.unlocked)}`;
+    next.textContent = `🗝 Жаңа ертегі ашылды: «${title}» ▶`;
+    next.hidden = false;
+  }
+  log(`шытырман жол: ${r.newlyDone ? "аялдама өтілді" : "қайталау"}${r.unlocked ? `, ашылды ${r.unlocked}` : ""}${r.chest ? `, сандық: ${r.treasures.join(", ") || "тиын"}` : ""}, ${r.streak} күн`);
 }
 
 // Shared by the operator's "Сначала" killswitch and the child's "Тағы

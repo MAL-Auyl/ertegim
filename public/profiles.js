@@ -25,6 +25,7 @@ const SETTING_DEFAULTS = {
   keepTranscripts: false, // store each attempt's transcript in the history
   assigned: [],           // activity ids the library highlights as "today's task"
   judge: "auto",          // "auto": speech recognition, the adult only without network/mic; "adult": always the adult
+  unlockAll: false,       // adventure map (adventure.js): every tale open, no «finish the previous one» locks
 };
 
 function profileStorage() {
@@ -70,6 +71,7 @@ function normalizeSettings(s) {
   out.keepTranscripts = s.keepTranscripts === true;
   out.assigned = Array.isArray(s.assigned) ? s.assigned.filter((x) => typeof x === "string").slice(0, 20) : [];
   out.judge = s.judge === "adult" ? "adult" : "auto";
+  out.unlockAll = s.unlockAll === true;
   return out;
 }
 

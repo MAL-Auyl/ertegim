@@ -1133,3 +1133,19 @@ body.gentle .sticker-badge.pop { animation: fade-in 260ms ease both; }
 @media (prefers-color-scheme: dark) { .judge-btn { color: #1b140d; } }
 .judge-hint { margin: 2px 4px 0; font-size: 0.8rem; font-weight: 700; color: var(--ink-soft); text-align: center; line-height: 1.35; }
 .judge-hint[hidden] { display: none; }
+
+/* End screen: the day's treasure chest and the tale it unlocked (app.js
+   revealAdventure, adventure.js). */
+.end-chest { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: var(--space-2); }
+.end-chest[hidden] { display: none; }
+.end-chest-img { width: 96px; height: 96px; animation: chestOpen 700ms var(--ease-materialize, ease-out) 600ms both; }
+@keyframes chestOpen { 0% { transform: scale(0.4) rotate(-12deg); opacity: 0; } 60% { transform: scale(1.12) rotate(4deg); opacity: 1; } 100% { transform: none; } }
+.end-chest-title { font-weight: 900; font-size: 1.05rem; color: var(--accent-dark); }
+.end-treasures { display: flex; gap: 12px; justify-content: center; }
+.end-treasure { display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 900; font-size: 0.85rem; animation: chestOpen 600ms var(--ease-materialize, ease-out) both; }
+.end-treasure .t-icon { font-size: 2.6rem; line-height: 1.1; }
+.end-streak { font-weight: 900; font-size: 0.92rem; padding: 4px 12px; border-radius: 999px; background: color-mix(in srgb, var(--warn) 16%, var(--card-solid)); }
+.end-streak[hidden] { display: none; }
+.end-next-btn { margin-top: var(--space-3); border-radius: 999px; text-decoration: none; }
+.end-next-btn[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .end-chest-img, .end-treasure { animation: none; } }

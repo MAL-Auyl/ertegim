@@ -400,6 +400,15 @@
         <div class="end-stickers-title">🎉 Жаңа жапсырма!</div>
         <div id="endStickerRow" class="end-sticker-row"></div>
       </div>
+      <!-- Adventure map (adventure.js): the day's chest and the tale this run
+           unlocked; app.js revealAdventure fills it, hidden when nothing new. -->
+      <div id="endChest" class="end-chest" hidden>
+        <img class="end-chest-img" src="/images/chest.svg" alt="">
+        <div class="end-chest-title">Қазына сандығы ашылды!</div>
+        <div id="endTreasures" class="end-treasures"></div>
+        <div id="endStreak" class="end-streak" hidden></div>
+      </div>
+      <a id="endNext" class="btn btn-primary end-next-btn" hidden></a>
       <button id="playAgainBtn" class="btn btn-primary end-play-btn">🔄 Тағы ойнаймыз</button>
       <button id="parentBtn" class="btn btn-muted end-parent-btn">Ата-анаға</button>
     </div>
@@ -513,6 +522,7 @@
   <script src="profiles.js"></script>
   <script src="session.js"></script>
   <script src="stickers.js"></script>
+  <script src="adventure.js"></script>
   <script src="report.js"></script>
   <script src="preroll.js"></script>
   <script src="app.js"></script>

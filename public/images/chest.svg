@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="қазына сандығы">
+  <!-- Treasure chest («Қазына сандығы»): open lid, golden glow, a few coins.
+       Same flat ink style as the lesson and tale pictures. -->
+  <circle cx="100" cy="96" r="78" fill="#FFE9A8" opacity="0.75"/>
+  <path d="M36 70 L50 34 C54 26 62 22 70 22 L130 22 C138 22 146 26 150 34 L164 70 Z" fill="#B86E38" stroke="#14181C" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M60 34 L140 34" stroke="#8A4F24" stroke-width="6" stroke-linecap="round"/>
+  <ellipse cx="100" cy="88" rx="60" ry="14" fill="#FFC531" stroke="#14181C" stroke-width="5"/>
+  <circle cx="78" cy="82" r="10" fill="#FFD23F" stroke="#14181C" stroke-width="4"/>
+  <circle cx="104" cy="78" r="10" fill="#FFD23F" stroke="#14181C" stroke-width="4"/>
+  <circle cx="126" cy="84" r="9" fill="#FFD23F" stroke="#14181C" stroke-width="4"/>
+  <path d="M30 92 L170 92 L162 172 C161 178 156 182 150 182 L50 182 C44 182 39 178 38 172 Z" fill="#C9772E" stroke="#14181C" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M34 120 L166 120" stroke="#14181C" stroke-width="6"/>
+  <path d="M64 92 L60 182 M136 92 L140 182" stroke="#8A4F24" stroke-width="6"/>
+  <rect x="86" y="108" width="28" height="30" rx="6" fill="#FFC531" stroke="#14181C" stroke-width="5"/>
+  <circle cx="100" cy="120" r="4" fill="#14181C"/>
+  <path d="M50 44 L56 52 M150 44 L144 52 M100 6 L100 16" stroke="#FFC531" stroke-width="6" stroke-linecap="round"/>
+</svg>

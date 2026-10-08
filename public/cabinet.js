@@ -230,6 +230,7 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
     $("fTimeout").value = s.silenceTimeoutMs ?? "";
     $("fTranscripts").checked = !!s.keepTranscripts;
     $("fJudge").value = s.judge === "adult" ? "adult" : "auto";
+    $("fUnlockAll").checked = !!s.unlockAll;
     $("deleteChild").disabled = Profiles.list().length <= 1;
 
     const history = Session.history();
@@ -578,6 +579,7 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
         silenceTimeoutMs: $("fTimeout").value === "" ? null : Number($("fTimeout").value),
         keepTranscripts: $("fTranscripts").checked,
         judge: $("fJudge").value === "adult" ? "adult" : "auto",
+        unlockAll: $("fUnlockAll").checked,
       },
     });
     $("saved").hidden = false;
