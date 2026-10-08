@@ -368,7 +368,7 @@ async function speak(text, speakerId = HERO_SPEAKER) {
   }
 }
 
-const LAB_PATHS = new Set(["/lab.html", "/lab/stt-pick.js", "/api/lab/transcribe"]);
+const LAB_PATHS = new Set(["/lab.html", "/lab/stt-pick.js", "/lab/tale-forms.js", "/api/lab/transcribe"]);
 
 function isLoopbackRequest(req) {
   const host = String(req.headers.get("host") || "").toLowerCase();
@@ -380,6 +380,16 @@ Bun.serve({
   port: PORT,
   async fetch(req) {
     const url = new URL(req.url);
+
+    // Same contract as api/version.js on Vercel: the build the cabinet shows.
+    if (url.pathname === "/api/version" && req.method === "GET") {
+      let version = "local";
+      try {
+        const r = Bun.spawnSync(["git", "rev-parse", "--short=7", "HEAD"], { cwd: ROOT });
+        if (r.exitCode === 0) version = r.stdout.toString().trim() || version;
+      } catch { /* no git — "local" */ }
+      return Response.json({ version, env: "local" }, { headers: { "Cache-Control": "no-store" } });
+    }
 
     if (url.pathname === "/api/speak" && req.method === "POST") {
       try {
@@ -484,6 +494,12 @@ Bun.serve({
     }
     // The page imports the picker as a module so its "did it match?" column
     // uses exactly the server's phonetic/Levenshtein rules, not a copy.
+    // stt-pick.js imports "./tale-forms.js" — relative to /lab/ in the browser.
+    if (url.pathname === "/lab/tale-forms.js" && req.method === "GET") {
+      return new Response(Bun.file(`${ROOT}../lib/tale-forms.js`), {
+        headers: { "Content-Type": "text/javascript; charset=utf-8" },
+      });
+    }
     if (url.pathname === "/lab/stt-pick.js" && req.method === "GET") {
       return new Response(Bun.file(`${ROOT}../lib/stt-pick.js`), {
         headers: { "Content-Type": "text/javascript; charset=utf-8" },

@@ -76,13 +76,20 @@ function tokenize(text) {
     .filter((w) => w.length >= 3);
 }
 
+// Answers that were not speech the recogniser heard: a tapped picture card
+// («👆 алма»), a traced letter, or the adult's verdict («👂 ата-ана»). Their
+// placeholder transcripts must not turn into «words the child said», and
+// the adult's tap delay is not the child's reaction time.
+const NOT_SPEECH = new Set(["tap", "trace", "adult"]);
+
 function summarize(r) {
   const words = [];
   for (const t of r.turns) {
+    if (NOT_SPEECH.has(t.source)) continue;
     for (const w of tokenize(t.transcript)) if (!words.includes(w)) words.push(w);
   }
 
-  const firstAttempts = r.turns.filter((t) => t.attempt === 1 && t.answeredAt != null);
+  const firstAttempts = r.turns.filter((t) => t.attempt === 1 && t.answeredAt != null && t.source !== "adult");
   const avgResponseSec = firstAttempts.length
     ? firstAttempts.reduce((acc, t) => acc + (t.answeredAt - t.askedAt) / 1000, 0) / firstAttempts.length
     : null;
@@ -105,6 +112,10 @@ function summarize(r) {
   // "pick" nodes). A speech therapist reads this as a separate signal — the
   // child understood but did not vocalise — so the report shows it apart.
   const gestureAnswers = r.turns.filter((t) => t.verdict !== null && t.source === "tap").length;
+  // Answers the adult judged by ear («Ата-ана бағалайды»: no network, no
+  // mic, or the child's profile asks for it) — the recogniser heard nothing,
+  // so the report says so instead of passing them off as recognised speech.
+  const adultAnswers = r.turns.filter((t) => t.verdict !== null && t.source === "adult").length;
 
   // Per-attempt detail for the therapist's cabinet — only when the profile
   // asked for it (Session.keepTranscripts), see the privacy note above.
@@ -130,6 +141,7 @@ function summarize(r) {
     firstTryCorrect,
     questionsTotal: askedSkills.length,
     gestureAnswers,
+    adultAnswers,
     skills,
     moments: r.moments.map((m) => ({ atSec: Math.round((m.at - r.startedAt) / 1000), text_kk: m.text_kk })),
     ...(attempts ? { attempts } : {}),
@@ -195,6 +207,20 @@ const Session = {
   history() {
     const h = readJson(HISTORY_KEY, []);
     return Array.isArray(h) ? h : [];
+  },
+
+  // Any child's history, not just the active one's — the cabinet's «Все
+  // дети» overview reads every profile without switching between them.
+  historyFor(profileId) {
+    try {
+      const st = safeStorage();
+      if (!st || typeof Profiles === "undefined" || !Profiles.scopedKey) return this.history();
+      const v = st.getItem(Profiles.scopedKey(HISTORY_KEY, profileId));
+      const h = v ? JSON.parse(v) : [];
+      return Array.isArray(h) ? h : [];
+    } catch {
+      return [];
+    }
   },
 
   // Replaces the active child's history — used by the cabinet's import of

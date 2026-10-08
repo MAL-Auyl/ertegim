@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="мысық">
+  <!-- Cat: the "not О" card in q_o_pick. Grey, so it never reads as a second
+       orange flame at a glance. -->
+  <path d="M44 86 L50 28 L92 62 Z" fill="#9AA3AD" stroke="#14181C" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M156 86 L150 28 L108 62 Z" fill="#9AA3AD" stroke="#14181C" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M56 58 L58 40 L76 56 Z" fill="#F4A6B8"/>
+  <path d="M144 58 L142 40 L124 56 Z" fill="#F4A6B8"/>
+  <ellipse cx="100" cy="112" rx="70" ry="62" fill="#9AA3AD" stroke="#14181C" stroke-width="7"/>
+  <ellipse cx="74" cy="104" rx="10" ry="13" fill="#14181C"/>
+  <ellipse cx="126" cy="104" rx="10" ry="13" fill="#14181C"/>
+  <circle cx="77" cy="99" r="3.5" fill="#FFFFFF"/>
+  <circle cx="129" cy="99" r="3.5" fill="#FFFFFF"/>
+  <path d="M92 128 L108 128 L100 138 Z" fill="#F4A6B8" stroke="#14181C" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M100 138 C96 148 86 150 82 144 M100 138 C104 148 114 150 118 144" fill="none" stroke="#14181C" stroke-width="4" stroke-linecap="round"/>
+  <path d="M60 130 L22 122 M60 140 L24 146 M140 130 L178 122 M140 140 L176 146" stroke="#14181C" stroke-width="4" stroke-linecap="round"/>
+</svg>

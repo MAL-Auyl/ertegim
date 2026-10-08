@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="ара">
+  <!-- Bee («ара», «Аю мен бал»): striped body, two wings, a friendly face. -->
+  <ellipse cx="78" cy="62" rx="30" ry="22" fill="#DDF1FF" stroke="#14181C" stroke-width="5" transform="rotate(-20 78 62)"/>
+  <ellipse cx="118" cy="56" rx="30" ry="22" fill="#DDF1FF" stroke="#14181C" stroke-width="5" transform="rotate(18 118 56)"/>
+  <ellipse cx="102" cy="116" rx="62" ry="46" fill="#FFC531" stroke="#14181C" stroke-width="7"/>
+  <path d="M86 74 C80 96 80 136 86 158" fill="none" stroke="#14181C" stroke-width="12"/>
+  <path d="M118 72 C112 96 112 138 118 160" fill="none" stroke="#14181C" stroke-width="12"/>
+  <path d="M162 116 L180 116" stroke="#14181C" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="56" cy="104" r="7" fill="#14181C"/>
+  <path d="M48 126 C54 134 64 134 70 126" fill="none" stroke="#14181C" stroke-width="5" stroke-linecap="round"/>
+  <path d="M60 74 C56 60 46 52 38 52 M70 72 C70 56 64 44 56 40" fill="none" stroke="#14181C" stroke-width="4" stroke-linecap="round"/>
+</svg>

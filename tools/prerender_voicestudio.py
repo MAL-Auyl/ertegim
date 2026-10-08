@@ -1,45 +1,86 @@
 #!/usr/bin/env python3
-"""Pre-render hero lines with VoiceStudio (OmniVoice) instead of Piper.
+"""Pre-render hero lines with VoiceStudio (OmniVoice) — one voice per hero.
 
 Needs the VoiceStudio desktop app running (backend on http://localhost:3900)
-with the k2-fsa/OmniVoice model installed. Stdlib only — no venv needed.
+with the k2-fsa/OmniVoice model installed. Stdlib only — no venv needed
+(ffmpeg is used if present, only to slow letter-lesson lines down).
 
 OmniVoice's voice design ("female, child, very high pitch") is trained on
 Chinese/English only and drifts on Kazakh, while cloning is its stable mode.
-So the default voice is built in two steps:
-  1. --make-ref: design the cub's voice on an ENGLISH sentence → tools/voice-ref/fox_ref_en.wav
-  2. render every Kazakh line by cloning that reference (cross-language cloning).
+So every hero's voice is built in two steps:
+  1. --make-ref: design the hero's voice on an ENGLISH sentence
+     → tools/voice-ref/<hero>_ref_en.wav (fox, owl, bear);
+  2. render every Kazakh line of that hero by cloning its reference
+     (cross-language cloning).
 In a Whisper round-trip test (2026-09-28) this beat both plain design-on-Kazakh
 and cloning the current Piper audio on the long intro line.
 
-Licence: OmniVoice weights are CC-BY-NC — fine for demos/testing, NOT for a
-paid product. Piper (tools/prerender.py) stays the default engine for that reason.
+Who says a line comes from public/story.js (tools/dump-story.js --meta), so
+the owl's and the bear's lines get their own voices in every tale.
+
+Each rendered line is level-matched to the Piper audio already in the app
+(about -16 dBFS RMS, peaks under -1 dBFS), so a hero rendered here never
+sounds louder or quieter than one still voiced by Piper.
+
+Re-runs are incremental: a line is re-rendered only when its text, hero,
+reference voice or settings changed (fingerprints in a small state file).
+
+Licence: OmniVoice weights are CC-BY-NC — fine for demos, testing and a
+non-commercial pilot, NOT for a paid product. Piper (tools/prerender.py)
+stays the default engine for that reason.
 
 Usage:
-  python tools/prerender_voicestudio.py --make-ref            # once; listen to the ref
-  python tools/prerender_voicestudio.py                       # → tools/voices/samples/voicestudio/full/
+  python tools/prerender_voicestudio.py --make-ref                 # once: design missing hero voices
+  python tools/prerender_voicestudio.py --make-ref owl --force     # redo one hero's voice
+  python tools/prerender_voicestudio.py --characters owl,bear      # → samples folder + review.html
+  python tools/prerender_voicestudio.py --characters owl,bear --to-public   # into the app
   python tools/prerender_voicestudio.py --only intro,q_tracks --force
-  python tools/prerender_voicestudio.py --mode design         # no reference, instruct only
-  python tools/prerender_voicestudio.py --to-public --force   # overwrite public/audio/*.wav
+  python tools/prerender_voicestudio.py --dry-run                  # what would be rendered, no backend
 """
-import argparse, io, json, os, subprocess, sys, time, urllib.error, urllib.request, uuid, wave
+import argparse, array, hashlib, html, io, json, math, os, shutil, subprocess, sys, tempfile, time
+import urllib.error, urllib.request, uuid, wave
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 API = os.environ.get("VOICESTUDIO_URL", "http://localhost:3900")
 REF_DIR = ROOT / "tools" / "voice-ref"
-REF_WAV = REF_DIR / "fox_ref_en.wav"
-REF_TEXT = "Hello! I am a little fox. My baby brother is lost, will you help me find him?"
-INSTRUCT = "female, child, very high pitch"
 SAMPLES_DIR = ROOT / "tools" / "voices" / "samples" / "voicestudio" / "full"
 PUBLIC_DIR = ROOT / "public" / "audio"
+PUBLIC_STATE = ROOT / "tools" / "voice-ref" / "voicestudio-public-state.json"  # tracked, shared across machines
+
+# One designed voice per hero. Attributes are OmniVoice voice-design terms
+# (English only); the reference sentence is English for the same reason.
+CHARACTERS = {
+    "fox": {
+        "instruct": "female, child, very high pitch",
+        "ref_text": "Hello! I am a little fox. My baby brother is lost, will you help me find him?",
+    },
+    "owl": {
+        "instruct": "female, teenager, moderate pitch",
+        "ref_text": "Hello, my friend. I am a little owl. At night I look at the stars and sing to them.",
+    },
+    "bear": {
+        "instruct": "male, young adult, low pitch",
+        "ref_text": "Hello, little one! I am a big kind bear. I am so hungry, let us find some sweet honey.",
+    },
+}
+
+TARGET_RMS_DBFS = -16.0   # Piper audio in public/audio measures about -15.4 dBFS RMS (median)
+PEAK_CEILING_DBFS = -1.0
+LESSON_TEMPO = 1 / 1.15   # same slowdown tools/prerender.py gives letter-lesson lines
 
 
-def lines() -> dict:
-    res = subprocess.run(["node", str(ROOT / "tools" / "dump-story.js")], check=True, capture_output=True, text=True, encoding="utf-8")
+def ref_path(character: str) -> Path:
+    return REF_DIR / f"{character}_ref_en.wav"
+
+
+def lines_meta() -> dict:
+    res = subprocess.run(["node", str(ROOT / "tools" / "dump-story.js"), "--meta"],
+                         check=True, capture_output=True, text=True, encoding="utf-8")
     return json.loads(res.stdout)
 
 
+# ---------------------------------------------------------------- backend --
 def multipart(fields: dict, files: dict) -> tuple[bytes, str]:
     boundary = uuid.uuid4().hex
     out = bytearray()
@@ -52,15 +93,6 @@ def multipart(fields: dict, files: dict) -> tuple[bytes, str]:
         out += path.read_bytes() + b"\r\n"
     out += f"--{boundary}--\r\n".encode()
     return bytes(out), f"multipart/form-data; boundary={boundary}"
-
-
-def generate(text: str, out: Path, **kw) -> None:
-    audio, took = request(text, **kw)
-    with wave.open(io.BytesIO(audio)) as w:
-        sec = w.getnframes() / w.getframerate()
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_bytes(audio)
-    print(f"rendered {out.relative_to(ROOT)} ({sec:.1f}s audio, {took:.1f}s)")
 
 
 def request(text: str, *, language: str, seed: int, instruct: str | None = None,
@@ -93,44 +125,218 @@ def check_backend() -> None:
     print(f"VoiceStudio {health.get('version')} on {health.get('device')}")
 
 
+# ------------------------------------------------------------ audio post --
+def read_pcm16(data: bytes) -> tuple[array.array, int, int]:
+    with wave.open(io.BytesIO(data)) as w:
+        if w.getsampwidth() != 2:
+            raise ValueError(f"expected 16-bit PCM, got {8 * w.getsampwidth()}-bit")
+        frames = array.array("h", w.readframes(w.getnframes()))
+        return frames, w.getframerate(), w.getnchannels()
+
+
+def write_pcm16(frames: array.array, rate: int, channels: int) -> bytes:
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(channels)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(frames.tobytes())
+    return buf.getvalue()
+
+
+def level_match(data: bytes, target_dbfs: float = TARGET_RMS_DBFS, ceiling_dbfs: float = PEAK_CEILING_DBFS) -> bytes:
+    """Scale to the target RMS, never pushing a peak above the ceiling."""
+    frames, rate, channels = read_pcm16(data)
+    if not frames:
+        return data
+    rms = math.sqrt(sum(x * x for x in frames) / len(frames))
+    peak = max(abs(x) for x in frames)
+    if rms < 1 or peak < 1:
+        return data
+    gain = 10 ** (target_dbfs / 20) * 32768 / rms
+    gain = min(gain, 10 ** (ceiling_dbfs / 20) * 32767 / peak)
+    out = array.array("h", (max(-32768, min(32767, int(round(x * gain)))) for x in frames))
+    return write_pcm16(out, rate, channels)
+
+
+def find_ffmpeg() -> str | None:
+    exe = shutil.which("ffmpeg")
+    if exe:
+        return exe
+    try:
+        import imageio_ffmpeg  # tools/.venv has it for tools/prerender.py
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:  # noqa: BLE001 — optional
+        return None
+
+
+def slow_down(data: bytes, ffmpeg: str, tempo: float) -> bytes:
+    with tempfile.TemporaryDirectory() as tmp:
+        src, dst = Path(tmp) / "in.wav", Path(tmp) / "out.wav"
+        src.write_bytes(data)
+        subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", str(src), "-af", f"atempo={tempo:.4f}", str(dst)], check=True)
+        return dst.read_bytes()
+
+
+def duration(data: bytes) -> float:
+    with wave.open(io.BytesIO(data)) as w:
+        return w.getnframes() / w.getframerate()
+
+
+# ------------------------------------------------------------------ state --
+def sha1(data: bytes) -> str:
+    return hashlib.sha1(data).hexdigest()
+
+
+def fingerprint(text: str, character: str, args, ref: Path | None, tempo: float | None) -> str:
+    parts = [text, character, args.mode, str(args.seed), CHARACTERS[character]["instruct"],
+             sha1(ref.read_bytes()) if ref and ref.exists() else "-", f"{tempo or 1:.4f}",
+             "" if args.no_normalize else f"{TARGET_RMS_DBFS}/{PEAK_CEILING_DBFS}"]
+    return sha1("\x1f".join(parts).encode("utf-8"))[:16]
+
+
+def load_state(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def save_state(path: Path, state: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(state, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+
+
+# ----------------------------------------------------------------- review --
+def write_review(out_dir: Path, rendered: list[tuple[str, dict]]) -> Path:
+    """A local page to compare each new line with the current app audio."""
+    rel_public = os.path.relpath(PUBLIC_DIR, out_dir).replace(os.sep, "/")
+    rows = "\n".join(
+        f"<tr><td><code>{html.escape(i)}</code><br><small>{html.escape(m['character'])}</small></td>"
+        f"<td>{html.escape(m['kk'])}</td>"
+        f"<td><audio controls preload=none src=\"{html.escape(i)}.wav\"></audio></td>"
+        f"<td><audio controls preload=none src=\"{rel_public}/{html.escape(i)}.wav\"></audio></td></tr>"
+        for i, m in rendered)
+    page = out_dir / "review.html"
+    page.write_text(
+        "<!doctype html><meta charset=utf-8><title>VoiceStudio review</title>"
+        "<style>body{font:15px system-ui;margin:20px}td{border-top:1px solid #ddd;padding:8px;vertical-align:top}"
+        "th{text-align:left}</style><h1>VoiceStudio: новые голоса</h1>"
+        "<p>Слева новая реплика, справа то, что сейчас в приложении. Если нравится — запустите тот же скрипт с <code>--to-public</code>.</p>"
+        f"<table><tr><th>Реплика</th><th>Текст</th><th>VoiceStudio</th><th>Сейчас</th></tr>{rows}</table>",
+        encoding="utf-8")
+    return page
+
+
+# ------------------------------------------------------------------- main --
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--make-ref", action="store_true", help=f"(re)design the reference voice into {REF_WAV.relative_to(ROOT)}")
-    ap.add_argument("--mode", choices=["clone", "design"], default="clone")
-    ap.add_argument("--instruct", default=INSTRUCT, help="voice-design attributes (English, comma-separated)")
-    ap.add_argument("--ref", type=Path, default=REF_WAV, help="reference clip for --mode clone (3-10 s)")
-    ap.add_argument("--ref-text", default=REF_TEXT, help="exact transcript of --ref")
-    ap.add_argument("--seed", type=int, default=42)
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--make-ref", nargs="?", const="all", metavar="HEROES",
+                    help="design reference voices (all missing, or e.g. owl,bear) into tools/voice-ref/")
+    ap.add_argument("--characters", default="fox,owl,bear", help="whose lines to render (default: all heroes)")
     ap.add_argument("--only", help="comma-separated audio ids")
-    ap.add_argument("--force", action="store_true", help="re-render even if the .wav exists")
-    ap.add_argument("--to-public", action="store_true", help=f"write into {PUBLIC_DIR.relative_to(ROOT)} instead of the samples folder")
+    ap.add_argument("--prefix", help="comma-separated id prefixes, e.g. bh_,q_bh_ for one tale")
+    ap.add_argument("--mode", choices=["clone", "design"], default="clone")
+    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--force", action="store_true", help="re-render even if nothing changed")
+    ap.add_argument("--to-public", action="store_true", help=f"write into {PUBLIC_DIR.relative_to(ROOT)} (the app)")
     ap.add_argument("--out-dir", type=Path, help=f"output folder (default {SAMPLES_DIR.relative_to(ROOT)})")
+    ap.add_argument("--no-normalize", action="store_true", help="keep VoiceStudio's own loudness")
+    ap.add_argument("--no-lesson-slowdown", action="store_true", help="do not slow letter-lesson lines")
+    ap.add_argument("--dry-run", action="store_true", help="list what would be rendered; no backend needed")
     args = ap.parse_args()
 
-    check_backend()
-
     if args.make_ref:
-        generate(REF_TEXT, REF_WAV, language="en", seed=args.seed, instruct=args.instruct)
+        heroes = list(CHARACTERS) if args.make_ref == "all" else [h.strip() for h in args.make_ref.split(",") if h.strip()]
+        unknown = [h for h in heroes if h not in CHARACTERS]
+        if unknown:
+            sys.exit(f"unknown hero(es): {', '.join(unknown)} — known: {', '.join(CHARACTERS)}")
+        check_backend()
+        for h in heroes:
+            out = ref_path(h)
+            if out.exists() and not args.force:
+                print(f"skip {h}: {out.relative_to(ROOT)} exists (add --force to redesign)")
+                continue
+            audio, took = request(CHARACTERS[h]["ref_text"], language="en", seed=args.seed, instruct=CHARACTERS[h]["instruct"])
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(audio)
+            print(f"designed {h}: {out.relative_to(ROOT)} ({duration(audio):.1f}s, {took:.1f}s) — listen to it before rendering")
         return
 
-    if args.mode == "clone" and not args.ref.exists():
-        sys.exit(f"{args.ref} not found — run with --make-ref first")
+    heroes = [h.strip() for h in args.characters.split(",") if h.strip()]
+    unknown = [h for h in heroes if h not in CHARACTERS]
+    if unknown:
+        sys.exit(f"unknown hero(es): {', '.join(unknown)} — known: {', '.join(CHARACTERS)}")
 
-    out_dir = PUBLIC_DIR if args.to_public else (args.out_dir.resolve() if args.out_dir else SAMPLES_DIR)
-    wanted = lines()
+    meta = lines_meta()
+    wanted = {i: m for i, m in meta.items() if m["character"] in heroes}
     if args.only:
         keep = set(args.only.split(","))
-        wanted = {k: v for k, v in wanted.items() if k in keep}
+        wanted = {i: m for i, m in wanted.items() if i in keep}
+    if args.prefix:
+        prefixes = tuple(p.strip() for p in args.prefix.split(",") if p.strip())
+        wanted = {i: m for i, m in wanted.items() if i.startswith(prefixes)}
 
-    for audio_id, text in wanted.items():
+    if args.mode == "clone":
+        missing = sorted({m["character"] for m in wanted.values() if not ref_path(m["character"]).exists()})
+        if missing and not args.dry_run:
+            sys.exit(f"no reference voice for: {', '.join(missing)} — run with --make-ref first")
+
+    out_dir = PUBLIC_DIR if args.to_public else (args.out_dir.resolve() if args.out_dir else SAMPLES_DIR)
+    state_path = PUBLIC_STATE if args.to_public else out_dir / ".voicestudio-state.json"
+    state = load_state(state_path)
+    ffmpeg = None if args.no_lesson_slowdown else find_ffmpeg()
+    if not ffmpeg and not args.no_lesson_slowdown and any(m["lesson"] for m in wanted.values()):
+        print("note: ffmpeg not found — letter-lesson lines keep VoiceStudio's normal pace")
+
+    plan = []
+    for audio_id, m in wanted.items():
+        tempo = LESSON_TEMPO if (m["lesson"] and ffmpeg) else None
+        ref = ref_path(m["character"]) if args.mode == "clone" else None
+        fp = fingerprint(m["kk"], m["character"], args, ref, tempo)
         out = out_dir / f"{audio_id}.wav"
-        if not args.force and out.exists():
-            print(f"skip {audio_id} (exists)")
+        if not args.force and state.get(audio_id) == fp and out.exists():
             continue
+        plan.append((audio_id, m, tempo, ref, fp, out))
+
+    by_hero = {}
+    for _, m, *_ in plan:
+        by_hero[m["character"]] = by_hero.get(m["character"], 0) + 1
+    summary = ", ".join(f"{h} {n}" for h, n in sorted(by_hero.items())) or "nothing"
+    print(f"{len(plan)} of {len(wanted)} line(s) to render → {out_dir.relative_to(ROOT) if out_dir.is_relative_to(ROOT) else out_dir} ({summary})")
+    if args.dry_run:
+        for audio_id, m, tempo, *_ in plan:
+            print(f"  {audio_id:<22} {m['character']:<5}{' slow' if tempo else ''}  {m['kk'][:60]}")
+        return
+    if not plan:
+        return
+
+    check_backend()
+    done = []
+    for n, (audio_id, m, tempo, ref, fp, out) in enumerate(plan, 1):
+        cfg = CHARACTERS[m["character"]]
         if args.mode == "clone":
-            generate(text, out, language="kk", seed=args.seed, ref=args.ref, ref_text=args.ref_text)
+            audio, took = request(m["kk"], language="kk", seed=args.seed, ref=ref, ref_text=cfg["ref_text"])
         else:
-            generate(text, out, language="kk", seed=args.seed, instruct=args.instruct)
+            audio, took = request(m["kk"], language="kk", seed=args.seed, instruct=cfg["instruct"])
+        if tempo:
+            audio = slow_down(audio, ffmpeg, tempo)
+        if not args.no_normalize:
+            audio = level_match(audio)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(audio)
+        state[audio_id] = fp
+        save_state(state_path, state)  # after every line: an interrupted run resumes where it stopped
+        done.append((audio_id, m))
+        print(f"[{n}/{len(plan)}] {m['character']:<4} {audio_id} ({duration(audio):.1f}s audio, {took:.1f}s)")
+
+    if args.to_public:
+        subprocess.run(["node", str(ROOT / "tools" / "offline-manifest.js")], check=True)
+        print("Done. Check the app, then commit public/audio, public/offline-manifest.json "
+              f"and {PUBLIC_STATE.relative_to(ROOT)}.")
+    else:
+        page = write_review(out_dir, [(i, m) for i, m in wanted.items() if (out_dir / f"{i}.wav").exists()])
+        print(f"Listen: {page}  — then run the same command with --to-public")
 
 
 if __name__ == "__main__":

@@ -18,6 +18,6 @@ jobs:
       - name: Parse ESM entrypoints
         run: |
           set -e
-          for f in server/server.js server/bins.js server/static.js api/transcribe.js lib/blocklist-core.js lib/stt-hints-core.js; do
+          for f in server/server.js server/bins.js server/static.js api/transcribe.js api/version.js lib/blocklist-core.js lib/stt-hints-core.js lib/tale-forms.js lib/stt-pick.js; do
             cp "$f" /tmp/check.mjs && node --check /tmp/check.mjs && echo "ok $f"
           done

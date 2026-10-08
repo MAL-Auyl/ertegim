@@ -16,8 +16,22 @@ const STICKER_CATALOG = {
   owl: { kk: "Үкімен таныстым", ru: "Познакомился с совёнком", img: "/images/cover-owl.png", hint_kk: "Өзен жолымен жүр" },
   bear: { kk: "Аюмен таныстым", ru: "Познакомился с медведем", img: "/images/cover-bear-fullbody.png", hint_kk: "Орман жолымен жүр" },
   "letter-a": { kk: "А әрпі", ru: "Буква А", img: "/images/lesson-a/alma.svg", hint_kk: "А әрпі сабағын өт" },
+  "letter-o": { kk: "О әрпі", ru: "Буква О", img: "/images/lesson-o/oiynshyq.svg", hint_kk: "О әрпі сабағын өт" },
+  "letter-u": { kk: "Ұ әрпі", ru: "Буква Ұ", img: "/images/lesson-u/ushaq.svg", hint_kk: "Ұ әрпі сабағын өт" },
   star: { kk: "Жұлдыз", ru: "Всё с первого раза", img: "/images/sticker-star.svg", hint_kk: "Барлық сұраққа бірден жауап бер" },
 };
+
+// Every tale of story.js TALES earns its own sticker (same id as the
+// activity), shelved right after the fox tale's heroes.
+(function addTaleStickers() {
+  const tales = typeof TALES !== "undefined" ? TALES : (typeof require === "function" ? require("./story.js").TALES : {});
+  const entries = Object.entries(STICKER_CATALOG);
+  const at = entries.findIndex(([id]) => id === "bear") + 1;
+  const taleEntries = Object.entries(tales || {}).filter(([, t]) => t.sticker).map(([id, t]) => [id, t.sticker]);
+  const merged = [...entries.slice(0, at), ...taleEntries, ...entries.slice(at)];
+  for (const k of Object.keys(STICKER_CATALOG)) delete STICKER_CATALOG[k];
+  for (const [k, v] of merged) STICKER_CATALOG[k] = v;
+})();
 
 // Which stickers a finished session earns. `summary` is Session.finish()'s
 // result; a blocked or unfinished run earns nothing — stickers are for

@@ -67,6 +67,23 @@ describe("summarize", () => {
     expect(s.questionsTotal).toBe(2);
   });
 
+  test("answers judged by the adult (no network / mic) are counted apart", () => {
+    Session.start(1000, { activity: "letter-a", skills: ["sound_a", "word_a", "pick_a", "open_a"] });
+    Session.questionShown("q_a_sound", "sound_a", 1, 1000);
+    Session.answer({ nodeId: "q_a_sound", transcript: "👂 ата-ана", verdict: "unclear", source: "adult", answeredAt: 3000 });
+    Session.questionShown("q_a_sound", "sound_a", 2, 4000);
+    Session.answer({ nodeId: "q_a_sound", transcript: "👂 ата-ана", verdict: "correct", source: "adult", answeredAt: 6000 });
+    Session.questionShown("q_a_pick", "pick_a", 1, 7000);
+    Session.answer({ nodeId: "q_a_pick", transcript: "👆 алма", verdict: "correct", source: "tap", answeredAt: 8000 });
+    const s = Session.summarize(Session.current());
+    expect(s.adultAnswers).toBe(2);
+    expect(s.gestureAnswers).toBe(1);
+    expect(s.skills.sound_a).toBe("reask");
+    // nothing was heard: no «words», and the adult's tap delay is not a reaction time
+    expect(s.words).toEqual([]); // «👂 ата-ана» and «👆 алма» are not speech
+    expect(s.avgResponseSec).toBe(1); // only the child's own tap (1 s); the adult's 2 s is left out
+  });
+
   test("shown but never answered (all verdicts null) is 'skipped'", () => {
     Session.questionShown("q_tracks", "count", 1, 1000);
     const s = Session.summarize(Session.current());

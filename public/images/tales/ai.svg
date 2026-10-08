@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="ай">
+  <!-- Crescent moon («ай»): the "not the star" card. Pale and big, no face — it must not read as a second star. -->
+  <path d="M128 24 C76 30 42 70 42 112 C42 154 78 184 122 182 C92 166 74 140 74 106 C74 70 96 40 128 24 Z" fill="#E9EEF7" stroke="#14181C" stroke-width="7" stroke-linejoin="round"/>
+  <circle cx="150" cy="70" r="5" fill="#14181C" opacity="0.25"/>
+  <circle cx="160" cy="140" r="4" fill="#14181C" opacity="0.25"/>
+</svg>

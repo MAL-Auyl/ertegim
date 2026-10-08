@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="от">
+  <!-- Campfire: «от» on q_o_ot / q_o_pick. Two crossed logs and one big
+       flame, nothing else — a child should name it at a glance. -->
+  <rect x="34" y="150" width="132" height="22" rx="11" fill="#9A5B2E" stroke="#14181C" stroke-width="6" transform="rotate(12 100 161)"/>
+  <rect x="34" y="150" width="132" height="22" rx="11" fill="#B86E38" stroke="#14181C" stroke-width="6" transform="rotate(-12 100 161)"/>
+  <path d="M100 24 C122 54 150 76 146 112 C143 140 124 156 100 156 C76 156 57 140 54 112 C51 86 70 74 78 54 C84 70 90 76 96 80 C96 60 94 42 100 24 Z" fill="#FF7A2F" stroke="#14181C" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M100 86 C112 102 126 112 124 128 C122 142 112 150 100 150 C88 150 78 142 76 128 C75 114 88 104 100 86 Z" fill="#FFD23F"/>
+</svg>

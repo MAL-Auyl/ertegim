@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="ерін дөңгелек">
+  <!-- Articulation pictogram for [о]: the same face as lesson-a/mouth.svg,
+       lips rounded into a ring — the shape of the letter itself. -->
+  <circle cx="100" cy="100" r="80" fill="#FFD9A8" stroke="#14181C" stroke-width="7"/>
+  <circle cx="72" cy="80" r="9" fill="#14181C"/>
+  <circle cx="128" cy="80" r="9" fill="#14181C"/>
+  <path d="M60 70 C66 60 78 58 86 64" fill="none" stroke="#14181C" stroke-width="5" stroke-linecap="round"/>
+  <path d="M114 64 C122 58 134 60 140 70" fill="none" stroke="#14181C" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="100" cy="134" rx="25" ry="27" fill="#E8677A" stroke="#14181C" stroke-width="6"/>
+  <ellipse cx="100" cy="134" rx="12" ry="14" fill="#14181C"/>
+</svg>

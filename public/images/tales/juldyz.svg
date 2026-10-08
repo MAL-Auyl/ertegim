@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="жұлдыз">
+  <!-- Little star («жұлдыз», «Үкі жұлдыз іздейді»): five points, a smile, a glow. -->
+  <circle cx="100" cy="104" r="84" fill="#FFF6C4" opacity="0.7"/>
+  <path d="M100 22 L122 76 L180 80 L136 116 L150 172 L100 142 L50 172 L64 116 L20 80 L78 76 Z" fill="#FFD23F" stroke="#14181C" stroke-width="7" stroke-linejoin="round"/>
+  <circle cx="86" cy="100" r="6" fill="#14181C"/>
+  <circle cx="114" cy="100" r="6" fill="#14181C"/>
+  <path d="M88 118 C94 126 106 126 112 118" fill="none" stroke="#14181C" stroke-width="5" stroke-linecap="round"/>
+</svg>

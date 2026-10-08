@@ -63,7 +63,7 @@ const parentBtn = document.getElementById("parentBtn");
 // q_a_), so every NODES[...] lookup below is the same for either.
 const pageParams = new URLSearchParams(location.search);
 const ACTIVITY = ACTIVITIES[pageParams.get("lesson")] || ACTIVITIES.story;
-const NODES = { ...STORY, ...LESSON_A };
+const NODES = Object.assign({}, STORY, ...Object.values(LETTER_LESSONS).map((l) => l.nodes), ...Object.values(TALES).map((t) => t.nodes));
 
 // --- Gentle mode ----------------------------------------------------------
 // For children with a speech delay / dysarthria / ASD: longer pauses before
@@ -209,7 +209,18 @@ const LESSON_PICTURES = {
   alma: { src: "/images/lesson-a/alma.svg", kk: "алма", ru: "яблоко" },
   dop: { src: "/images/lesson-a/dop.svg", kk: "доп", ru: "мяч" },
   ana: { src: "/images/lesson-a/ana.svg", kk: "ана", ru: "мама" },
+  // lesson «О» (LESSON_O)
+  mouth_o: { src: "/images/lesson-o/mouth-o.svg", kk: "О-о-о", ru: "губы кругленькие" },
+  ot: { src: "/images/lesson-o/ot.svg", kk: "от", ru: "огонь" },
+  mysyq: { src: "/images/lesson-o/mysyq.svg", kk: "мысық", ru: "кошка" },
+  oiynshyq: { src: "/images/lesson-o/oiynshyq.svg", kk: "ойыншық", ru: "игрушка" },
+  // lesson «Ұ» (LESSON_U)
+  mouth_u: { src: "/images/lesson-u/mouth-u.svg", kk: "Ұ-ұ-ұ", ru: "губы трубочкой" },
+  ushaq: { src: "/images/lesson-u/ushaq.svg", kk: "ұшақ", ru: "самолёт" },
+  unaidy: { src: "/images/lesson-u/unaidy.svg", kk: "ұнайды", ru: "нравится" },
 };
+// Tale picture cards come with each tale (story.js TALES[...].pictures).
+for (const t of Object.values(TALES)) Object.assign(LESSON_PICTURES, t.pictures || {});
 
 function pictureCardHTML(picId, { kk, ru, choiceId } = {}) {
   const pic = LESSON_PICTURES[picId];
@@ -297,15 +308,18 @@ function renderLessonOverlay(spec) {
     : "";
   // `plus: n` adds a "+" and n more apples after the base row; `minus: n`
   // fades the last n apples out once the row has landed ("the fox ate it").
-  const base = spec.apples || 0;
+  // `items` + `emoji` count anything (bees, stars, balloons); `apples` is the
+  // lessons' original spelling of the same row.
+  const base = spec.items || spec.apples || 0;
+  const icon = spec.emoji || "🍎";
   const step = spec.slow ? 900 : 160;
   const size = "font-size:clamp(34px,9vw,58px);";
   const pop = (i) => (still ? "" : `opacity:0;animation:lessonPop 420ms ${i * step}ms both;`);
   const apple = (i) => {
     const eaten = spec.minus && i >= base - spec.minus;
     const inner = eaten
-      ? `<span style="display:inline-block;${still ? "opacity:.25;filter:grayscale(1);" : `animation:lessonEaten 600ms ${base * step + 500}ms both;`}">🍎</span>`
-      : "🍎";
+      ? `<span style="display:inline-block;${still ? "opacity:.25;filter:grayscale(1);" : `animation:lessonEaten 600ms ${base * step + 500}ms both;`}">${icon}</span>`
+      : icon;
     return `<span style="${size}filter:drop-shadow(0 4px 8px rgba(46,32,19,.35));${pop(i)}">${inner}</span>`;
   };
   let row = Array.from({ length: base }, (_, i) => apple(i)).join("");
@@ -647,10 +661,13 @@ function awaitLineEnd() {
   });
 }
 
-// Next Steps #7: pre-rendered fallback audio (tools/prerender.py output,
-// served from /audio/<stateId>.wav) — stage-risk hedge in case live Piper
-// or the request itself lags. Live call gets a short leash (2.5s); on any
-// failure or timeout we fall back to the static file for that state.
+// Every line plays its pre-rendered file first (public/audio/<stateId>.wav —
+// Piper via tools/prerender.py, or per-hero VoiceStudio voices via
+// tools/prerender_voicestudio.py). Live Piper (/api/speak, local server
+// only) is the fallback for a line with no file yet; with neither, the text
+// stays up for its reading time. File-first means the voices chosen for the
+// heroes are what the child hears everywhere — not only on the deployed site
+// where /api/speak does not exist — and no line waits on a synthesis call.
 // The echo only ever starts on heroVoice's `ended` event. If the line
 // finished on its leash instead (broken blob, stalled element), the echo will
 // never play — settle it right away rather than waiting out its own leash.
@@ -684,6 +701,35 @@ function stopEchoPlayback() {
 
 // Awaits the echo too when the node has one: the resolved promise means
 // "the fox has stopped making noise", which is what arming the mic waits on.
+async function playClip(src, echo) {
+  heroVoice.src = src;
+  const echoDone = echo && ECHO_IDS.has(currentId) ? scheduleEcho(heroVoice.src) : null;
+  // play() can hang indefinitely instead of rejecting in some browser/
+  // automation contexts — never let audio playback stall the demo.
+  await playWithTimeout(3000);
+  await awaitLineEnd();
+  await settleEcho(echoDone);
+}
+
+async function speakLive(text, echo) {
+  const controller = new AbortController();
+  const abortTimer = setTimeout(() => controller.abort(), 2500);
+  const res = await fetch("/api/speak", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+    signal: controller.signal,
+  });
+  clearTimeout(abortTimer);
+  if (!res.ok) throw new Error(`live TTS ${res.status}`);
+  const ms = res.headers.get("X-Synth-Ms");
+  // The echo replays this very same object URL — do not revoke it while an
+  // echo may still be playing (it outlives the main line by ~0.45s + its
+  // own duration).
+  await playClip(URL.createObjectURL(await res.blob()), echo);
+  return ms;
+}
+
 async function speakLine(text, stateId, { echo = false } = {}) {
   speakGen++;
   // An operator override can switch nodes mid-line — the new line must cut
@@ -693,52 +739,26 @@ async function speakLine(text, stateId, { echo = false } = {}) {
   stopEchoPlayback();
   if (!text) return;
   setStage("tts", "running", "");
-  try {
-    const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), 2500);
-    const res = await fetch("/api/speak", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-      signal: controller.signal,
-    });
-    clearTimeout(abortTimer);
-    if (!res.ok) throw new Error((await res.json()).error || res.statusText);
-    const ms = res.headers.get("X-Synth-Ms");
-    const blob = await res.blob();
-    // The echo replays this very same object URL — do not revoke it while an
-    // echo may still be playing (it outlives the main line by ~0.45s + its
-    // own duration).
-    heroVoice.src = URL.createObjectURL(blob);
-    const echoDone = echo && ECHO_IDS.has(currentId) ? scheduleEcho(heroVoice.src) : null;
-    // play() can hang indefinitely instead of rejecting in some browser/
-    // automation contexts — never let audio playback stall the demo.
-    await playWithTimeout(3000);
-    await awaitLineEnd();
-    await settleEcho(echoDone);
-    log(`voice: "${text.slice(0, 40)}${text.length > 40 ? "…" : ""}" (${ms}ms synth)`);
-    setStage("tts", "ok", `${ms}ms live`);
-  } catch (err) {
-    if (stateId) {
-      try {
-        heroVoice.src = `/audio/${stateId}.wav`;
-        const echoDone = echo && ECHO_IDS.has(currentId) ? scheduleEcho(heroVoice.src) : null;
-        await playWithTimeout(3000);
-        await awaitLineEnd();
-        await settleEcho(echoDone);
-        log(`voice: fallback pre-rendered audio for "${stateId}" (live TTS: ${err.message})`);
-        setStage("tts", "skip", "fallback wav");
-        return;
-      } catch (fallbackErr) {
-        log(`voice error, fallback also failed: ${fallbackErr.message} — держу реплику ${readingTimeMs(text)}мс текстом`);
-        setStage("tts", "err", "live + fallback failed");
-        await sleep(readingTimeMs(text));
-        return;
-      }
+  let fileErr = null;
+  if (stateId) {
+    try {
+      await playClip(`/audio/${stateId}.wav`, echo);
+      log(`voice: /audio/${stateId}.wav`);
+      setStage("tts", "ok", "wav");
+      return;
+    } catch (err) {
+      fileErr = err;
     }
-    // Non-fatal — the WoZ operator still has the on-screen text either way.
-    log(`voice error (text still shown): ${err.message}`);
-    setStage("tts", "err", err.message);
+  }
+  try {
+    const ms = await speakLive(text, echo);
+    log(`voice: live "${text.slice(0, 40)}${text.length > 40 ? "…" : ""}" (${ms}ms synth${fileErr ? `; wav: ${fileErr.message}` : ""})`);
+    setStage("tts", "skip", `${ms}ms live`);
+  } catch (err) {
+    // Neither a file nor live synthesis: the text is all the child gets.
+    log(`voice error: ${fileErr ? `wav ${fileErr.message}; ` : ""}live ${err.message} — держу реплику ${readingTimeMs(text)}мс текстом`);
+    if (stateId) noteError(`voice: /audio/${stateId}.wav — ${(fileErr || err).message}`, "speakLine");
+    setStage("tts", "err", "no wav, no live");
     await sleep(readingTimeMs(text));
   }
 }
@@ -1160,6 +1180,10 @@ function armVadForQuestion() {
     setListenCue(false, false);
     setStage("mic", "err", err.name || err.message);
     log(`VAD недоступен, ручной режим: ${err.name || err.message}`);
+    micUnavailable = true;
+    micErrorName = err.name || "";
+    noteError(`mic: ${err.name || ""} ${err.message || ""}`.trim(), "getUserMedia");
+    showJudgeBar("mic");
     // No mic at all means no clip will ever be submitted, so the
     // Correct/Re-ask/Advance controls (normally opened by submitAudio)
     // would never appear and the operator would be stuck on this question
@@ -1233,6 +1257,115 @@ function log(msg) {
 
 let currentRoute = null; // "river" | "forest", set at q_fork
 
+// --- «Ата-ана бағалайды»: the adult judges the answer -------------------
+// Voice answers need the network (speech recognition runs on the server).
+// Without it — or without a microphone, or when recognition keeps failing —
+// the child must not get stuck on the first question: the hero still asks,
+// and the adult next to the child taps «Айтты» / «Тағы» on a big bar under
+// the speech bubble. A child profile can also ask for this ALWAYS
+// (settings.judge = "adult"): for severe speech impairments a therapist's
+// ear is more reliable than any recogniser. Picture cards stay tappable for
+// the child either way. Answers are recorded with source "adult".
+const judgeBar = document.getElementById("judgeBar");
+const judgeButtons = document.getElementById("judgeButtons");
+const judgeWhy = document.getElementById("judgeWhy");
+const STT_FAILS_FOR_ADULT = 2; // consecutive recognition failures before the bar stays on
+let sttFailStreak = 0;
+let micUnavailable = false;
+let micErrorName = "";
+const judgeHint = document.getElementById("judgeHint");
+// What the adult can do about it — shown once per reason under the buttons.
+// Phrased for a phone or tablet (the pilot devices), not for a laptop.
+function judgeHintText(reason) {
+  if (reason === "offline") return "Интернет жоқ: жауапты сіз бағалайсыз. Интернет пайда болғанда микрофон қайта қосылады. · Нет интернета — ответ оцениваете вы; с интернетом микрофон включится снова.";
+  if (reason === "stt") return "Сөйлеуді тану уақытша істемейді. · Распознавание речи сейчас не отвечает — оцените ответ сами.";
+  if (reason === "mic") {
+    if (micErrorName === "NotAllowedError" || micErrorName === "SecurityError") {
+      return "Микрофонға рұқсат жоқ. · Доступ к микрофону запрещён: нажмите 🔒 или ⓘ слева от адреса сайта → Микрофон → Разрешить, затем обновите страницу.";
+    }
+    if (micErrorName === "NotFoundError" || micErrorName === "OverconstrainedError") return "Микрофон табылмады. · Микрофон не найден — подключите гарнитуру или используйте другое устройство.";
+    if (micErrorName === "NotReadableError") return "Микрофонды басқа қолданба алып тұр. · Микрофон занят другим приложением (звонок, запись) — закройте его и обновите страницу.";
+    return "Микрофон қосылмады. · Микрофон не включился — ответы оценивает взрослый.";
+  }
+  return "";
+}
+let judgeHintShown = "";
+const BRANCH_LABELS = {
+  river: { kk: "🌊 Өзен", ru: "река" },
+  forest: { kk: "🌲 Орман", ru: "лес" },
+};
+const JUDGE_WHY = {
+  setting: "👂",
+  offline: "📴 Интернет жоқ ·",
+  mic: "🎙️✕ Микрофон жоқ ·",
+  stt: "📶 Байланыс әлсіз ·",
+};
+
+// Pilot diagnostics (errlog.js): failures the adult never sees as an error
+// but the developer needs — recognition down, mic refused.
+function noteError(msg, src) {
+  try {
+    if (typeof ErrLog !== "undefined") ErrLog.note(msg, { src, page: location.pathname + location.search, version: localStorage.getItem("ertegim.version") || "" });
+  } catch { /* diagnostics are best-effort */ }
+}
+
+function adultJudgeReason() {
+  if (CHILD_SETTINGS.judge === "adult") return "setting";
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return "offline";
+  if (micUnavailable) return "mic";
+  if (sttFailStreak >= STT_FAILS_FOR_ADULT) return "stt";
+  return null;
+}
+
+function hideJudgeBar() {
+  if (!judgeBar) return;
+  judgeBar.classList.remove("show");
+  judgeButtons.innerHTML = "";
+}
+
+function showJudgeBar(reason) {
+  if (!judgeBar || storyEnded) return;
+  const s = NODES[currentId];
+  if (!s || s.kind !== "question") return;
+  judgeWhy.textContent = JUDGE_WHY[reason] || "";
+  // The mic button is the operator's override; next to the adult's bar it
+  // only suggests «press to talk», which is exactly what does not work now.
+  recordBtn.style.display = "none";
+  const hint = judgeHintText(reason);
+  // Explain each reason once per session, not on every question.
+  if (judgeHint) {
+    judgeHint.hidden = !hint || judgeHintShown.includes(`|${reason}|`);
+    judgeHint.textContent = hint;
+    judgeHintShown += `|${reason}|`;
+  }
+  const btn = (cls, data, kk, ru) => `<button type="button" class="judge-btn ${cls}" data-judge="${data}">${kk}<small>${ru}</small></button>`;
+  const yes = s.mode === "branch"
+    ? Object.keys(s.onAnswer || {}).map((r) => btn("route", `route:${r}`, (BRANCH_LABELS[r] || { kk: r }).kk, (BRANCH_LABELS[r] || { ru: "" }).ru)).join("")
+    : btn("yes", "correct", "✅ Айтты", "сказал(а)");
+  judgeButtons.innerHTML = yes + btn("again", "reask", "🔁 Тағы бір рет", "ещё раз");
+  judgeBar.classList.add("show");
+  log(`ата-ана бағалайды (${reason}): микрофон не слушает, ответ оценивает взрослый`);
+}
+
+function onJudge(action) {
+  if (storyEnded || !currentId) return;
+  const s = NODES[currentId];
+  if (!s || s.kind !== "question") return;
+  judgeButtons.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+  cancelAiAutoAdvance();
+  disarmVad();
+  if (!lastTranscript) lastTranscript = "👂 ата-ана";
+  if (!recordingStartedAt) recordingStartedAt = Date.now();
+  if (action === "reask") { markReask("adult"); return; }
+  if (action.startsWith("route:")) pendingRoute = action.slice(6);
+  if (s.mode === "pick") pendingChoice = Object.keys(s.onAnswer || {})[0] || null;
+  markCorrect("adult");
+}
+judgeButtons?.addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-judge]");
+  if (b && !b.disabled) onJudge(b.dataset.judge);
+});
+
 function renderState(id) {
   // Soft session cap: past the limit, any non-final beat jumps straight to
   // the finale instead of cutting the child off mid-story.
@@ -1248,6 +1381,7 @@ function renderState(id) {
   cancelAiAutoAdvance();
   cancelNarrationAutoAdvance();
   disarmVad();
+  hideJudgeBar();
   aiVerdictEl.classList.remove("show");
   blockedFlash.classList.remove("show", "materialize-in");
   resultEl.classList.remove("show", "materialize-in");
@@ -1310,6 +1444,8 @@ function renderState(id) {
   if (id === "lp_ok") Session.moment("екіге бірді қосты");
   if (id === "lm_ok") Session.moment("төрттен бірді азайтты");
   if (id === "lw_ok") Session.moment("А әрпін жазды");
+  if (id === "o_sound_ok") Session.moment("О дыбысын айтты");
+  if (id === "u_sound_ok") Session.moment("Ұ дыбысын айтты");
 
   if (s.kind === "narration") {
     nextBtn.style.display = "block";
@@ -1346,7 +1482,9 @@ function renderState(id) {
     lastTranscript = "";
     recordingStartedAt = 0;
     nextBtn.style.display = "none";
-    recordBtn.style.display = "flex";
+    // In «the adult judges» mode the mic never opens — do not show it even
+    // while the hero is still speaking (showJudgeBar hides it later anyway).
+    recordBtn.style.display = adultJudgeReason() ? "none" : "flex";
     recordBtn.disabled = false;
     recordBtn.textContent = "🎙";
     recordBtn.title = "Слушаю… (нажми, если ребёнок уже ответил)";
@@ -1362,6 +1500,8 @@ function renderState(id) {
     // hears the hero's own voice from the speakers and trips the VAD.
     speakDone.then(() => {
       if (currentId !== id || gen !== speakGen) return;
+      const why = adultJudgeReason();
+      if (why) { showJudgeBar(why); return; }
       armVadForQuestion();
       log("mic armed after line");
     });
@@ -1474,8 +1614,8 @@ async function startRecording() {
     stream = await navigator.mediaDevices.getUserMedia({ audio: MIC_CONSTRAINTS });
   } catch (err) {
     const hint = {
-      NotFoundError: "микрофон не найден — проверь Параметры Windows → Звук → Ввод",
-      NotAllowedError: "доступ к микрофону запрещён — проверь разрешения сайта и Windows",
+      NotFoundError: "микрофон не найден — подключи гарнитуру или проверь настройки звука устройства",
+      NotAllowedError: "доступ к микрофону запрещён — 🔒/ⓘ у адреса сайта → Микрофон → Разрешить, затем обнови страницу",
       NotReadableError: "микрофон занят другим приложением",
     }[err.name] || err.message;
     statusText.textContent = `Микрофон недоступен: ${hint}`;
@@ -1602,6 +1742,7 @@ async function submitAudio(blob, filename, meta = {}) {
       return;
     }
 
+    sttFailStreak = 0;
     statusText.textContent = "";
     thinkingDots.hidden = true;
     lastAlternatives = data.alternatives || [];
@@ -1672,6 +1813,12 @@ async function submitAudio(blob, filename, meta = {}) {
     resultEl.classList.add("show", "materialize-in");
     setStage("stt", "err", err.message);
     log(`STT недоступен, ручной режим: ${err.message}`);
+    // The child is not left waiting for a button only the operator panel
+    // has: the adult judges this answer, and after a second failure in a row
+    // every next question too (adultJudgeReason).
+    sttFailStreak++;
+    if (navigator.onLine !== false) noteError(`stt: ${err.message}`, "/api/transcribe");
+    showJudgeBar(sttFailStreak >= STT_FAILS_FOR_ADULT ? "stt" : (navigator.onLine === false ? "offline" : "stt"));
   } finally {
     recordBtn.disabled = false;
     fileInput.disabled = false;
@@ -2022,7 +2169,9 @@ document.getElementById("btnAdvance").addEventListener("click", () => {
 // renderState() call in the app already runs inside a click handler;
 // this "Бастау" gate makes the first one no exception.
 function startStateForMemory() {
-  const played = ACTIVITY.kind === "lesson" ? Session.lessonRuns(ACTIVITY.id) : Session.memory().runs;
+  // The fox tale keeps its original counter; every other activity (lessons,
+  // the tales of TALES) has its own under memory().lessons[id].
+  const played = ACTIVITY.id !== "story" ? Session.lessonRuns(ACTIVITY.id) : Session.memory().runs;
   return played > 0 ? ACTIVITY.startAgain : ACTIVITY.start;
 }
 
@@ -2033,9 +2182,10 @@ document.getElementById("startTitle").textContent = ACTIVITY.title;
 document.getElementById("startSubKk").textContent = ACTIVITY.subtitleKk;
 document.getElementById("startSubRu").textContent = ACTIVITY.subtitleRu;
 document.getElementById("endLine").textContent = ACTIVITY.endLineKk;
-if (ACTIVITY.kind === "lesson") {
+if (ACTIVITY.kind === "lesson" || ACTIVITY.kind === "tale") {
   document.title = `Ертегім — ${ACTIVITY.title}`;
-  document.getElementById("startSky")?.classList.add("sky-day"); // a lesson starts in daylight, not at dusk
+  // A lesson starts in daylight, not at dusk; a tale says which it needs.
+  if (ACTIVITY.kind === "lesson" || ACTIVITY.startSky === "day") document.getElementById("startSky")?.classList.add("sky-day");
 }
 if (ACTIVITY.id !== "story") log(`активность из URL: ${ACTIVITY.id} (${ACTIVITY.kind})`);
 

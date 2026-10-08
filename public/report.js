@@ -13,11 +13,28 @@ const SKILL_META = {
   word_a: { icon: "🍎", name: "«Алма» сөзі" },
   pick_a: { icon: "👆", name: "А-ны суреттен тапты" },
   open_a: { icon: "💛", name: "Ана туралы айтты" },
+  // letter lessons «О» and «Ұ» (LESSON_O / LESSON_U in story.js)
+  sound_o: { icon: "🔤", name: "«О» дыбысы" },
+  word_o: { icon: "🔥", name: "«От» сөзі" },
+  pick_o: { icon: "👆", name: "О-ны суреттен тапты" },
+  open_o: { icon: "🧸", name: "Ойыншық туралы айтты" },
+  sound_u: { icon: "🔤", name: "«Ұ» дыбысы" },
+  word_u: { icon: "✈️", name: "«Ұшақ» сөзі" },
+  pick_u: { icon: "👆", name: "Ұ-ны суреттен тапты" },
+  open_u: { icon: "💛", name: "Не ұнайтынын айтты" },
   letter: { icon: "🔤", name: "Әріптер" },
   plus: { icon: "➕", name: "Қосу" },
   minus: { icon: "➖", name: "Азайту" },
   write: { icon: "✏️", name: "Жазу" },
 };
+
+// Tales bring their own skill rows (story.js TALES[...].skills). In the
+// browser TALES is a global from story.js; under tests it is require()'d.
+const TALES_FOR_REPORT = typeof TALES !== "undefined" ? TALES
+  : (typeof require === "function" ? require("./story.js").TALES : {});
+for (const t of Object.values(TALES_FOR_REPORT || {})) {
+  for (const [k, v] of Object.entries(t.skills || {})) SKILL_META[k] = { icon: v.icon, name: v.kk };
+}
 
 // Only the rows this session actually had: summarize() keys `skills` by the
 // activity's own list, so a letter lesson never shows the tale's four rows
@@ -116,8 +133,12 @@ function renderReport(summary, history, doc = document) {
   const gestureEl = el(doc, "reportGesture");
   if (gestureEl) {
     const n = summary.gestureAnswers || 0;
-    gestureEl.style.display = n ? "block" : "none";
-    gestureEl.textContent = n ? `👆 ${n} жауап — сөзбен емес, суретті көрсетіп` : "";
+    const a = summary.adultAnswers || 0;
+    const lines = [];
+    if (n) lines.push(`👆 ${n} жауап — сөзбен емес, суретті көрсетіп`);
+    if (a) lines.push(`👂 ${a} жауапты ересек адам бағалады`);
+    gestureEl.style.display = lines.length ? "block" : "none";
+    gestureEl.textContent = lines.join(" · ");
   }
 
   const rows = history.slice(0, 5);

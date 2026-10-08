@@ -1,0 +1,111 @@
+<!doctype html>
+<!-- Памятка: how to run a session at home and in the therapist's office.
+     Two audiences on one printable page; kk first, ru below each point. -->
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ертегім — нұсқаулық</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32 48x48">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#ff7a2f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="design-system.css">
+<style>
+  body { display: flex; flex-direction: column; align-items: center; padding: 12px 12px 60px; }
+  .wrap { width: 100%; max-width: 820px; }
+  .topbar { max-width: 820px; }
+  .sheet { background: var(--card-solid); border: 3px solid var(--ink); border-radius: var(--radius-xl); box-shadow: 0 7px 0 0 var(--ink-shadow); padding: var(--space-5); margin-top: var(--space-4); }
+  .jump { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--space-4); }
+  .jump a, .jump button { padding: 10px 16px; border-radius: 999px; font: inherit; font-weight: 800; text-decoration: none; color: var(--ink); background: var(--card-solid); border: 2.5px solid var(--line); box-shadow: 0 3px 0 0 var(--line); cursor: pointer; }
+  h2 { margin: 0 0 var(--space-2); font-size: 1.3rem; font-weight: 900; }
+  h2 small { display: block; font-size: 0.85rem; font-weight: 700; color: var(--ink-soft); }
+  ol.steps { margin: var(--space-3) 0 0; padding-left: 0; list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 12px; }
+  ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+  ol.steps > li::before { content: counter(s); display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 900; border: 2px solid var(--ink); }
+  .kk { font-weight: 800; }
+  .ru { display: block; color: var(--ink-soft); font-size: 0.92rem; margin-top: 2px; }
+  .note { margin-top: var(--space-4); padding: 10px 14px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--info) 10%, var(--card-solid)); border: 2px solid color-mix(in srgb, var(--info) 35%, transparent); font-size: 0.9rem; font-weight: 700; }
+  .btns { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+  .chip { display: inline-block; padding: 1px 9px; border-radius: 999px; border: 2px solid var(--ink); font-size: 0.82rem; font-weight: 900; white-space: nowrap; }
+  .chip.yes { background: var(--ok); color: #fff; } .chip.again { background: var(--warn); color: #fff; }
+  @media print {
+    body { padding: 0; background: #fff; }
+    .topbar, .jump, .no-print { display: none !important; }
+    .sheet { box-shadow: none; border: 1px solid #999; border-radius: 8px; break-inside: avoid-page; }
+    #therapist { break-before: page; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <a class="topbar-back" href="/" aria-label="Басты бетке">←</a>
+      <h1 class="topbar-logo">📖 Нұсқаулық</h1>
+    </div>
+    <span class="muted">Памятка</span>
+  </div>
+
+  <div class="wrap">
+    <nav class="jump" aria-label="Бөлімдер">
+      <a href="#parents">👪 Ата-аналарға · Родителям</a>
+      <a href="#therapist">🩺 Логопедке · Логопеду</a>
+      <a href="/consent.html">📝 Келісім · Согласие</a>
+      <button type="button" onclick="window.print()">🖨 Басып шығару · Печать</button>
+    </nav>
+
+    <section class="sheet" id="parents">
+      <h2>👪 Ата-аналарға <small>Родителям: как заниматься дома</small></h2>
+      <ol class="steps">
+        <li><div><span class="kk">Тыныш бөлмеде, баланың қасында отырыңыз. Дыбысты қаттырақ қойыңыз.</span>
+          <span class="ru">Тихая комната, вы рядом с ребёнком. Звук погромче.</span></div></li>
+        <li><div><span class="kk">Бірінші рет «Микрофонға рұқсат беру» сұралса — «Рұқсат ету» басыңыз.</span>
+          <span class="ru">В первый раз браузер спросит про микрофон — нажмите «Разрешить».</span></div></li>
+        <li><div><span class="kk">Түлкі сұрайды — бала дауыспен жауап береді немесе суретті саусағымен көрсетеді. Экранда «Сенің кезегің» белгісі шығады.</span>
+          <span class="ru">Лисёнок спрашивает — ребёнок отвечает голосом или показывает картинку пальцем. Когда его очередь, на экране значок «Сенің кезегің».</span></div></li>
+        <li><div><span class="kk">Баланың орнына жауап бермеңіз және түзетпеңіз. Кез келген талпынысы үшін мақтаңыз — қиын болса, түлкі өзі көмектеседі.</span>
+          <span class="ru">Не отвечайте за ребёнка и не исправляйте. Хвалите за любую попытку — если трудно, лисёнок поможет сам.</span></div></li>
+        <li><div><span class="kk">Интернет болмаса, сұрақтың астында «Ата-ана бағалайды» жолағы шығады. Бала айтса немесе тырысса — <span class="chip yes">✅ Айтты</span>, жоқ болса — <span class="chip again">🔁 Тағы бір рет</span>.</span>
+          <span class="ru">Нет интернета — под вопросом появится полоса «Ата-ана бағалайды». Сказал или попытался — «Айтты», нет — «Тағы бір рет».</span></div></li>
+        <li><div><span class="kk">Бір сабақ — 3–5 минут. Аптасына 2–3 рет, күнде бір уақытта болғаны жақсы. Бала шаршаса — тоқтатыңыз.</span>
+          <span class="ru">Одно занятие — 3–5 минут, 2–3 раза в неделю, лучше в одно и то же время. Устал — остановитесь.</span></div></li>
+        <li><div><span class="kk">Логопед сілтеме жіберсе — ашыңыз да «Қабылдау» басыңыз. Басты бетте апталық тапсырма көрінеді.</span>
+          <span class="ru">Логопед прислал ссылку — откройте и нажмите «Қабылдау». На главной появится задание недели.</span></div></li>
+        <li><div><span class="kk">Аптаның соңында: Кабинет → «📤 Отправить логопеду» — файлды логопедке WhatsApp арқылы жіберіңіз.</span>
+          <span class="ru">В конце недели: Кабинет → «📤 Отправить логопеду» — отправьте файл логопеду в WhatsApp.</span></div></li>
+        <li><div><span class="kk">iPhone/iPad: Safari-де «Бөлісу» → «Басты экранға» басыңыз. Әйтпесе Safari 7 күннен кейін деректерді өшіруі мүмкін.</span>
+          <span class="ru">iPhone/iPad: в Safari «Поделиться» → «На экран „Домой“». Иначе Safari может стереть данные через 7 дней без посещений.</span></div></li>
+      </ol>
+      <p class="note">🔒 Баланың дауысы Ертегімде сақталмайды: жауап тек мәтінге айналдыру үшін сөйлеуді тану сервисіне жіберіледі. Нәтижелер тек осы құрылғыда.<br>
+        <span class="ru">Голос ребёнка в Ертегім не сохраняется: ответ отправляется сервису распознавания речи только чтобы превратить его в текст. Результаты хранятся только на этом устройстве.</span></p>
+    </section>
+
+    <section class="sheet" id="therapist">
+      <h2>🩺 Логопедке <small>Логопеду: первый запуск и работа на пилоте</small></h2>
+      <ol class="steps">
+        <li><div><span class="kk">Планшетте бір рет: Кабинет → «📥 Скачать для работы без интернета». Wi-Fi арқылы, шамамен 35 МБ.</span>
+          <span class="ru">Один раз на планшете: Кабинет → «Скачать для работы без интернета». По Wi-Fi, около 35 МБ.</span></div></li>
+        <li><div><span class="kk">Әр балаға профиль ашыңыз: аты, жасы, жұмсақ режим, кім бағалайды.</span>
+          <span class="ru">На каждого ребёнка — профиль: имя, возраст, мягкий режим и «кто оценивает ответ». Для тяжёлых нарушений речи — «всегда взрослый».</span></div></li>
+        <li><div><span class="kk">Транскрипттерді сақтауды тек ата-ананың жазбаша келісімімен қосыңыз.</span>
+          <span class="ru">«Сохранять транскрипты» включайте только с письменного согласия родителей — бланк по кнопке «Согласие» выше.</span></div></li>
+        <li><div><span class="kk">Сабақ кезінде баланың қасында болыңыз. Тану қате болса, кабинетте әр әрекеттің транскриптін көресіз.</span>
+          <span class="ru">На занятии вы рядом. Распознавание детской речи неидеально — в кабинете видно каждую попытку, последнее слово за вами.</span></div></li>
+        <li><div><span class="kk">Үй тапсырмасы: «📝 Домашнее задание» → сабақтар, аптасына неше рет, ата-анаға жазба → «🔗 Ссылка для родителей».</span>
+          <span class="ru">Домашнее задание: отметьте занятия, сколько раз в неделю, заметку → «Ссылка для родителей» в WhatsApp. Результаты из дома — кнопкой «Загрузить результаты из дома».</span></div></li>
+        <li><div><span class="kk">«👥 Все дети» кестесі назар аударатын балаларды бірінші көрсетеді.</span>
+          <span class="ru">Таблица «Все дети» показывает первыми тех, кто давно не занимался, отстаёт с заданием или стал реже отвечать с первого раза.</span></div></li>
+        <li><div><span class="kk">Аптасына бір рет: «💾 Сохранить копию устройства» — файлды бұлтта сақтаңыз.</span>
+          <span class="ru">Раз в неделю: «Сохранить копию устройства» и положите файл в облако. Новый планшет — «Восстановить из копии».</span></div></li>
+        <li><div><span class="kk">Бірдеңе бұзылса: «📋 Скопировать журнал» → әзірлеушіге жіберіңіз, не болғанын сипаттаңыз.</span>
+          <span class="ru">Что-то сломалось — «Скопировать журнал» и отправьте разработчику с описанием: что делали, на каком экране.</span></div></li>
+      </ol>
+      <p class="note">⚠️ Ертегім — жаттығу құралы, диагноз қоймайды. <span class="ru">Ертегім — тренажёр, а не диагностика: отчёт показывает, как прошли занятия, но не заменяет заключение специалиста.</span></p>
+    </section>
+  </div>
+  <script src="offline.js"></script>
+  <script>OfflineKit.register();</script>
+</body>
+</html>

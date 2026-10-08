@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="ұнайды">
+  <!-- «Ұнайды» (I like it): a smiling heart — the open, emotional question of
+       the Ұ lesson. A face, so it reads as a feeling and not a shape. -->
+  <path d="M100 176 C58 146 22 116 22 74 C22 46 42 28 66 28 C82 28 94 36 100 50 C106 36 118 28 134 28 C158 28 178 46 178 74 C178 116 142 146 100 176 Z" fill="#F0433A" stroke="#14181C" stroke-width="7" stroke-linejoin="round"/>
+  <circle cx="76" cy="82" r="8" fill="#14181C"/>
+  <circle cx="124" cy="82" r="8" fill="#14181C"/>
+  <path d="M74 108 C86 126 114 126 126 108" fill="none" stroke="#14181C" stroke-width="7" stroke-linecap="round"/>
+  <path d="M46 62 C50 50 58 44 68 42" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.75"/>
+</svg>

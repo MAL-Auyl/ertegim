@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-title" content="Ертегім">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<link crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="design-system.css">
 <style>
   /* Page layout only — the visual language (sky, scene, shelf cards, big
@@ -211,7 +211,7 @@
 
   <section class="shelf">
     <h2 class="section-title">🦊 Ертегілер <small>Сказки</small></h2>
-    <div class="row">
+    <div class="row" id="taleRow">
       <a class="book theme-dusk" href="/story.html">
         <div class="book-art"><img src="/images/cover-fox-fullbody.png" alt=""></div>
         <div class="book-body">
@@ -247,6 +247,22 @@
         <div class="book-body">
           <div class="book-title">А әрпі — түлкімен</div>
           <div class="book-desc">Для особых детей: звук «А», слово «алма», выбор картинки (можно показать пальцем), слово «ана». Мягкий режим.</div>
+          <span class="btn btn-primary book-cta">▶ Сабақ</span>
+        </div>
+      </a>
+      <a class="book theme-forest" href="/story.html?lesson=letter-o">
+        <div class="book-art book-art-letter"><span class="letter-big">Оо</span><img class="art-small" src="/images/lesson-o/oiynshyq.svg" alt=""></div>
+        <div class="book-body">
+          <div class="book-title">О әрпі — түлкімен</div>
+          <div class="book-desc">Звук «О» (губы кругленькие), слово «от», выбор картинки, рассказ про любимую игрушку. Мягкий режим.</div>
+          <span class="btn btn-primary book-cta">▶ Сабақ</span>
+        </div>
+      </a>
+      <a class="book theme-river" href="/story.html?lesson=letter-u">
+        <div class="book-art book-art-letter"><span class="letter-big">Ұұ</span><img class="art-small" src="/images/lesson-u/ushaq.svg" alt=""></div>
+        <div class="book-body">
+          <div class="book-title">Ұ әрпі — түлкімен</div>
+          <div class="book-desc">Звук «у» по-казахски (губы трубочкой), слово «ұшақ», выбор картинки, «что тебе нравится?». Мягкий режим.</div>
           <span class="btn btn-primary book-cta">▶ Сабақ</span>
         </div>
       </a>
@@ -302,7 +318,7 @@
     <div id="stickerShelf" class="sticker-shelf"></div>
   </section>
 
-  <footer>🔒 Баланың дауысы сақталмайды — тек сөздер мен көрсеткіштер. Ата-ана есебі — ертегінің соңында.<br><a class="cabinet-link" href="/cabinet.html">🩺 Кабинет логопеда / родителя</a></footer>
+  <footer>🔒 Баланың дауысы сақталмайды — тек сөздер мен көрсеткіштер. Ата-ана есебі — ертегінің соңында.<br><a class="cabinet-link" href="/cabinet.html">🩺 Кабинет логопеда / родителя</a> · <a class="cabinet-link" href="/help.html">📖 Нұсқаулық · Памятка</a></footer>
   <dialog class="hw-dialog" id="hwDialog">
     <h3>📝 Логопедтің тапсырмасы</h3>
     <p class="muted" style="margin:0;">Задание от логопеда</p>
@@ -312,10 +328,30 @@
       <button type="button" class="btn btn-muted" id="hwDecline">Жоқ</button>
     </div>
   </dialog>
+  <script src="errlog.js"></script>
+  <script src="story.js"></script>
   <script src="profiles.js"></script>
   <script src="session.js"></script>
   <script src="homework.js"></script>
   <script src="stickers.js"></script>
+  <script>
+    // The tale library: every tale of story.js TALES gets a card after the
+    // fox tale's own three, so a new tale needs no edit here.
+    (function () {
+      const row = document.getElementById("taleRow");
+      if (!row || typeof TALES === "undefined") return;
+      const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      row.insertAdjacentHTML("beforeend", Object.entries(TALES).map(([id, t]) => `
+        <a class="book ${esc(t.theme || "theme-dusk")}" href="/story.html?lesson=${encodeURIComponent(id)}">
+          <div class="book-art"><img src="${esc(t.cover)}" alt="">${t.sticker ? `<img class="tale-prop" src="${esc(t.sticker.img)}" alt="">` : ""}</div>
+          <div class="book-body">
+            <div class="book-title">${esc(t.title)}</div>
+            <div class="book-desc">${esc(t.cardDescRu || t.subtitleRu)}</div>
+            <span class="btn btn-primary book-cta">▶ Ойнау</span>
+          </div>
+        </a>`).join(""));
+    })();
+  </script>
   <script>
     // Active child, the therapist's homework (homework.js) and today's
     // assigned activities (set in the cabinet or received through a link).
@@ -347,6 +383,8 @@
           if (incoming.child && (target.name === "Бала" || /^Бала \d+$/.test(target.name))) patch.name = incoming.child;
           Profiles.update(target.id, patch);
           Profiles.setActive(target.id);
+          // Homework history now lives here — ask the browser not to evict it.
+          if (typeof OfflineKit !== "undefined") OfflineKit.persist();
           clearHash(); dlg.close(); location.reload();
         };
         document.getElementById("hwDecline").onclick = () => { clearHash(); dlg.close(); };
@@ -396,5 +434,7 @@
         </div>`).join("");
     })();
   </script>
+  <script src="offline.js"></script>
+  <script>OfflineKit.register();</script>
 </body>
 </html>
