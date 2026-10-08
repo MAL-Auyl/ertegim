@@ -39,6 +39,30 @@ VoiceStudio работает только на вашем компьютере (
 187 реплик из 217, на процессоре без видеокарты это долго. Можно частями, например
 `--prefix bh_,q_bh_` для одной сказки.
 
+## Голос через «Режиссёрский ИИ»
+
+В Voice Studio есть «Режиссёрский ИИ»: вы описываете голос обычными словами, а он показывает токены
+голоса, инструкцию для синтеза и поправку скорости речи. Это удобный способ подобрать голос каждому
+герою.
+
+1. Вставьте в поле «Направление» описание героя. Готовые варианты, на английском, потому что модель
+   лучше понимает его:
+   - **Лисёнок:** `A cheerful little fox cub, a six-year-old child, bright and playful, warm and kind, speaks clearly and a little slowly for small children.`
+   - **Сова:** `A gentle, wise young owl girl, soft and calm, a little shy, a warm bedtime-story voice, speaks slowly and softly.`
+   - **Медведь:** `A big, kind, friendly bear, a low warm voice, slow and cozy, never scary, a gentle giant talking to a small child.`
+2. Скопируйте токены, которые покажет режиссёр, в поле `instruct` нужного героя в файле
+   `tools\voice-ref\voices.json`. Поправку скорости впишите в `speed`: `0.9`, `"0.9x"` или `"-10%"`.
+3. Пересоздайте голос героя и озвучьте заново:
+   ```
+   python tools\prerender_voicestudio.py --make-ref bear --force
+   python tools\prerender_voicestudio.py --characters bear
+   ```
+   Скрипт сам перерисует только реплики этого героя.
+
+Поправка скорости применяется ко всем репликам героя и требует ffmpeg. Без ffmpeg скрипт предупредит
+и оставит обычный темп. Сейчас в `voices.json` сова на 5 % и медведь на 10 % медленнее лисёнка: так
+их проще отличить на слух.
+
 ## Что скрипт делает сам
 
 - **Свой голос каждому герою.** Голос придумывается по описанию на английском предложении, так

@@ -1,0 +1,6 @@
+{
+  "_how": "Paste VoiceStudio «Режиссёрский ИИ» output per hero: taxonomy tokens → instruct, speech-rate offset → speed (0.9, \"0.9x\" or \"-10%\"). Then: python tools/prerender_voicestudio.py --make-ref <hero> --force, and render again.",
+  "fox": { "instruct": "female, child, very high pitch", "speed": 1.0 },
+  "owl": { "instruct": "female, teenager, moderate pitch", "speed": "-5%" },
+  "bear": { "instruct": "male, young adult, low pitch", "speed": "-10%" }
+}

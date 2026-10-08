@@ -36,6 +36,10 @@ Usage:
   python tools/prerender_voicestudio.py --characters owl,bear --to-public   # into the app
   python tools/prerender_voicestudio.py --only intro,q_tracks --force
   python tools/prerender_voicestudio.py --dry-run                  # what would be rendered, no backend
+
+Per-hero voice from VoiceStudio's «Режиссёрский ИИ»: paste its taxonomy tokens
+and speech-rate offset into tools/voice-ref/voices.json (see VOICES_FILE below),
+then --make-ref <hero> --force and render again — changed heroes re-render.
 """
 import argparse, array, hashlib, html, io, json, math, os, shutil, subprocess, sys, tempfile, time
 import urllib.error, urllib.request, uuid, wave
@@ -64,6 +68,53 @@ CHARACTERS = {
         "ref_text": "Hello, little one! I am a big kind bear. I am so hungry, let us find some sweet honey.",
     },
 }
+
+# VoiceStudio's «Режиссёрский ИИ» (Director AI) turns a plain-language
+# direction ("a big kind bear, low warm voice, slow") into taxonomy tokens and
+# a speech-rate offset. Paste them per hero into tools/voice-ref/voices.json:
+#   { "bear": { "instruct": "male, middle-aged, low pitch", "speed": "-10%" } }
+# instruct → used when the hero's reference voice is designed (--make-ref);
+# speed    → pace of every line of that hero (0.9, "0.9x", "-10%"; needs ffmpeg);
+# ref_text → optional English sentence the reference is designed on.
+VOICES_FILE = REF_DIR / "voices.json"
+
+
+def parse_speed(value) -> float:
+    """1.0 = as rendered; 0.9 / "0.9x" / "-10%" = 10 % slower; "+10%" = faster."""
+    if value is None or value == "":
+        return 1.0
+    if isinstance(value, (int, float)):
+        speed = float(value)
+    else:
+        text = str(value).strip().lower().replace(",", ".")
+        if text.endswith("%"):
+            speed = 1 + float(text[:-1]) / 100
+        else:
+            speed = float(text.rstrip("x"))
+    if not 0.5 <= speed <= 2.0:
+        raise ValueError(f"speed {value!r} is outside 0.5–2.0")
+    return speed
+
+
+def load_voice_overrides(path: Path = VOICES_FILE) -> dict:
+    """Merge tools/voice-ref/voices.json into CHARACTERS (unknown heroes are an error)."""
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as err:
+        sys.exit(f"{path.relative_to(ROOT)}: not valid JSON ({err})")
+    for hero, cfg in data.items():
+        if hero.startswith("_"):
+            continue  # comments
+        if hero not in CHARACTERS:
+            sys.exit(f"{path.relative_to(ROOT)}: unknown hero {hero!r} — known: {', '.join(CHARACTERS)}")
+        for key in ("instruct", "ref_text"):
+            if cfg.get(key):
+                CHARACTERS[hero][key] = str(cfg[key]).strip()
+        CHARACTERS[hero]["speed"] = parse_speed(cfg.get("speed"))
+    return data
+
 
 TARGET_RMS_DBFS = -16.0   # Piper audio in public/audio measures about -15.4 dBFS RMS (median)
 PEAK_CEILING_DBFS = -1.0
@@ -242,9 +293,13 @@ def main() -> None:
     ap.add_argument("--to-public", action="store_true", help=f"write into {PUBLIC_DIR.relative_to(ROOT)} (the app)")
     ap.add_argument("--out-dir", type=Path, help=f"output folder (default {SAMPLES_DIR.relative_to(ROOT)})")
     ap.add_argument("--no-normalize", action="store_true", help="keep VoiceStudio's own loudness")
-    ap.add_argument("--no-lesson-slowdown", action="store_true", help="do not slow letter-lesson lines")
+    ap.add_argument("--no-lesson-slowdown", action="store_true", help="do not slow letter-lesson lines (per-hero speed still applies)")
     ap.add_argument("--dry-run", action="store_true", help="list what would be rendered; no backend needed")
     args = ap.parse_args()
+    overrides = load_voice_overrides()
+    if overrides:
+        print(f"voices: {VOICES_FILE.relative_to(ROOT)} — " + ", ".join(
+            f"{h} «{CHARACTERS[h]['instruct']}» ×{CHARACTERS[h].get('speed', 1.0):.2f}" for h in CHARACTERS if h in overrides))
 
     if args.make_ref:
         heroes = list(CHARACTERS) if args.make_ref == "all" else [h.strip() for h in args.make_ref.split(",") if h.strip()]
@@ -285,13 +340,16 @@ def main() -> None:
     out_dir = PUBLIC_DIR if args.to_public else (args.out_dir.resolve() if args.out_dir else SAMPLES_DIR)
     state_path = PUBLIC_STATE if args.to_public else out_dir / ".voicestudio-state.json"
     state = load_state(state_path)
-    ffmpeg = None if args.no_lesson_slowdown else find_ffmpeg()
-    if not ffmpeg and not args.no_lesson_slowdown and any(m["lesson"] for m in wanted.values()):
-        print("note: ffmpeg not found — letter-lesson lines keep VoiceStudio's normal pace")
+    lesson_tempo = 1.0 if args.no_lesson_slowdown else LESSON_TEMPO
+    ffmpeg = find_ffmpeg()
+    paced = (lesson_tempo != 1.0 and any(m["lesson"] for m in wanted.values())) or any(CHARACTERS[h].get("speed", 1.0) != 1.0 for h in heroes)
+    if not ffmpeg and paced:
+        print("note: ffmpeg not found — lesson slowdown and per-hero speed are skipped (install ffmpeg to apply them)")
 
     plan = []
     for audio_id, m in wanted.items():
-        tempo = LESSON_TEMPO if (m["lesson"] and ffmpeg) else None
+        tempo = (lesson_tempo if m["lesson"] else 1.0) * CHARACTERS[m["character"]].get("speed", 1.0)
+        tempo = tempo if (ffmpeg and abs(tempo - 1.0) > 1e-3) else None
         ref = ref_path(m["character"]) if args.mode == "clone" else None
         fp = fingerprint(m["kk"], m["character"], args, ref, tempo)
         out = out_dir / f"{audio_id}.wav"
@@ -306,7 +364,7 @@ def main() -> None:
     print(f"{len(plan)} of {len(wanted)} line(s) to render → {out_dir.relative_to(ROOT) if out_dir.is_relative_to(ROOT) else out_dir} ({summary})")
     if args.dry_run:
         for audio_id, m, tempo, *_ in plan:
-            print(f"  {audio_id:<22} {m['character']:<5}{' slow' if tempo else ''}  {m['kk'][:60]}")
+            print(f"  {audio_id:<22} {m['character']:<5}{f' ×{tempo:.2f}' if tempo else '      '}  {m['kk'][:60]}")
         return
     if not plan:
         return
