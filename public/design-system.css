@@ -1027,6 +1027,9 @@ body.gentle .mic-btn.recording { animation: none; }
 .sticker.first .sticker-state { color: var(--ok); }
 .sticker.reask .sticker-state { color: var(--warn); }
 .sticker.reveal .sticker-state { color: var(--info-dark); }
+.area-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: var(--space-3); font-size: 0.82rem; font-weight: 800; }
+.area-chips-label { color: var(--ink-soft); margin-right: 2px; }
+.area-chip { padding: 3px 10px; border-radius: 999px; background: var(--card-solid); border: 1.5px solid var(--line); color: var(--ink); }
 .gesture-note { margin-top: var(--space-3); font-size: 0.84rem; color: var(--ink-soft); padding: 8px 12px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--info) 10%, var(--card-solid)); border: 1.5px dashed color-mix(in srgb, var(--info) 40%, transparent); }
 
 .report .word-tag { font-size: 0.9rem; font-weight: 700; padding: 6px 13px; border: 2px solid var(--ink); background: color-mix(in srgb, var(--accent) 12%, var(--card-solid)); box-shadow: 0 2px 0 0 var(--ink-shadow); }

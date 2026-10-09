@@ -45,8 +45,9 @@
   .child-tab.add { border-style: dashed; color: var(--ink-soft); box-shadow: none; }
 
   /* settings form */
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3) var(--space-4); }
-  @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+  /* minmax(0, …): a long <option> must not widen the column past the phone screen */
+  .form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3) var(--space-4); }
+  @media (max-width: 640px) { .form-grid { grid-template-columns: minmax(0, 1fr); } }
   .field { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; font-weight: 800; color: var(--ink-soft); }
   .field input, .field select, .field textarea {
     font: inherit; font-weight: 700; color: var(--ink); padding: 10px 12px;
@@ -141,6 +142,33 @@
   .tools .btn { padding: 12px 18px; font-size: 0.95rem; border-radius: 999px; }
   #printTitle { display: none; }
 
+  /* speech-skill map (skillmap.js): one ordinal blue per answer kind */
+  .map-root { --seg-first: #184f95; --seg-reask: #3987e5; --seg-reveal: #86b6ef; }
+  @media (prefers-color-scheme: dark) { .map-root { --seg-first: #86b6ef; --seg-reask: #3987e5; --seg-reveal: #184f95; } }
+  .map-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.8rem; font-weight: 800; color: var(--ink-soft); margin-bottom: var(--space-3); }
+  .map-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .map-legend i { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+  .map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-3); }
+  .area-card { border: 2px solid var(--line); border-radius: var(--radius-md); background: var(--paper); padding: var(--space-3); display: flex; flex-direction: column; gap: 6px; }
+  .area-card.attn { border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); }
+  .area-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; font-size: 0.95rem; }
+  .area-head b { white-space: nowrap; }
+  .area-head .muted { font-size: 0.76rem; }
+  .area-head .area-trend { margin-left: auto; font-weight: 900; }
+  .area-bar { display: flex; gap: 2px; height: 12px; border-radius: 999px; overflow: hidden; }
+  .area-bar i { display: block; height: 100%; min-width: 0; }
+  .area-bar.empty { border: 2px dashed var(--line); height: 12px; box-sizing: border-box; }
+  .seg-first { background: var(--seg-first); } .seg-reask { background: var(--seg-reask); } .seg-reveal { background: var(--seg-reveal); }
+  .area-meta { font-size: 0.78rem; font-weight: 700; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .area-note { font-size: 0.86rem; font-weight: 800; }
+  .area-attn { color: var(--warn); }
+  .area-suggest { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.78rem; font-weight: 800; color: var(--ink-soft); }
+  .chip-add { font: inherit; font-size: 0.78rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; cursor: pointer; color: var(--accent-dark); background: var(--card-solid); border: 1.5px solid color-mix(in srgb, var(--accent) 55%, transparent); }
+  .chip-add:hover { background: color-mix(in srgb, var(--accent) 12%, var(--card-solid)); }
+  .chip-add[disabled] { cursor: default; color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: none; }
+  .assign.flash { animation: assignFlash 1.6s ease-out; border-radius: 6px; }
+  @keyframes assignFlash { from { background: color-mix(in srgb, var(--accent) 30%, transparent); } to { background: transparent; } }
+
   @media print {
     body { padding: 0; background: #fff; }
     .topbar, #pinGate, .child-tabs, .tools, #childForm, .form-actions, .no-print { display: none !important; }
@@ -200,6 +228,13 @@
           <div class="trend-box"><h3>Среднее время реакции, с</h3><div id="trendAvg"></div></div>
         </div>
         <p id="stTrend" class="muted"></p>
+      </section>
+
+      <section class="sheet map-root" id="mapSection">
+        <h2>🧩 Карта речевых навыков <small>все упражнения этого ребёнка по областям</small></h2>
+        <div class="map-legend"><span><i class="seg-first"></i>сразу</span><span><i class="seg-reask"></i>с переспросом</span><span><i class="seg-reveal"></i>показал герой</span></div>
+        <div class="map-grid" id="skillMap"></div>
+        <p class="muted" style="margin-bottom:0;">Это карта выполненных упражнений и наблюдений в Ертегім, а не диагностика речевых нарушений. Выводы делает специалист.</p>
       </section>
 
       <section class="sheet" id="hwSection">
@@ -339,6 +374,7 @@
   <script src="story.js"></script>
   <script src="profiles.js"></script>
   <script src="session.js"></script>
+  <script src="skillmap.js"></script>
   <script src="homework.js"></script>
   <script src="backup.js"></script>
   <script src="stickers.js"></script>

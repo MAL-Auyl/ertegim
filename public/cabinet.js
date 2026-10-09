@@ -237,6 +237,7 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
     renderHomework(p, history);
     renderStats(history);
     renderTrends(history);
+    renderSkillMap(p, history);
     renderSessions(history);
     renderStickers();
     $("printTitle").textContent = `${p.name} — Ертегім, отчёт от ${new Date().toLocaleDateString("ru-RU")}`;
@@ -267,6 +268,59 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
     $("trendFirst").innerHTML = lineSVG(series.map((x) => ({ v: x.firstTry, label: label(x) })), { min: 0, max: 1, fmt: (v) => `${Math.round(v * 100)} %`, color: "var(--ok)" });
     const maxSec = Math.max(5, ...series.map((x) => x.avgSec || 0));
     $("trendAvg").innerHTML = lineSVG(series.map((x) => ({ v: x.avgSec, label: label(x) })), { min: 0, max: Math.ceil(maxSec), fmt: (v) => `${v.toFixed(1)} с`, color: "var(--info)" });
+  }
+
+  // Speech-skill map (skillmap.js): one card per area, a stacked bar of how
+  // the answers went, and for an area that needs attention the activities
+  // that train it — one tap adds them to the homework plan.
+  function renderSkillMap(p, history) {
+    const plan = p.homework ? Homework.normalizePlan(p.homework, ACTIVITY_IDS) : null;
+    const assigned = new Set(plan ? plan.activities : p.settings.assigned);
+    const when = (d) => (d === 0 ? "сегодня" : d === 1 ? "вчера" : `${d} дн. назад`);
+    const arrow = { up: ["▲", "лучше, чем в прошлых занятиях"], down: ["▼", "хуже, чем в прошлых занятиях"], flat: ["■", "без изменений"] };
+    $("skillMap").innerHTML = SkillMap.skillMap(history).map((a) => {
+      const bar = a.asked
+        ? `<div class="area-bar" role="img" aria-label="${a.asked} ответов: сразу ${a.first}, с переспросом ${a.reask}, показал герой ${a.reveal}">${
+            [["first", a.first], ["reask", a.reask], ["reveal", a.reveal]].filter(([, n]) => n).map(([k, n]) => `<i class="seg-${k}" style="flex-grow:${n}"></i>`).join("")}</div>`
+        : `<div class="area-bar empty"></div>`;
+      const meta = a.asked
+        ? `${a.asked} ${answerWord(a.asked)} в ${a.sessions} ${sessionWord(a.sessions)} · ${Math.round(a.firstShare * 100)} % сразу${a.daysSince == null ? "" : ` · последний раз ${when(a.daysSince)}`}`
+        : "";
+      const t = a.trend ? `<span class="area-trend trend-${a.trend}" title="${arrow[a.trend][1]}">${arrow[a.trend][0]}</span>` : "";
+      const short = (id) => activityTitle(id).replace(/ \(особый режим\)$/, "");
+      const chips = a.suggest.map((id) => assigned.has(id)
+        ? `<button type="button" class="chip-add" disabled title="уже в задании">✓ ${esc(short(id))}</button>`
+        : `<button type="button" class="chip-add" data-id="${esc(id)}" title="добавить в домашнее задание">+ ${esc(short(id))}</button>`).join("");
+      return `<div class="area-card${a.attention ? " attn" : ""}">
+        <div class="area-head"><span>${a.icon}</span><b>${esc(a.ru)}</b><span class="muted">${esc(a.kk)}</span>${t}</div>
+        ${bar}
+        ${meta ? `<div class="area-meta">${meta}</div>` : ""}
+        <div class="area-note${a.attention ? " area-attn" : ""}">${esc(a.attention === "stale" ? `${a.note} · давно не практиковали` : a.note)}</div>
+        ${chips ? `<div class="area-suggest no-print">В задание: ${chips}</div>` : ""}
+      </div>`;
+    }).join("");
+    $("skillMap").querySelectorAll(".chip-add[data-id]").forEach((b) => b.addEventListener("click", () => addToHomework(b.dataset.id)));
+  }
+
+  function answerWord(n) {
+    return n % 10 === 1 && n % 100 !== 11 ? "ответ" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "ответа" : "ответов";
+  }
+  function sessionWord(n) {
+    return n % 10 === 1 && n % 100 !== 11 ? "занятии" : "занятиях";
+  }
+
+  // «+ в задание»: tick the activity in the homework form and save the plan,
+  // as if the therapist had ticked it and pressed «Сохранить задание».
+  function addToHomework(id) {
+    const box = $("assignedList").querySelector(`input[value="${CSS.escape(id)}"]`);
+    if (!box) return;
+    box.checked = true;
+    if (!savePlan()) return;
+    render();
+    const row = $("assignedList").querySelector(`input[value="${CSS.escape(id)}"]`);
+    $("hwSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    if (row) row.closest(".assign").classList.add("flash");
+    flash(Profiles.active().linkedId ? "Добавлено в задание" : "Добавлено в задание — отправьте родителям новую ссылку");
   }
 
   function renderSessions(history) {

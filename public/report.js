@@ -36,6 +36,16 @@ for (const t of Object.values(TALES_FOR_REPORT || {})) {
   for (const [k, v] of Object.entries(t.skills || {})) SKILL_META[k] = { icon: v.icon, name: v.kk };
 }
 
+// Speech-skill areas (skillmap.js) — the «бүгін» chips under the skills.
+const SKILLMAP_FOR_REPORT = typeof SkillMap !== "undefined" ? SkillMap
+  : (typeof require === "function" ? require("./skillmap.js").SkillMap : null);
+
+function areaChipsHTML(summary) {
+  if (!SKILLMAP_FOR_REPORT) return "";
+  return SKILLMAP_FOR_REPORT.sessionAreas(summary)
+    .map((a) => `<span class="area-chip">${a.icon} ${esc(a.kk)}</span>`).join("");
+}
+
 // Only the rows this session actually had: summarize() keys `skills` by the
 // activity's own list, so a letter lesson never shows the tale's four rows
 // (all "skipped") and the tale never shows the lesson's.
@@ -127,6 +137,13 @@ function renderReport(summary, history, doc = document) {
     </div>`;
   }).join("");
 
+  const areasEl = el(doc, "reportAreas");
+  if (areasEl) {
+    const chips = areaChipsHTML(summary);
+    areasEl.style.display = chips ? "flex" : "none";
+    areasEl.innerHTML = chips ? `<span class="area-chips-label">Бүгін жаттықтық:</span>${chips}` : "";
+  }
+
   // Picture-card answers (lesson "pick" nodes): shown only when there were
   // any, as one extra line under the skills — the parent/therapist should
   // see "understood, pointed, did not say it" as its own fact.
@@ -152,5 +169,5 @@ function renderReport(summary, history, doc = document) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { renderReport, fmtSec, skillLabel, skillPercent, skillStars, starsHTML, summaryLine, historyRowText, esc, skillRows, SKILL_META };
+  module.exports = { renderReport, fmtSec, skillLabel, skillPercent, skillStars, starsHTML, summaryLine, historyRowText, esc, skillRows, areaChipsHTML, SKILL_META };
 }

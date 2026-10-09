@@ -1576,8 +1576,9 @@ const TALE_FOX_BIRTHDAY = {
     next: "parent_report" }),
 };
 
-// The registry. `skills`: report row (icon + Kazakh name) and the cabinet's
-// Russian label for each question's skill, in the order they are asked.
+// The registry. `skills`: report row (icon + Kazakh name), the cabinet's
+// Russian label and the speech area of the skills map (skillmap.js) for
+// each question's skill, in the order they are asked.
 // `pictures`: card id → SVG (app.js LESSON_PICTURES picks these up).
 // `sticker`: what finishing the tale earns. `card`: the library shelf.
 const TALES = {
@@ -1591,11 +1592,11 @@ const TALES = {
     cardDescRu: "Жужжать как пчела «ж-ж-ж», посчитать пчёл, найти мёд, сказать «рақмет».",
     sticker: { kk: "Бал", ru: "Мёд", img: "/images/tales/bal.svg", hint_kk: "«Аю мен бал» ертегісін өт" },
     skills: {
-      bh_help: { icon: "🤝", kk: "Көмектесуге келісті", ru: "согласился помочь" },
-      bh_buzz: { icon: "🐝", kk: "Арадай ызыңдады (ж-ж-ж)", ru: "жужжал «ж-ж-ж»" },
-      bh_count: { icon: "🔢", kk: "Араларды санады (3)", ru: "счёт до 3" },
-      bh_pick: { icon: "🍯", kk: "Балды тапты", ru: "нашёл мёд (картинка)" },
-      bh_thanks: { icon: "🙏", kk: "«Рақмет» айтты", ru: "сказал «рақмет»" },
+      bh_help: { icon: "🤝", area: "dialogue", kk: "Көмектесуге келісті", ru: "согласился помочь" },
+      bh_buzz: { icon: "🐝", area: "sounds", kk: "Арадай ызыңдады (ж-ж-ж)", ru: "жужжал «ж-ж-ж»" },
+      bh_count: { icon: "🔢", area: "counting", kk: "Араларды санады (3)", ru: "счёт до 3" },
+      bh_pick: { icon: "🍯", area: "understanding", kk: "Балды тапты", ru: "нашёл мёд (картинка)" },
+      bh_thanks: { icon: "🙏", area: "words", kk: "«Рақмет» айтты", ru: "сказал «рақмет»" },
     },
     pictures: {
       ara: { src: "/images/tales/ara.svg", kk: "ара", ru: "пчела" },
@@ -1612,11 +1613,11 @@ const TALES = {
     cardDescRu: "Поздороваться «сәлем», позвать по-совиному «у-у-у», посчитать звёзды, загадать желание.",
     sticker: { kk: "Жұлдызша", ru: "Звёздочка", img: "/images/tales/juldyz.svg", hint_kk: "«Үкі жұлдыз іздейді» ертегісін өт" },
     skills: {
-      os_hello: { icon: "👋", kk: "«Сәлем» айтты", ru: "поздоровался" },
-      os_hoot: { icon: "🦉", kk: "Үкідей шақырды (у-у-у)", ru: "звал «у-у-у»" },
-      os_count: { icon: "🔢", kk: "Жұлдыздарды санады (4)", ru: "счёт до 4" },
-      os_pick: { icon: "⭐", kk: "Жұлдызды тапты", ru: "нашёл звёздочку (картинка)" },
-      os_wish: { icon: "💛", kk: "Тілек айтты", ru: "загадал желание" },
+      os_hello: { icon: "👋", area: "words", kk: "«Сәлем» айтты", ru: "поздоровался" },
+      os_hoot: { icon: "🦉", area: "sounds", kk: "Үкідей шақырды (у-у-у)", ru: "звал «у-у-у»" },
+      os_count: { icon: "🔢", area: "counting", kk: "Жұлдыздарды санады (4)", ru: "счёт до 4" },
+      os_pick: { icon: "⭐", area: "understanding", kk: "Жұлдызды тапты", ru: "нашёл звёздочку (картинка)" },
+      os_wish: { icon: "💛", area: "dialogue", kk: "Тілек айтты", ru: "загадал желание" },
     },
     pictures: {
       juldyz: { src: "/images/tales/juldyz.svg", kk: "жұлдыз", ru: "звёздочка" },
@@ -1633,11 +1634,11 @@ const TALES = {
     cardDescRu: "Поздравить лисёнка, посчитать шарики, найти красный, задуть свечки «ф-ф-фу» — упражнение на выдох.",
     sticker: { kk: "Торт", ru: "Торт", img: "/images/tales/tort.svg", hint_kk: "«Түлкінің туған күні» ертегісін өт" },
     skills: {
-      fb_congrats: { icon: "🎉", kk: "Құттықтады", ru: "поздравил" },
-      fb_count: { icon: "🔢", kk: "Шарларды санады (5)", ru: "счёт до 5" },
-      fb_pick: { icon: "🎈", kk: "Қызыл шарды тапты", ru: "нашёл красный (картинка)" },
-      fb_blow: { icon: "🕯️", kk: "Шамдарды үрледі (ф-ф-фу)", ru: "выдох «ф-ф-фу»" },
-      fb_gift: { icon: "🎁", kk: "Сыйлық ойлады", ru: "придумал подарок" },
+      fb_congrats: { icon: "🎉", area: "dialogue", kk: "Құттықтады", ru: "поздравил" },
+      fb_count: { icon: "🔢", area: "counting", kk: "Шарларды санады (5)", ru: "счёт до 5" },
+      fb_pick: { icon: "🎈", area: "understanding", kk: "Қызыл шарды тапты", ru: "нашёл красный (картинка)" },
+      fb_blow: { icon: "🕯️", area: "breath", kk: "Шамдарды үрледі (ф-ф-фу)", ru: "выдох «ф-ф-фу»" },
+      fb_gift: { icon: "🎁", area: "dialogue", kk: "Сыйлық ойлады", ru: "придумал подарок" },
     },
     pictures: {
       shar_qyzyl: { src: "/images/tales/shar-qyzyl.svg", kk: "қызыл", ru: "красный" },
