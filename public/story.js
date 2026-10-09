@@ -252,7 +252,7 @@ const STORY = {
     next: "q_letter_a",
   },
   q_letter_a: {
-    kind: "question", mode: "exact", skill: "letter",
+    model: "А", kind: "question", mode: "exact", skill: "letter",
     speaker: FOX, character: "fox", pose: "talk", bg: "dawn",
     overlay: { letter: "А", apples: 1 },
     forms: ["а"], // matched as a prefix: «а», «алма», «а-а-а» all count
@@ -527,7 +527,9 @@ const LESSONS = {
 //                    failed ones (the hero corrects gently and asks again
 //                    without spending a re-ask).
 // Every node may carry `letter` (big Аа kept on screen) and `picture`
-// (one non-interactive card beside the hero).
+// (one non-interactive card beside the hero). An imitation question also
+// carries `model`: the target split into syllables («Ал-ма»), shown big as
+// the visual hint on the last try before the hero answers (hints.js).
 // The lesson can never be failed: two gentle re-asks, then the hero shows
 // the answer himself and praises the attempt — exactly STORY's ladder.
 const LESSON_A_SOUND_FORMS = ["а", "аа", "ааа", "ах", "аһ", "эа", "ай"];
@@ -567,7 +569,7 @@ const LESSON_A = {
 
   // ---- звук: имитация -----------------------------------------------------
   q_a_sound: {
-    kind: "question", mode: "imitate", skill: "sound_a",
+    model: "А-а-а", kind: "question", mode: "imitate", skill: "sound_a",
     speaker: FOX, character: "fox", pose: "talk", bg: "lesson", letter: "Аа", picture: "mouth",
     kk: "Енді сен! Менімен бірге: А-а-а!",
     ru: "Теперь ты! Вместе со мной: А-а-а!",
@@ -605,7 +607,7 @@ const LESSON_A = {
     next: "q_a_alma",
   },
   q_a_alma: {
-    kind: "question", mode: "imitate", skill: "word_a",
+    model: "Ал-ма", kind: "question", mode: "imitate", skill: "word_a",
     speaker: FOX, character: "fox", pose: "talk", bg: "lesson", letter: "Аа", picture: "alma",
     kk: "Бұл — алма. Ал-ма. Айтшы: ал-ма!",
     ru: "Это — яблоко, алма. Ал-ма. Скажи: ал-ма!",
@@ -764,7 +766,7 @@ const LESSON_O = {
     ru: "Когда говорим О — губы делаем кругленькими, прямо как буква О. Смотри на меня: О-о-о!",
     next: "q_o_sound" }),
 
-  q_o_sound: oNode({ kind: "question", mode: "imitate", skill: "sound_o", pose: "talk", picture: "mouth_o",
+  q_o_sound: oNode({ model: "О-о-о", kind: "question", mode: "imitate", skill: "sound_o", pose: "talk", picture: "mouth_o",
     kk: "Енді сен! Менімен бірге: О-о-о!",
     ru: "Теперь ты! Вместе со мной: О-о-о!",
     accept: LESSON_O_SOUND_FORMS, acceptPrefix: ["о"],
@@ -790,7 +792,7 @@ const LESSON_O = {
     kk: "О әрпінен басталатын сөздер де бар. Мен саған біреуін көрсетейін.",
     ru: "Есть слова и на букву О. Я покажу тебе одно.",
     next: "q_o_ot" }),
-  q_o_ot: oNode({ kind: "question", mode: "imitate", skill: "word_o", pose: "talk", picture: "ot",
+  q_o_ot: oNode({ model: "О-от", kind: "question", mode: "imitate", skill: "word_o", pose: "talk", picture: "ot",
     kk: "Бұл — от. От жылы, бірақ оған жақын бармаймыз! Айтшы: о-от!",
     ru: "Это — огонь, от. Он тёплый, но близко к нему не подходим! Скажи: о-от!",
     accept: LESSON_O_OT_FORMS, acceptPrefix: ["о"],
@@ -901,7 +903,7 @@ const LESSON_U = {
     ru: "Когда говорим Ұ — вытягиваем губы вперёд трубочкой. Смотри на меня: У-у-у!",
     next: "q_u_sound" }),
 
-  q_u_sound: uNode({ kind: "question", mode: "imitate", skill: "sound_u", pose: "talk", picture: "mouth_u",
+  q_u_sound: uNode({ model: "Ұ-ұ-ұ", kind: "question", mode: "imitate", skill: "sound_u", pose: "talk", picture: "mouth_u",
     kk: "Енді сен! Менімен бірге: Ұ-ұ-ұ!",
     ru: "Теперь ты! Вместе со мной: У-у-у!",
     accept: LESSON_U_SOUND_FORMS, acceptPrefix: ["ұ", "у", "ү"],
@@ -927,7 +929,7 @@ const LESSON_U = {
     kk: "Ұ әрпінен басталатын сөздер де бар. Мен саған біреуін көрсетейін.",
     ru: "Есть слова и на букву Ұ. Я покажу тебе одно.",
     next: "q_u_ushaq" }),
-  q_u_ushaq: uNode({ kind: "question", mode: "imitate", skill: "word_u", pose: "talk", picture: "ushaq",
+  q_u_ushaq: uNode({ model: "Ұ-шақ", kind: "question", mode: "imitate", skill: "word_u", pose: "talk", picture: "ushaq",
     kk: "Бұл — ұшақ. Ұ-шақ. Ол аспанда ұшады! Айтшы: ұ-шақ!",
     ru: "Это — самолёт, ұшақ. Ұ-шақ. Он летает в небе! Скажи: ұ-шақ!",
     accept: LESSON_U_USHAQ_FORMS, acceptPrefix: ["ұ", "у"],
@@ -1149,7 +1151,7 @@ const TALE_BEAR_HONEY = {
     kk: "Тыңда! Ара ұшып жүр: ж-ж-ж! Аралар балдың қайда екенін біледі.",
     ru: "Слушай! Летит пчела: ж-ж-ж! Пчёлы знают, где мёд.",
     next: "q_bh_buzz" }),
-  q_bh_buzz: bhNode({ kind: "question", mode: "imitate", skill: "bh_buzz", pose: "talk", picture: "ara",
+  q_bh_buzz: bhNode({ model: "Ж-ж-ж", kind: "question", mode: "imitate", skill: "bh_buzz", pose: "talk", picture: "ara",
     kk: "Арадай ызыңдап көрші: ж-ж-ж!",
     ru: "Пожужжи как пчела: ж-ж-ж!",
     accept: ["ж", "жж", "жжж", "жу", "жуу", "з", "зз", "ззз", "бзз", "ш", "шш"], acceptPrefix: ["ж", "з"],
@@ -1238,7 +1240,7 @@ const TALE_BEAR_HONEY = {
     kk: "Аралар балдарын бөлісті. Оларға рақмет айтайық!",
     ru: "Пчёлы поделились мёдом. Давай скажем им спасибо!",
     next: "q_bh_thanks" }),
-  q_bh_thanks: bhNode({ kind: "question", mode: "imitate", skill: "bh_thanks", pose: "talk", picture: "ara",
+  q_bh_thanks: bhNode({ model: "Рақ-мет", kind: "question", mode: "imitate", skill: "bh_thanks", pose: "talk", picture: "ara",
     kk: "Араларға айтшы: рақмет!",
     ru: "Скажи пчёлам: рақмет — спасибо!",
     accept: ["рақмет", "рахмет", "ракмет", "рахмед", "рахмат", "рақ", "спасибо", "пасиба", "сибо"],
@@ -1283,7 +1285,7 @@ const TALE_OWL_STAR = {
     ru: "Я совёнок. Моя маленькая звёздочка упала с неба. Она показывала мне дорогу…",
     next: "q_os_hello" }),
 
-  q_os_hello: osNode({ kind: "question", mode: "imitate", skill: "os_hello", pose: "talk",
+  q_os_hello: osNode({ model: "Сә-лем", kind: "question", mode: "imitate", skill: "os_hello", pose: "talk",
     kk: "Үкімен амандасайық. Айтшы: сәлем, үкі!",
     ru: "Поздороваемся с совёнком. Скажи: сәлем — привет, совёнок!",
     accept: ["сәлем", "салем", "сәлам", "салам", "сәлеметсіз", "привет", "здравствуй", "здрасте", "прив"],
@@ -1309,7 +1311,7 @@ const TALE_OWL_STAR = {
     kk: "Үкілер түнде бір-бірін былай шақырады: у-у-у!",
     ru: "Совы ночью зовут друг друга вот так: у-у-у!",
     next: "q_os_hoot" }),
-  q_os_hoot: osNode({ kind: "question", mode: "imitate", skill: "os_hoot", speaker: OWL, character: "owl", pose: "talk",
+  q_os_hoot: osNode({ model: "У-у-у", kind: "question", mode: "imitate", skill: "os_hoot", speaker: OWL, character: "owl", pose: "talk",
     kk: "Менімен бірге жұлдызды шақыр: у-у-у!",
     ru: "Позови звёздочку вместе со мной: у-у-у!",
     accept: ["у", "уу", "ууу", "ұ", "ұұ", "ух", "угу", "уху", "ху"], acceptPrefix: ["у", "ұ"],
@@ -1524,7 +1526,7 @@ const TALE_FOX_BIRTHDAY = {
     kk: "Міне, тәтті торт! Үстінде шамдар жанып тұр.",
     ru: "Вот сладкий торт! На нём горят свечки.",
     next: "q_fb_blow" }),
-  q_fb_blow: fbNode({ kind: "question", mode: "imitate", skill: "fb_blow", pose: "talk", picture: "tort",
+  q_fb_blow: fbNode({ model: "Ф-ф-фу", kind: "question", mode: "imitate", skill: "fb_blow", pose: "talk", picture: "tort",
     kk: "Шамдарды бірге үрлейік: ф-ф-фу!",
     ru: "Задуем свечки вместе: ф-ф-фу!",
     accept: ["фу", "фуу", "ф", "фф", "ффф", "пу", "пуу", "уф", "фух", "ху", "пф"], acceptPrefix: ["ф", "п"],

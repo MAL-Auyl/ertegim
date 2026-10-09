@@ -187,12 +187,14 @@ function rerollTracks() {
   STORY.tracks_reveal.ru = t.revealRu;
   STORY.q_tracks.criterion = t.criterion;
 }
-function renderTrackOverlay(show) {
+function renderTrackOverlay(show, { numbered = false } = {}) {
   if (!show) { trackOverlay.innerHTML = ""; trackOverlay.classList.remove("show"); return; }
   // Staggered pop-in (CSS .track / @keyframes trackPop): one track lands
-  // every 160ms so the child can count along.
+  // every 160ms so the child can count along — every 900ms, with its number,
+  // as the visual hint (hints.js).
+  const step = numbered ? 900 : 160;
   trackOverlay.innerHTML = TRACK_SLOTS.slice(0, trackCount)
-    .map((p, i) => `<span class="track" style="left:${p.left};top:${p.top};animation-delay:${i * 160}ms"></span>`).join("");
+    .map((p, i) => `<span class="track" style="left:${p.left};top:${p.top};animation-delay:${i * step}ms">${numbered ? `<b class="track-n">${i + 1}</b>` : ""}</span>`).join("");
   trackOverlay.classList.add("show");
 }
 
@@ -254,6 +256,37 @@ function renderLessonOverlays(s) {
   }
 }
 
+// --- Visual hint (hints.js), shown on the last try before the reveal ----
+// highlight: the right picture card glows, the other one steps back;
+// count:     the things to count land one by one with their numbers;
+// model:     the target sound/word in syllables, big, mid-stage («Ал-ма»).
+let modelCard = null;
+function clearVisualSupport() {
+  if (modelCard) modelCard.classList.remove("show");
+  pictureOverlay?.querySelectorAll(".pic-card").forEach((c) => c.classList.remove("hint-glow", "hint-dim"));
+}
+function applyVisualSupport(id, s, support) {
+  clearVisualSupport();
+  if (!support) return;
+  log(`подсказка-картинка: ${support}`);
+  if (support === "highlight") {
+    const right = Object.keys(s.onAnswer || {})[0];
+    pictureOverlay.querySelectorAll(".pic-card").forEach((c) => c.classList.add(c.dataset.choice === right ? "hint-glow" : "hint-dim"));
+  } else if (support === "count") {
+    if (id === "q_tracks") renderTrackOverlay(true, { numbered: true });
+    else if (s.overlay) renderLessonOverlay({ ...s.overlay, slow: true, numbered: true });
+  } else if (support === "model" && s.model) {
+    if (!modelCard) {
+      modelCard = document.createElement("div");
+      modelCard.id = "modelCard";
+      modelCard.setAttribute("aria-live", "polite");
+      sceneStage.appendChild(modelCard);
+    }
+    modelCard.innerHTML = `<span class="model-ear" aria-hidden="true">👂</span>${esc(s.model)}`;
+    modelCard.classList.add("show");
+  }
+}
+
 // Soft "yes" on the letter itself — the lesson's replacement for sparkles.
 function glowLetter() {
   if (!letterOverlay || !letterOverlay.classList.contains("show")) return;
@@ -293,6 +326,10 @@ function countForNode(id) {
 // What a lesson node shows on the scene: a big letter and/or a row of apples.
 // `slow` lands one apple per ~0.9 s so they appear as the fox counts aloud.
 let lessonOverlay = null;
+function numberTag(n) {
+  return `<b style="display:block;font:900 clamp(14px,3.6vw,20px)/1 system-ui,sans-serif;color:#fff;text-align:center;text-shadow:0 2px 6px rgba(46,32,19,.6);">${n}</b>`;
+}
+
 function renderLessonOverlay(spec) {
   if (!lessonOverlay) {
     lessonOverlay = document.createElement("div");
@@ -320,13 +357,15 @@ function renderLessonOverlay(spec) {
     const inner = eaten
       ? `<span style="display:inline-block;${still ? "opacity:.25;filter:grayscale(1);" : `animation:lessonEaten 600ms ${base * step + 500}ms both;`}">${icon}</span>`
       : icon;
-    return `<span style="${size}filter:drop-shadow(0 4px 8px rgba(46,32,19,.35));${pop(i)}">${inner}</span>`;
+    // The visual hint numbers what is left to count (not the eaten ones).
+    const num = spec.numbered && !eaten ? numberTag(i + 1) : "";
+    return `<span style="${size}filter:drop-shadow(0 4px 8px rgba(46,32,19,.35));display:inline-flex;flex-direction:column;align-items:center;${pop(i)}">${inner}${num}</span>`;
   };
   let row = Array.from({ length: base }, (_, i) => apple(i)).join("");
   if (spec.plus) {
     row += `<span style="${size}font-weight:800;color:#fff;text-shadow:0 3px 8px rgba(46,32,19,.5);${pop(base)}">+</span>`;
     row += Array.from({ length: spec.plus }, (_, i) =>
-      `<span style="${size}filter:drop-shadow(0 4px 8px rgba(46,32,19,.35));${pop(base + 1 + i)}">🍎</span>`).join("");
+      `<span style="${size}filter:drop-shadow(0 4px 8px rgba(46,32,19,.35));display:inline-flex;flex-direction:column;align-items:center;${pop(base + 1 + i)}">${icon}${spec.numbered ? numberTag(base + 1 + i) : ""}</span>`).join("");
   }
   lessonOverlay.innerHTML = letter + (row ? `<div style="display:flex;gap:10px;align-items:center;">${row}</div>` : "");
 }
@@ -1242,6 +1281,9 @@ vadFrameId = requestAnimationFrame(vadLoop);
 // --- story state ---
 let currentId = null;
 let reaskCount = 0; // per-question re-asks so far; maxReasks() (1, or 2 in gentle mode) before auto-reveal (design doc "third strike")
+// This question's re-asks before the reveal: maxReasks(), plus one when the
+// child needed the hero's demonstration on this skill last time (hints.js).
+let questionMaxReasks = 1;
 // fox_reask/owl_reask loop back into the SAME question id, which used to
 // re-trigger the "reaskCount = 0" reset below on every re-render —
 // making the second consecutive re-ask (the auto-reveal trigger)
@@ -1389,6 +1431,7 @@ function renderState(id) {
   thinkingDots.hidden = true;
 
   renderLessonOverlay(s.overlay || null);
+  clearVisualSupport();
   stopTrace();
 
   if (id === "parent_report") {
@@ -1495,8 +1538,15 @@ function renderState(id) {
     if (activeQuestionId !== id) {
       reaskCount = 0;
       activeQuestionId = id;
+      // The ladder adapts to this child: a skill the hero had to show last
+      // time gets one more step of support now (hints.js).
+      const recent = Hints.recentSkillStates(Session.history(), s.skill);
+      questionMaxReasks = Hints.adaptiveMaxReasks(maxReasks(), recent);
+      if (questionMaxReasks > maxReasks()) log(`подсказки: +1 ступень для «${s.skill}» — в прошлый раз ответ показал герой`);
     }
-    Session.questionShown(id, s.skill, reaskCount + 1);
+    const support = Hints.visualSupportNow(s, reaskCount, questionMaxReasks);
+    applyVisualSupport(id, s, support);
+    Session.questionShown(id, s.skill, reaskCount + 1, Date.now(), { support });
     // Arm the mic only once the question has been spoken — otherwise the mic
     // hears the hero's own voice from the speakers and trips the VAD.
     speakDone.then(() => {
@@ -2032,9 +2082,9 @@ function markReask(source) {
   cancelAiAutoAdvance();
   const s = NODES[currentId];
   if (s.kind !== "question") return;
-  if (reaskCount < maxReasks()) {
+  if (reaskCount < questionMaxReasks) {
     reaskCount++;
-    log(`${source}: ПЕРЕСПРОСИТЬ (${reaskCount}-я попытка из ${maxReasks()})`);
+    log(`${source}: ПЕРЕСПРОСИТЬ (${reaskCount}-я попытка из ${questionMaxReasks})`);
     recordAnswer("unclear", source);
     advanceFromQuestion(s.onReask);
     heroShake(); // after the re-render: renderState replaces #heroStage's contents

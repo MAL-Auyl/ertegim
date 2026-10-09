@@ -36,14 +36,15 @@ test("the VAD loop and the total-silence timer read the profile, not the raw con
   expect(arm).toContain("vadSilenceTimeoutMs()");
 });
 
-test("re-asks are a counter bounded by maxReasks(), reset only on a new question", () => {
+test("re-asks are a counter bounded per question (maxReasks(), adapted by hints.js), reset only on a new question", () => {
   expect(SRC).toMatch(/^let reaskCount = 0;/m);
   expect(SRC).not.toContain("reaskUsed");
   const body = SRC.slice(SRC.indexOf("function markReask"), SRC.indexOf("function markReask") + 900);
-  expect(body).toContain("if (reaskCount < maxReasks())");
+  expect(body).toContain("if (reaskCount < questionMaxReasks)");
   expect(body).toContain("reaskCount++");
-  expect(SRC).toContain("Session.questionShown(id, s.skill, reaskCount + 1)");
+  expect(SRC).toContain("Session.questionShown(id, s.skill, reaskCount + 1, Date.now(), { support })");
   expect(SRC).toMatch(/if \(activeQuestionId !== id\) \{\s*reaskCount = 0;/);
+  expect(SRC).toContain("questionMaxReasks = Hints.adaptiveMaxReasks(maxReasks(), recent)");
 });
 
 test("decoration checks calmMotion() (OS reduced-motion OR gentle), and gentle is a body class", () => {

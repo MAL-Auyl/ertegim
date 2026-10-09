@@ -116,6 +116,10 @@ function summarize(r) {
   // mic, or the child's profile asks for it) — the recogniser heard nothing,
   // so the report says so instead of passing them off as recognised speech.
   const adultAnswers = r.turns.filter((t) => t.verdict !== null && t.source === "adult").length;
+  // Tries that came with a visual hint (hints.js: glowing card, numbered
+  // things to count, the syllable card) — the report says "with a picture
+  // hint" instead of folding them into plain re-asks.
+  const visualHints = r.turns.filter((t) => t.support).length;
 
   // Per-attempt detail for the therapist's cabinet — only when the profile
   // asked for it (Session.keepTranscripts), see the privacy note above.
@@ -142,6 +146,7 @@ function summarize(r) {
     questionsTotal: askedSkills.length,
     gestureAnswers,
     adultAnswers,
+    visualHints,
     skills,
     moments: r.moments.map((m) => ({ atSec: Math.round((m.at - r.startedAt) / 1000), text_kk: m.text_kk })),
     ...(attempts ? { attempts } : {}),
@@ -160,8 +165,9 @@ const Session = {
     return raw;
   },
 
-  questionShown(nodeId, skill, attempt, now = Date.now()) {
-    this.current().turns.push({ nodeId, skill, attempt, askedAt: now, answeredAt: null, transcript: "", verdict: null, source: null, route: null });
+  // `support`: the visual hint shown on this try (hints.js), or null.
+  questionShown(nodeId, skill, attempt, now = Date.now(), { support = null } = {}) {
+    this.current().turns.push({ nodeId, skill, attempt, askedAt: now, answeredAt: null, transcript: "", verdict: null, source: null, route: null, support });
   },
 
   answer({ nodeId, transcript, verdict, source, route, answeredAt = Date.now() }) {

@@ -137,6 +137,8 @@ function renderReport(summary, history, doc = document) {
     const lines = [];
     if (n) lines.push(`👆 ${n} жауап — сөзбен емес, суретті көрсетіп`);
     if (a) lines.push(`👂 ${a} жауапты ересек адам бағалады`);
+    const v = summary.visualHints || 0;
+    if (v) lines.push(`🖼 ${v} рет сурет-көмекпен`);
     gestureEl.style.display = lines.length ? "block" : "none";
     gestureEl.textContent = lines.join(" · ");
   }

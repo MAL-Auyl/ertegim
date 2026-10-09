@@ -289,6 +289,7 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
           <div class="s-skills">${skills || "<span class='muted'>вопросов не было</span>"}</div>
           ${h.gestureAnswers ? `<p class="muted">👆 ответов жестом: ${h.gestureAnswers}</p>` : ""}
           ${h.adultAnswers ? `<p class="muted">👂 оценил взрослый (без распознавания речи): ${h.adultAnswers}</p>` : ""}
+          ${h.visualHints ? `<p class="muted">🖼 попыток с подсказкой-картинкой: ${h.visualHints}</p>` : ""}
           ${h.words && h.words.length ? `<p><b>Слова:</b> ${h.words.map(esc).join(", ")}</p>` : ""}
           ${h.moments && h.moments.length ? `<p><b>Моменты:</b> ${h.moments.map((m) => esc(m.text_kk)).join("; ")}</p>` : ""}
           ${attempts
