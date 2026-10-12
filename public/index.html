@@ -127,6 +127,11 @@
   .hw-strip .hw-rows { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   .hw-pill { padding: 3px 10px; border-radius: 999px; border: 1.5px solid var(--line); font-size: 0.78rem; font-weight: 800; }
   .hw-pill.met { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
+  a.hw-pill { color: var(--ink); text-decoration: none; background: var(--card-solid); }
+  a.hw-pill:hover { border-color: var(--accent); }
+  .hw-send { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 8px; }
+  .hw-send .btn { padding: 8px 14px; font-size: 0.82rem; border-radius: 999px; }
+  .hw-sent { font-size: 0.76rem; color: var(--ink-soft); font-weight: 700; }
   dialog.hw-dialog {
     max-width: min(440px, calc(100vw - 32px)); border: 3px solid var(--ink); border-radius: var(--radius-xl);
     box-shadow: 0 8px 0 0 var(--ink-shadow); padding: var(--space-5); background: var(--card-solid); color: var(--ink);
@@ -475,10 +480,43 @@
       const byId = Object.fromEntries(progress.map((p) => [p.id, p]));
       if (plan) {
         const strip = document.getElementById("hwStrip");
+        const href = (id) => (id === "story" ? "/story.html" : `/story.html?lesson=${encodeURIComponent(id)}`);
         strip.innerHTML = `📝 <b>Апталық тапсырма</b>${plan.from ? ` · ${esc(plan.from)}` : ""}
           ${plan.note ? `<p class="hw-note">«${esc(plan.note)}»</p>` : ""}
-          <div class="hw-rows">${progress.map((p) => `<span class="hw-pill${p.met ? " met" : ""}">${p.met ? "✅" : "⭐"} ${esc(titleOf[p.id] || p.id)} · ${p.done}/${p.target}</span>`).join("")}</div>`;
+          <div class="hw-rows">${progress.map((p) => `<a class="hw-pill${p.met ? " met" : ""}" href="${href(p.id)}">${p.met ? "✅" : "▶"} ${esc(titleOf[p.id] || p.id)} · ${p.done}/${p.target}</a>`).join("")}</div>
+          <div class="hw-send" id="hwSend"></div>`;
         strip.hidden = false;
+        renderSend(child, plan);
+      }
+
+      // 3) Results back to the therapist (parents' device only — the plan
+      // came through a link): one button sends a link with the sessions
+      // played since the plan was issued (homework.js resultsLink).
+      function renderSend(child, plan) {
+        const box = document.getElementById("hwSend");
+        if (!box || !child.linkedId) return;
+        const since = Homework.sessionsSince(plan, Session.history());
+        if (!since.length) { box.innerHTML = `<span class="hw-sent">Ойнаған соң нәтижені логопедке жібере аласыз · После занятий отправьте результаты логопеду</span>`; return; }
+        const sentAt = child.hwSentAt ? new Date(child.hwSentAt).getTime() : 0;
+        const fresh = since.filter((s) => new Date(s.date).getTime() > sentAt).length;
+        const days = sentAt ? Math.floor((Date.now() - sentAt) / 86400000) : null;
+        const when = days === null ? "" : days === 0 ? "бүгін" : days === 1 ? "кеше" : `${days} күн бұрын`;
+        box.innerHTML = `<button type="button" class="btn ${fresh ? "btn-primary" : ""}" id="hwSendBtn">📤 Нәтижені жіберу · Отправить логопеду</button>
+          <span class="hw-sent">${sentAt ? `Жіберілді: ${when}${fresh ? ` · жаңа ойын: ${fresh}` : " ✓"}` : `Ойын саны: ${since.length}`}</span>`;
+        document.getElementById("hwSendBtn").onclick = async () => {
+          const link = Homework.resultsLink(location.origin, Homework.resultsPayload(child, plan, Session.history()));
+          const text = `Ертегім: ${child.name} — нәтижелер / результаты занятий дома. Сілтемені кабинетте ашыңыз · Откройте ссылку на устройстве с кабинетом:`;
+          let sent = false;
+          try {
+            if (navigator.share) { await navigator.share({ title: "Ертегім — нәтижелер", text, url: link }); sent = true; }
+          } catch (err) { if (err && err.name === "AbortError") return; }
+          if (!sent) {
+            try { await navigator.clipboard.writeText(`${text} ${link}`); sent = true; alert("Сілтеме көшірілді — WhatsApp-қа қойыңыз.\nСсылка скопирована — вставьте в WhatsApp логопеду."); }
+            catch { prompt("Сілтемені көшіріңіз · Скопируйте ссылку:", link); sent = true; }
+          }
+          Profiles.update(child.id, { hwSentAt: new Date().toISOString() });
+          renderSend(Profiles.get(child.id), plan);
+        };
       }
       const assigned = new Set(child.settings.assigned || []);
       if (!assigned.size) return;

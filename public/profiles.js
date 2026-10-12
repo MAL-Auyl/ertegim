@@ -142,6 +142,11 @@ const Profiles = {
     if (patch.homework !== undefined) p.homework = patch.homework && typeof patch.homework === "object" ? patch.homework : null;
     if (patch.linkedId !== undefined) p.linkedId = typeof patch.linkedId === "string" ? patch.linkedId.slice(0, 40) : null;
     if (patch.remoteId !== undefined) p.remoteId = typeof patch.remoteId === "string" ? patch.remoteId.slice(0, 40) : null;
+    // When results last went to the therapist (home device) / last came in
+    // from home (therapist's device) — ISO strings, shown next to the buttons.
+    for (const f of ["hwSentAt", "hwReceivedAt"]) {
+      if (patch[f] !== undefined) p[f] = typeof patch[f] === "string" && !Number.isNaN(new Date(patch[f]).getTime()) ? patch[f] : null;
+    }
     writeState(s);
     return { ...p, settings: normalizeSettings(p.settings) };
   },

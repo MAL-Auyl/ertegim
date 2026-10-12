@@ -110,7 +110,38 @@
   .hw-row.met .hw-bar > i { background: var(--ok); }
   .hw-link { width: 100%; font: inherit; font-size: 0.8rem; padding: 8px 10px; border: 2px dashed var(--line); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink); }
   .hw-received { padding: 10px 12px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--warn) 12%, var(--card-solid)); border: 2px solid color-mix(in srgb, var(--warn) 40%, transparent); font-weight: 700; font-size: 0.9rem; margin-bottom: var(--space-3); }
-  #importStatus { font-weight: 800; }
+  #importStatus { font-weight: 800; margin: 6px 0 0; }
+  .import-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: var(--space-4); }
+  .import-row .hw-link { flex: 1 1 260px; width: auto; }
+  .import-row .btn { padding: 10px 16px; font-size: 0.9rem; border-radius: 999px; }
+  .hwr-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: var(--space-4); padding: 12px 14px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--ok) 14%, var(--card-solid)); border: 2px solid color-mix(in srgb, var(--ok) 45%, transparent); font-weight: 800; font-size: 0.92rem; }
+  .hwr-banner[hidden] { display: none; }
+  .hwr-banner .btn { padding: 8px 14px; font-size: 0.85rem; border-radius: 999px; }
+  /* homework round: results + the next-set draft (practice.js) */
+  .hw-round { border: 2px solid var(--line); border-radius: var(--radius-md); background: var(--paper); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); }
+  .hw-round[hidden] { display: none; }
+  .hw-round h3 { margin: 0 0 6px; font-size: 1rem; font-weight: 900; }
+  .hw-round h3 small { font-size: 0.78rem; font-weight: 700; color: var(--ink-soft); margin-left: 6px; }
+  .hw-round h3 + p { margin-top: 0; }
+  table.round { width: 100%; min-width: 520px; border-collapse: collapse; font-size: 0.86rem; }
+  table.round th, table.round td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+  table.round th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); border-top: none; }
+  table.round td.num { font-variant-numeric: tabular-nums; font-weight: 800; white-space: nowrap; }
+  .round-areas { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+  .round-area { padding: 3px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--card-solid); font-size: 0.8rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .proposal { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .proposal li { display: flex; gap: 8px; align-items: baseline; font-size: 0.9rem; font-weight: 700; }
+  .proposal .act { flex: 0 0 auto; font-weight: 900; min-width: 92px; }
+  .proposal .why { color: var(--ink-soft); font-weight: 700; }
+  .proposal .p-keep .act { color: var(--ink-soft); }
+  .proposal .p-replace .act, .proposal .p-add .act { color: var(--accent-dark); }
+  .proposal .p-drop .act { color: var(--ok); }
+  .round-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: var(--space-3); }
+  .round-actions .btn { padding: 10px 16px; font-size: 0.9rem; border-radius: 999px; }
+  .assign.added, .assign.removed { background: color-mix(in srgb, var(--accent) 16%, transparent); border-radius: 6px; }
+  .assign.added::after, .assign.removed::after { margin-left: auto; padding-right: 6px; font-size: 0.72rem; font-weight: 900; color: var(--accent-dark); }
+  .assign.added::after { content: "＋ добавлено"; }
+  .assign.removed::after { content: "− убрано"; }
   .dev-grid { display: grid; gap: var(--space-3); }
   .dev-row { display: grid; grid-template-columns: 150px 1fr; gap: 6px 14px; align-items: start; padding-top: var(--space-3); border-top: 1px solid var(--line); }
   .dev-row:first-child { border-top: none; padding-top: 0; }
@@ -200,6 +231,11 @@
 
     <div id="cabinet" hidden>
       <div id="printTitle"></div>
+      <div class="hwr-banner no-print" id="hwrBanner" hidden>
+        <span id="hwrText"></span>
+        <button type="button" class="btn btn-primary" id="hwrImport">📥 Загрузить</button>
+        <button type="button" class="btn btn-muted" id="hwrDismiss">Не сейчас</button>
+      </div>
       <div class="backup-banner no-print" id="backupBanner" hidden>
         <span id="backupBannerText"></span>
         <button type="button" class="btn btn-primary" id="backupNow2">💾 Сохранить копию</button>
@@ -240,6 +276,7 @@
       <section class="sheet" id="hwSection">
         <h2>📝 Домашнее задание <small>занятия дома между встречами с логопедом</small></h2>
         <div id="hwReceived" class="hw-received" hidden></div>
+        <div id="hwRound" class="hw-round" hidden></div>
         <form id="hwForm">
           <div class="form-grid">
             <div class="field wide">Что делать дома <span class="hint">отмеченные занятия выделяются на главном экране ребёнка</span>
@@ -262,11 +299,13 @@
           </div>
           <input class="hw-link" id="hwLink" readonly hidden aria-label="Ссылка с заданием">
         </form>
-        <div class="form-actions no-print">
-          <label class="btn" style="cursor:pointer;">📥 Загрузить результаты из дома<input type="file" id="importFile" accept="application/json,.json" hidden></label>
-          <span id="importStatus" class="muted"></span>
+        <div class="import-row no-print">
+          <input id="importLink" class="hw-link" placeholder="Вставьте ссылку с результатами из WhatsApp" aria-label="Ссылка с результатами из дома">
+          <button type="button" class="btn" id="importLinkBtn">📥 Загрузить</button>
+          <label class="btn" style="cursor:pointer;">📄 Из файла<input type="file" id="importFile" accept="application/json,.json" hidden></label>
         </div>
-        <p class="muted">Ссылка открывает задание на телефоне родителей — без регистрации, данные идут в самой ссылке. Родители возвращают результаты кнопкой «📤 Отправить логопеду», вы загружаете файл сюда — занятия добавятся в историю этого ребёнка.</p>
+        <p id="importStatus" class="muted" style="font-weight:800;"></p>
+        <p class="muted">Как это работает: 1) «🔗 Ссылка для родителей» — задание открывается на телефоне родителей, без регистрации, данные идут в самой ссылке. 2) Ребёнок занимается дома. 3) Родители нажимают на главной «📤 Нәтижені жіберу» и присылают вам ссылку с результатами. 4) Откройте её на этом устройстве (или вставьте сюда) — занятия добавятся в историю ребёнка, а выше появятся итоги и предложение на следующую неделю. Следующий набор выбираете вы. На iPhone/iPad, если Ертегім открыт с экрана «Домой», вставьте ссылку в поле выше: у Safari и у иконки на экране разные данные.</p>
       </section>
 
       <section class="sheet">
@@ -376,6 +415,7 @@
   <script src="session.js"></script>
   <script src="skillmap.js"></script>
   <script src="homework.js"></script>
+  <script src="practice.js"></script>
   <script src="backup.js"></script>
   <script src="stickers.js"></script>
   <script src="cabinet.js"></script>

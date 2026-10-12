@@ -8,10 +8,15 @@
 //      many times a week, a note) into the HASH of a link — /#hw=<base64url>.
 //      The hash never reaches a server; the parent opens the link, the home
 //      screen shows the plan and stores it in the child's profile.
-//   2. Home → therapist: the parent sends the usual JSON export (cabinet →
-//      «Отправить логопеду»); the therapist imports it and the sessions are
-//      merged into the matching child by `pid` (the therapist-side profile
-//      id that travelled inside the link).
+//   2. Home → therapist: one button on the parents' home screen
+//      («Нәтижені жіберу») sends a RESULTS link — /cabinet.html#hwr=<…> —
+//      with the sessions played since the plan was issued (the numbers the
+//      cabinet needs: answers per skill, first try, hints, words; no
+//      attempt transcripts). The therapist opens it on the cabinet's device
+//      and the sessions are merged into the matching child by `pid` (the
+//      therapist-side profile id that travelled inside the plan link). The
+//      full JSON export (cabinet → «Отправить логопеду») still works and
+//      also carries transcripts when the parents agreed to keep them.
 //
 // Pure data, no DOM: classic <script> on pages, require()'d by
 // tests/homework.test.js.
@@ -101,15 +106,119 @@ function weekProgress(plan, history, now = Date.now()) {
 }
 
 // Sessions from another device merged into ours: same date + activity is
-// the same session. Newest first, capped.
+// the same session. When both copies exist the fuller one wins — the JSON
+// export (with attempt transcripts) over a results link's short copy.
+// Newest first, capped.
 function mergeHistory(mine, theirs, max = HW_HISTORY_MAX) {
   const key = (s) => `${s.date}|${s.activity || "story"}`;
+  const rank = (s) => (Array.isArray(s.attempts) ? 2 : 0) + (s.fromLink ? 0 : 1);
   const seen = new Map();
   for (const s of [...(mine || []), ...(theirs || [])]) {
     if (!s || typeof s !== "object" || typeof s.date !== "string" || Number.isNaN(new Date(s.date).getTime())) continue;
-    if (!seen.has(key(s))) seen.set(key(s), s);
+    const k = key(s);
+    if (!seen.has(k) || rank(s) > rank(seen.get(k))) seen.set(k, s);
   }
   return [...seen.values()].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, max);
+}
+
+// ---- results link (home → therapist) ----------------------------------
+const HW_RESULTS_HASH = "hwr";
+const HW_RESULTS_MAX = 30; // sessions in one link (newest)
+const HW_WORDS_MAX = 8; // words per session in the link
+const HW_STATE_CODE = { first: "f", reask: "r", reveal: "v" };
+const HW_STATE_NAME = { f: "first", r: "reask", v: "reveal" };
+
+// One session → short keys. Skipped skills and the per-attempt detail stay
+// home; the cabinet's dynamics, skill map and homework progress need only
+// these.
+function packSession(s) {
+  const k = {};
+  for (const [skill, st] of Object.entries(s.skills || {})) if (HW_STATE_CODE[st]) k[skill] = HW_STATE_CODE[st];
+  const o = { d: s.date, a: s.activity || "story", k }; // first-try counts are recomputed from k
+  if (s.completed) o.c = 1;
+  if (s.blocked) o.b = 1;
+  if (Number.isFinite(s.durationSec)) o.u = s.durationSec;
+  if (Number.isFinite(s.avgResponseSec)) o.t = Math.round(s.avgResponseSec * 10) / 10;
+  if (s.gestureAnswers) o.g = s.gestureAnswers;
+  if (s.adultAnswers) o.j = s.adultAnswers;
+  if (s.visualHints) o.h = s.visualHints;
+  if (s.route) o.r = String(s.route).slice(0, 20);
+  const w = (Array.isArray(s.words) ? s.words : []).filter((x) => typeof x === "string").slice(0, HW_WORDS_MAX).map((x) => x.slice(0, 24));
+  if (w.length) o.w = w;
+  return o;
+}
+
+function unpackSession(o) {
+  if (!o || typeof o !== "object" || typeof o.d !== "string" || Number.isNaN(new Date(o.d).getTime())) return null;
+  const skills = {};
+  for (const [skill, c] of Object.entries(o.k && typeof o.k === "object" ? o.k : {})) {
+    if (HW_STATE_NAME[c] && /^[a-z][a-z0-9_]{0,30}$/.test(skill)) skills[skill] = HW_STATE_NAME[c];
+  }
+  const int = (x) => (Number.isInteger(x) && x >= 0 && x < 1000 ? x : 0);
+  const q = Object.keys(skills).length;
+  return {
+    date: new Date(o.d).toISOString(),
+    activity: typeof o.a === "string" ? o.a.slice(0, 40) : "story",
+    durationSec: Number.isFinite(o.u) && o.u >= 0 ? Math.round(o.u) : null,
+    route: typeof o.r === "string" ? o.r : null,
+    completed: o.c === 1,
+    blocked: o.b === 1,
+    words: Array.isArray(o.w) ? o.w.filter((x) => typeof x === "string").slice(0, HW_WORDS_MAX).map((x) => x.slice(0, 24)) : [],
+    avgResponseSec: Number.isFinite(o.t) && o.t >= 0 ? o.t : null,
+    // recomputed from the skills, so a hand-edited link cannot claim more
+    firstTryCorrect: Object.values(skills).filter((x) => x === "first").length,
+    questionsTotal: q,
+    gestureAnswers: int(o.g),
+    adultAnswers: int(o.j),
+    visualHints: int(o.h),
+    skills,
+    moments: [],
+    fromLink: true,
+  };
+}
+
+// Sessions played since the plan was issued, newest first, capped.
+function sessionsSince(plan, history) {
+  const from = plan ? new Date(plan.createdAt).getTime() : 0;
+  return (history || []).filter((s) => s && typeof s.date === "string" && new Date(s.date).getTime() >= from);
+}
+
+// What the parents' button sends. `profile` is the home-side child.
+function resultsPayload(profile, plan, history, now = Date.now()) {
+  const sessions = sessionsSince(plan, history).slice(0, HW_RESULTS_MAX);
+  return {
+    v: HW_VERSION,
+    c: { id: profile.id, l: profile.linkedId || (plan && plan.pid) || null, n: String(profile.name || "").slice(0, 40) },
+    r: plan ? plan.createdAt : null,
+    at: new Date(now).toISOString(),
+    s: sessions.map(packSession),
+  };
+}
+
+function resultsLink(origin, payload) {
+  return `${String(origin).replace(/\/$/, "")}/cabinet.html#${HW_RESULTS_HASH}=${b64urlEncode(JSON.stringify(payload))}`;
+}
+
+// "#hwr=…" (or a whole pasted link / WhatsApp message with it) → { child,
+// round, sentAt, sessions } shaped like parseBundle() output, else null.
+function resultsFromHash(text) {
+  const m = /[#&]hwr=([A-Za-z0-9_-]+)/.exec(String(text || ""));
+  if (!m) return null;
+  try {
+    const o = JSON.parse(b64urlDecode(m[1]));
+    if (!o || typeof o !== "object" || !o.c || !Array.isArray(o.s)) return null;
+    const str = (x, n) => (typeof x === "string" ? x.slice(0, n) : null);
+    const date = (x) => (typeof x === "string" && !Number.isNaN(new Date(x).getTime()) ? new Date(x).toISOString() : null);
+    return {
+      child: { id: str(o.c.id, 40), linkedId: str(o.c.l, 40), name: str(o.c.n, 40) || "" },
+      round: date(o.r),
+      sentAt: date(o.at),
+      sessions: mergeHistory([], o.s.slice(0, HW_RESULTS_MAX).map(unpackSession)),
+      stickers: {},
+    };
+  } catch {
+    return null;
+  }
 }
 
 // Validates a JSON export from the cabinet. Returns { child, sessions,
@@ -138,7 +247,7 @@ function matchProfile(profiles, child) {
     || null;
 }
 
-const Homework = { normalizePlan, encodePlan, decodePlan, planLink, planFromHash, weekStart, weekProgress, mergeHistory, parseBundle, matchProfile, HW_HISTORY_MAX };
+const Homework = { normalizePlan, encodePlan, decodePlan, planLink, planFromHash, weekStart, weekProgress, mergeHistory, parseBundle, matchProfile, sessionsSince, packSession, unpackSession, resultsPayload, resultsLink, resultsFromHash, HW_HISTORY_MAX, HW_RESULTS_MAX };
 
 if (typeof module !== "undefined") {
   module.exports = { Homework, ...Homework };

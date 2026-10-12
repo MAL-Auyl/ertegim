@@ -170,6 +170,7 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
   });
 
   function render() {
+    renderResultsBanner();
     renderOverview();
     renderTabs();
     renderChild();
@@ -384,12 +385,85 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
           `<div class="hw-row${x.met ? " met" : ""}"><span class="hw-bar"><i style="width:${Math.min(100, Math.round((x.done / x.target) * 100))}%"></i></span>${x.met ? "✅" : "⏳"} ${esc(activityTitle(x.id))} — ${x.done} из ${x.target}</div>`).join("")
       : `<div class="muted">Задание не выдано.</div>`;
     $("hwClear").disabled = !plan && !p.settings.assigned.length;
+    renderRound(p, plan, history);
+  }
+
+  // How the current assignment went and a draft of the next one
+  // (practice.js). The draft only fills the form — the therapist decides.
+  let lastProposal = null;
+  function renderRound(p, plan, history) {
+    const box = $("hwRound");
+    const prop = plan ? Practice.nextPlanProposal(plan, history) : null;
+    lastProposal = prop;
+    box.hidden = !prop;
+    if (!prop) return;
+    const r = prop.summary;
+    const day = (iso) => new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+    const home = p.linkedId; // the parents' device: no draft for the therapist here
+    const got = p.hwReceivedAt ? ` · результаты из дома: ${day(p.hwReceivedAt)}` : "";
+    const head = `<h3>📬 Итоги задания <small>с ${day(r.since)} · ${r.days} ${dayWordRu(r.days)}${got}</small></h3>`;
+    if (!r.sessions) {
+      box.innerHTML = `${head}<p class="muted">С ${day(r.since)} занятий ещё не было${home ? "" : ". Когда родители пришлют ссылку с результатами («📤 Нәтижені жіберу» на главной), здесь появятся итоги и предложение на следующую неделю"}.</p>`;
+      return;
+    }
+    const pct = (x) => `${Math.round(x * 100)} %`;
+    const rows = r.perActivity.map((a) => `<tr>
+      <td>${esc(activityTitle(a.id))}</td>
+      <td class="num">${a.done} из ${a.expected}${a.done >= a.expected ? " ✅" : ""}</td>
+      <td class="num">${a.asked ? `${a.first}/${a.asked} · ${pct(a.firstShare)}` : "—"}</td>
+      <td class="num">${a.hints || "—"}</td>
+      <td class="num">${a.adult || "—"}</td>
+      <td>${a.last ? esc(day(a.last)) : '<span class="warn-text">не открывали</span>'}</td>
+    </tr>`).join("");
+    const areas = r.areas.map((a) => `<span class="round-area" title="доля ответов сразу: до задания → за время задания">${a.icon} ${esc(a.ru)}: ${a.beforeShare == null ? "" : `${pct(a.beforeShare)} → `}${pct(a.firstShare)} <span class="muted">(${a.asked} отв.)</span></span>`).join("");
+    const t = (id) => `«${esc(activityTitle(id).replace(/ \(особый режим\)$/, ""))}»`;
+    const ACT = { keep: "Оставить", replace: "Заменить", drop: "Убрать", add: "Добавить" };
+    const items = prop.items.map((it) => `<li class="p-${it.action}"><span class="act">${ACT[it.action]}</span><span>${it.action === "replace" ? `${t(it.id)} → ${t(it.with)}` : t(it.id)} <span class="why">— ${esc(it.reason)}</span></span></li>`).join("");
+    const pw = prop.perWeek;
+    const perWeek = pw.to !== pw.from
+      ? `<li class="p-replace"><span class="act">Раз в неделю</span><span>${pw.from} → ${pw.to} <span class="why">— ${esc(pw.reason)}</span></span></li>`
+      : pw.reason ? `<li class="p-keep"><span class="act">Раз в неделю</span><span>${pw.from} <span class="why">— ${esc(pw.reason)}</span></span></li>` : "";
+    box.innerHTML = `${head}
+      <p class="muted">Занятий за это время: ${r.sessions}${r.extra ? ` (из них вне задания: ${r.extra})` : ""} · по заданию сделано ${r.done} из ${r.expected}</p>
+      <div class="table-wrap"><table class="round"><thead><tr><th>Занятие</th><th>Сделано</th><th>Сразу</th><th>С картинкой-подсказкой</th><th>Оценил взрослый</th><th>Последний раз</th></tr></thead><tbody>${rows}</tbody></table></div>
+      ${areas ? `<div class="round-areas">${areas}</div><p class="muted" style="margin:0;">Доля ответов сразу по областям: до задания → за время задания. Это наблюдения, а не диагностика.</p>` : ""}
+      ${home ? "" : `<h3 style="margin-top:var(--space-4);">🧭 Предложение на следующий набор <small>черновик — решаете вы</small></h3>
+      <ul class="proposal">${items}${perWeek}</ul>
+      <div class="round-actions no-print"><button type="button" class="btn btn-primary" id="hwApply">✍️ Перенести в форму</button><span class="muted">отметит занятия ниже; потом «🔗 Ссылка для родителей»</span></div>`}`;
+    const apply = $("hwApply");
+    if (apply) apply.addEventListener("click", applyProposal);
+  }
+
+  function dayWordRu(n) {
+    return n % 10 === 1 && n % 100 !== 11 ? "день" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "дня" : "дней";
+  }
+
+  // Fills the form with the draft: ticks/unticks activities, sets the
+  // weekly count and marks what changed. Nothing is saved until the
+  // therapist presses «Сохранить» or «Ссылка для родителей».
+  function applyProposal() {
+    if (!lastProposal) return;
+    const want = new Set(lastProposal.activities);
+    $("assignedList").querySelectorAll("input").forEach((box) => {
+      const on = want.has(box.value), row = box.closest(".assign");
+      row.classList.toggle("added", on && !box.checked);
+      row.classList.toggle("removed", !on && box.checked);
+      box.checked = on;
+    });
+    $("hwPerWeek").value = String(lastProposal.perWeek.to);
+    $("hwForm").scrollIntoView({ behavior: "smooth", block: "start" });
+    flash("Проверьте выделенное и нажмите «🔗 Ссылка для родителей»");
   }
 
   function readPlanForm() {
     const p = Profiles.active();
+    const prev = p.homework ? Homework.normalizePlan(p.homework, ACTIVITY_IDS) : null;
+    const acts = [...$("assignedList").querySelectorAll("input:checked")].map((i) => i.value);
+    // Same set of activities → the same assignment: editing the note or the
+    // weekly count must not restart the round (practice.js counts from createdAt).
+    const same = prev && prev.activities.length === acts.length && acts.every((id) => prev.activities.includes(id));
     return Homework.normalizePlan({
-      activities: [...$("assignedList").querySelectorAll("input:checked")].map((i) => i.value),
+      activities: acts,
       perWeek: Number($("hwPerWeek").value),
       note: $("hwNote").value,
       from: $("hwFrom").value,
@@ -397,7 +471,7 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
       // The link always points back to THIS device's profile — unless this
       // device is itself the home one, then it keeps the therapist's id.
       pid: p.linkedId || p.id,
-      createdAt: new Date().toISOString(),
+      createdAt: same ? prev.createdAt : new Date().toISOString(),
     }, ACTIVITY_IDS);
   }
 
@@ -441,21 +515,16 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
     render();
   });
 
-  // Results played at home → this device. The file is the JSON export of
-  // the parents' cabinet; sessions are merged into the matching child.
-  $("importFile").addEventListener("change", async (e) => {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = "";
-    if (!file) return;
-    let bundle = null;
-    try { bundle = Homework.parseBundle(JSON.parse(await file.text())); } catch { bundle = null; }
-    if (!bundle) { $("importStatus").textContent = "Это не файл результатов Ертегім."; return; }
+  // Results played at home → this device: a results link (opened here or
+  // pasted) or the JSON export file. Sessions are merged into the matching
+  // child; the round summary above the form shows what came in.
+  function importBundle(bundle) {
     let target = Homework.matchProfile(Profiles.list(), bundle.child);
     if (!target) {
-      if (!confirm(`Ребёнок «${bundle.child.name || "без имени"}» не найден. Создать новый профиль?`)) return;
+      if (!confirm(`Ребёнок «${bundle.child.name || "без имени"}» не найден. Создать новый профиль?`)) return false;
       target = Profiles.add({ name: bundle.child.name });
     }
-    Profiles.update(target.id, { remoteId: bundle.child.id });
+    Profiles.update(target.id, { remoteId: bundle.child.id, hwReceivedAt: new Date().toISOString() });
     Profiles.setActive(target.id);
     const before = Session.history();
     const merged = Homework.mergeHistory(before, bundle.sessions);
@@ -465,6 +534,53 @@ if (typeof document !== "undefined" && document.getElementById("cabinet")) {
     $("importStatus").textContent = added > 0
       ? `✅ ${target.name}: добавлено занятий — ${added}.`
       : `${target.name}: новых занятий нет, всё уже загружено.`;
+    $("hwSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    return true;
+  }
+
+  $("importFile").addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    let bundle = null;
+    try { bundle = Homework.parseBundle(JSON.parse(await file.text())); } catch { bundle = null; }
+    if (!bundle) { $("importStatus").textContent = "Это не файл результатов Ертегім."; return; }
+    importBundle(bundle);
+  });
+
+  $("importLinkBtn").addEventListener("click", () => {
+    const bundle = Homework.resultsFromHash($("importLink").value);
+    if (!bundle) { $("importStatus").textContent = "Это не ссылка с результатами Ертегім (в ней должно быть «#hwr=»)."; return; }
+    if (importBundle(bundle)) $("importLink").value = "";
+  });
+
+  // A results link opened on this device: /cabinet.html#hwr=… — offered
+  // after the PIN, imported on «Загрузить», and the hash is dropped either way.
+  let pendingResults = Homework.resultsFromHash(location.hash);
+  const dropHash = () => { try { history.replaceState(null, "", location.pathname + location.search); } catch { /* file:// */ } };
+  function renderResultsBanner() {
+    const b = pendingResults;
+    $("hwrBanner").hidden = !b;
+    if (!b) return;
+    const n = b.sessions.length;
+    $("hwrText").textContent = n
+      ? `📬 Результаты из дома: ${b.child.name || "ребёнок"} — занятий: ${n}${b.sentAt ? `, отправлено ${fmtDateTime(b.sentAt)}` : ""}.`
+      : `📬 Ссылка из дома от «${b.child.name || "ребёнок"}», но занятий в ней нет.`;
+    $("hwrImport").hidden = !n;
+  }
+  $("hwrImport").addEventListener("click", () => {
+    const b = pendingResults;
+    pendingResults = null; dropHash();
+    if (!b || !importBundle(b)) render();
+  });
+  $("hwrDismiss").addEventListener("click", () => { pendingResults = null; dropHash(); renderResultsBanner(); });
+  // The link opened in a tab where the cabinet is already open: no reload.
+  window.addEventListener("hashchange", () => {
+    const b = Homework.resultsFromHash(location.hash);
+    if (!b) return;
+    pendingResults = b;
+    renderResultsBanner();
+    $("hwrBanner").scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
 

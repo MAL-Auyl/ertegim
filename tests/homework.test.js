@@ -101,3 +101,81 @@ describe("profiles keep the homework bridge fields", () => {
     Profiles._storage = null;
   });
 });
+
+describe("results link (home → therapist)", () => {
+  const np = H.normalizePlan(plan, KNOWN); // issued 2026-10-03T08:00Z
+  const home = { id: "pHome", linkedId: "p123", name: "Айгерім" };
+  const s = (iso, activity, skills, extra = {}) => ({ date: iso, activity, skills, completed: true, durationSec: 210, avgResponseSec: 2.345, words: ["алма", "ана"], moments: [{ atSec: 3, text_kk: "x" }], attempts: [{ transcript: "секрет" }], ...extra });
+  const history = [
+    s("2026-10-06T10:00:00.000Z", "letter-a", { sound_a: "reveal", word_a: "first", pick_a: "first", open_a: "skipped" }, { visualHints: 2, gestureAnswers: 1, adultAnswers: 1, questionsTotal: 3, firstTryCorrect: 2 }),
+    s("2026-10-04T10:00:00.000Z", "count", { count: "reask" }, { questionsTotal: 1, firstTryCorrect: 0 }),
+    s("2026-10-01T10:00:00.000Z", "count", { count: "first" }), // before the plan
+  ];
+
+  test("carries the sessions since the plan, round-trips through the hash", () => {
+    const link = H.resultsLink("https://ertegim.vercel.app/", H.resultsPayload(home, np, history, Date.parse("2026-10-07T09:00:00Z")));
+    expect(link.startsWith("https://ertegim.vercel.app/cabinet.html#hwr=")).toBe(true);
+    expect(link.split("#hwr=")[1]).toMatch(/^[A-Za-z0-9_-]+$/);
+    const b = H.resultsFromHash(new URL(link).hash);
+    expect(b.child).toEqual({ id: "pHome", linkedId: "p123", name: "Айгерім" });
+    expect(b.round).toBe(np.createdAt);
+    expect(b.sentAt).toBe("2026-10-07T09:00:00.000Z");
+    expect(b.sessions.map((x) => x.date.slice(0, 10))).toEqual(["2026-10-06", "2026-10-04"]);
+    const a = b.sessions[0];
+    expect(a.skills).toEqual({ sound_a: "reveal", word_a: "first", pick_a: "first" }); // skipped stays home
+    expect([a.questionsTotal, a.firstTryCorrect, a.visualHints, a.gestureAnswers, a.adultAnswers]).toEqual([3, 2, 2, 1, 1]);
+    expect(a.avgResponseSec).toBe(2.3);
+    expect(a.completed).toBe(true);
+    expect(a.words).toEqual(["алма", "ана"]);
+    expect(a.fromLink).toBe(true);
+    // a session's attempt transcripts and moments never travel in the link
+    const raw = Buffer.from(link.split("#hwr=")[1], "base64url").toString("utf8");
+    expect(raw).not.toContain("секрет");
+    expect(raw).not.toContain("text_kk");
+    expect(a.attempts).toBeUndefined();
+  });
+
+  test("a pasted WhatsApp message with the link works; garbage → null", () => {
+    const link = H.resultsLink("https://e.kz", H.resultsPayload(home, np, history));
+    expect(H.resultsFromHash(`Ертегім: Айгерім — нәтижелер ${link}`).sessions.length).toBe(2);
+    expect(H.resultsFromHash("#hwr=!!!")).toBeNull();
+    expect(H.resultsFromHash("#hwr=" + Buffer.from('{"c":1}').toString("base64url"))).toBeNull();
+    expect(H.resultsFromHash("#hw=abc")).toBeNull();
+    expect(H.resultsFromHash("")).toBeNull();
+  });
+
+  test("first-try counts are recomputed from the skills, junk skills dropped", () => {
+    const payload = { c: { id: "x" }, s: [{ d: "2026-10-06T10:00:00Z", a: "count", k: { count: "f", "<img>": "f", plus: "zz" }, q: 99, f: 99 }] };
+    const b = H.resultsFromHash("#hwr=" + Buffer.from(JSON.stringify(payload)).toString("base64url"));
+    expect(b.sessions[0].skills).toEqual({ count: "first" });
+    expect([b.sessions[0].questionsTotal, b.sessions[0].firstTryCorrect]).toEqual([1, 1]);
+  });
+
+  test("at most HW_RESULTS_MAX sessions, newest first", () => {
+    const many = Array.from({ length: 40 }, (_, i) => s(new Date(Date.parse("2026-10-04T00:00:00Z") + i * 3600e3).toISOString(), "count", { count: "first" }));
+    const p = H.resultsPayload(home, np, [...many].reverse());
+    expect(p.s.length).toBe(H.HW_RESULTS_MAX);
+    expect(p.s[0].d).toBe(many[39].date);
+  });
+
+  test("the file export (with transcripts) wins over the link's short copy of the same session", () => {
+    const short = H.resultsFromHash(new URL(H.resultsLink("https://e.kz", H.resultsPayload(home, np, history))).hash).sessions;
+    const afterLink = H.mergeHistory([], short);
+    const full = H.mergeHistory(afterLink, history);
+    expect(full.length).toBe(3);
+    expect(full[0].attempts).toBeDefined();
+    expect(full[0].fromLink).toBeUndefined();
+    // and the other way round: the link never replaces what is already full
+    expect(H.mergeHistory(history, short)[0].attempts).toBeDefined();
+  });
+
+  test("profiles remember when results were sent / received", () => {
+    const { Profiles } = require("../public/profiles.js");
+    const mem = {}; Profiles._storage = { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = v; }, removeItem: (k) => { delete mem[k]; } };
+    const p = Profiles.add({ name: "Айгерім" }, 1000);
+    Profiles.update(p.id, { hwSentAt: "2026-10-07T09:00:00.000Z", hwReceivedAt: "nonsense" });
+    expect(Profiles.get(p.id).hwSentAt).toBe("2026-10-07T09:00:00.000Z");
+    expect(Profiles.get(p.id).hwReceivedAt).toBeNull();
+    Profiles._storage = null;
+  });
+});
