@@ -448,7 +448,8 @@
     label.hidden = !show;
     if (!show) return;
     box.innerHTML = rows.map(function (r) {
-      return "<li><em>" + (MEDAL[r.place] || "") + "<\/em><b>" + esc(r.label) + "<\/b>" +
+      var c = COUNTRIES[r.country];
+      return "<li><em>" + (MEDAL[r.place] || "") + "<\/em><b>" + esc(r.label) + (c ? "<small>(" + esc(c.name[lang]) + ")<\/small>" : "") + "<\/b>" +
         "<span>" + (ROMAN[r.place] || r.place) + " " + esc(t("place")) + "<\/span><\/li>";
     }).join("");
   }
@@ -462,7 +463,8 @@
       '<div class="overall__grid">' + overallRows().map(function (r) {
         return '<div class="overall__card overall__card--' + r.place + '"><span class="overall__medal">' + (MEDAL[r.place] || "") + "<\/span>" +
           '<span class="overall__place">' + (ROMAN[r.place] || r.place) + " " + esc(t("place")) + "<\/span>" +
-          '<b class="overall__name">' + esc(r.label) + "<\/b><\/div>";
+          '<b class="overall__name">' + esc(r.label) + "<\/b>" +
+          (COUNTRIES[r.country] ? '<span class="overall__country">(' + esc(COUNTRIES[r.country].name[lang]) + ")<\/span>" : "") + "<\/div>";
       }).join("") + "<\/div>";
   }
 
