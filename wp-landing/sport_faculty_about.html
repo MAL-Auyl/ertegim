@@ -62,8 +62,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 72px; }
   clip-path: polygon(0 0, 100% 0, 100% 91%, 0 100%);
   background:
     radial-gradient(ellipse at 85% 15%, rgba(0,170,255,.25), transparent 55%),
-    linear-gradient(125deg, rgba(11,42,91,.97) 35%, rgba(11,61,145,.82) 100%),
-    url("/wp-content/uploads/2026/10/program.jpg") center / cover;
+    linear-gradient(125deg, rgba(11,42,91,.97) 35%, rgba(11,61,145,.82) 100%);
+    /* Фото фона: добавьте строку ниже в background после градиента
+       url("/wp-content/uploads/…/sport-hero.jpg") center / cover; */
 }
 #ysf .hero__word {
   position: absolute; right: -2vw; bottom: 6vh; font-size: clamp(90px, 17vw, 260px); font-weight: 900; line-height: .8;
@@ -89,6 +90,11 @@ html { scroll-behavior: smooth; scroll-padding-top: 72px; }
 #ysf .medal em { display: block; font-style: normal; font-size: 28px; line-height: 1; }
 #ysf .medal b { display: block; margin-top: 8px; font-size: 34px; font-weight: 900; line-height: 1; }
 #ysf .medal span { display: block; margin-top: 4px; font-size: 12px; color: var(--muted-white); }
+#ysf .why { display: grid; gap: 12px; }
+#ysf .why li { display: grid; grid-template-columns: 44px 1fr; gap: 14px; align-items: center; padding: 14px; border-radius: 14px; background: rgba(11,42,91,.55); border: 1px solid rgba(255,255,255,.08); }
+#ysf .why i { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: rgba(245,158,11,.15); color: var(--gold); font-size: 18px; }
+#ysf .why b { display: block; font-size: 15px; font-weight: 800; color: var(--white); }
+#ysf .why span { font-size: 13px; line-height: 1.5; color: var(--muted-white); }
 #ysf .hero__card p { margin-top: 16px; font-size: 13px; line-height: 1.6; color: var(--muted-white); }
 #ysf .hero__card a { color: var(--accent); font-weight: 600; }
 
@@ -243,13 +249,12 @@ html { scroll-behavior: smooth; scroll-padding-top: 72px; }
         </div>
       </div>
       <aside class="hero__card">
-        <h3>Caspian Games – 2026</h3>
-        <div class="medals">
-          <div class="medal"><em>🥇</em><b>3</b><span>алтын</span></div>
-          <div class="medal"><em>🥈</em><b>4</b><span>күміс</span></div>
-          <div class="medal"><em>🥉</em><b>3</b><span>қола</span></div>
-        </div>
-        <p>VIII халықаралық студенттік «Caspian Games – 2026» ойындарында Yessenov University командалары жеңіп алған медальдар. <a href="#achievements">Толығырақ →</a></p>
+        <h3>Неге біз?</h3>
+        <ul class="why">
+          <li><i class="fa-solid fa-medal"></i><span><b>Тәжірибе мен теория</b>Сабақтар залда, алаңда және аудиторияда өтеді</span></li>
+          <li><i class="fa-solid fa-dumbbell"></i><span><b>Спорт нысандары</b>Кампустағы спорт кешені мен стадион</span></li>
+          <li><i class="fa-solid fa-people-group"></i><span><b>Студенттік спорт</b>Секциялар, командалар және жарыстар</span></li>
+        </ul>
       </aside>
     </div>
   </section>
@@ -303,7 +308,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 72px; }
         <div class="num"><b><span class="todo">[XXX]</span></b><span>білім алушы</span></div>
         <div class="num"><b><span class="todo">[XX]</span></b><span>оқытушы мен жаттықтырушы</span></div>
         <div class="num"><b><span class="todo">[X]</span></b><span>білім беру бағдарламасы</span></div>
-        <div class="num"><b>10</b><span>Caspian Games – 2026 медальдары</span></div>
+        <div class="num"><b><span class="todo">[XX]</span></b><span>спорт секциясы</span></div>
       </div>
     </div>
   </section>
@@ -346,13 +351,13 @@ html { scroll-behavior: smooth; scroll-padding-top: 72px; }
       <div class="head">
         <p class="eyebrow"><i class="fa-solid fa-building"></i> Инфрақұрылым</p>
         <h2 class="title">Жаттығуға арналған алаңдар</h2>
-        <p class="sub">VIII халықаралық студенттік «Caspian Games – 2026» ойындарының жарыстары өткен университет нысандары.</p>
+        <p class="sub">Yessenov University кампусындағы оқу-жаттығу және жарыс өткізуге арналған спорт нысандары.</p>
       </div>
       <div class="infra">
-        <div class="place place--big"><i class="fa-solid fa-dumbbell"></i><h4>Yessenov Sports Complex</h4><p>32 шағын аудан · жүзу, баскетбол, Caspian Games – 2026 ашылу салтанаты</p></div>
-        <div class="place"><i class="fa-solid fa-person-running"></i><h4>Yessenov Stadium</h4><p>32 шағын аудан · жеңіл атлетика, жабылу салтанаты</p></div>
-        <div class="place"><i class="fa-solid fa-chess-knight"></i><h4>Yessenov Атриум</h4><p>32 шағын аудан · шахмат</p></div>
-        <div class="place"><i class="fa-solid fa-gamepad"></i><h4>Yessenov Технопарк</h4><p>32 шағын аудан · киберспорт</p></div>
+        <div class="place place--big"><i class="fa-solid fa-dumbbell"></i><h4>Yessenov Sports Complex</h4><p>32 шағын аудан · жүзу, баскетбол</p></div>
+        <div class="place"><i class="fa-solid fa-person-running"></i><h4>Yessenov Stadium</h4><p>32 шағын аудан · жеңіл атлетика</p></div>
+        <div class="place"><i class="fa-solid fa-volleyball"></i><h4><span class="todo">[Спорт залы]</span></h4><p><span class="todo">[қай спорт түрлері]</span></p></div>
+        <div class="place"><i class="fa-solid fa-heart-pulse"></i><h4><span class="todo">[Тренажер залы]</span></h4><p><span class="todo">[сипаттамасы]</span></p></div>
         <div class="place"><i class="fa-solid fa-plus"></i><h4><span class="todo">[Басқа нысан]</span></h4><p><span class="todo">[спорт залы, секциялар]</span></p></div>
       </div>
     </div>
@@ -367,21 +372,19 @@ html { scroll-behavior: smooth; scroll-padding-top: 72px; }
       </div>
       <div class="ach">
         <div class="ach__card">
-          <p class="eyebrow">5–9 қазан 2026 · Ақтау</p>
-          <h3>VIII халықаралық студенттік «Caspian Games – 2026»</h3>
-          <p>Yessenov University базасында өткен ойындарда Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері 10 спорт түрі бойынша бақ сынады.</p>
+          <p class="eyebrow">Студенттік спорт</p>
+          <h3>Жарыстар мен жеңістер</h3>
+          <p>Факультет студенттері қалалық, республикалық және халықаралық жарыстарда университет намысын қорғайды.</p>
           <div class="medals">
-            <div class="medal"><em>🥇</em><b>3</b><span>алтын</span></div>
-            <div class="medal"><em>🥈</em><b>4</b><span>күміс</span></div>
-            <div class="medal"><em>🥉</em><b>3</b><span>қола</span></div>
+            <div class="medal"><em>🥇</em><b><span class="todo">[X]</span></b><span>алтын</span></div>
+            <div class="medal"><em>🥈</em><b><span class="todo">[X]</span></b><span>күміс</span></div>
+            <div class="medal"><em>🥉</em><b><span class="todo">[X]</span></b><span>қола</span></div>
           </div>
         </div>
         <div class="golds">
-          <div class="gold"><div class="gold__ico">🥊</div><div><h4>Бокс</h4><p>Caspian Games – 2026</p></div><span>🥇</span></div>
-          <div class="gold"><div class="gold__ico">🥋</div><div><h4>Каратэ-до</h4><p>Caspian Games – 2026</p></div><span>🥇</span></div>
-          <div class="gold"><div class="gold__ico">🤼</div><div><h4>Самбо</h4><p>Caspian Games – 2026</p></div><span>🥇</span></div>
-          <div class="gold"><div class="gold__ico">🏐</div><div><h4>Волейбол (қыздар) · Жеңіл атлетика · Футзал · Киберспорт</h4><p>Caspian Games – 2026</p></div><span>🥈</span></div>
-          <div class="gold"><div class="gold__ico">🏊</div><div><h4>Жүзу · Баскетбол · Волейбол (ұлдар)</h4><p>Caspian Games – 2026</p></div><span>🥉</span></div>
+          <div class="gold"><div class="gold__ico">🏆</div><div><h4><span class="todo">[Жарыс атауы]</span></h4><p><span class="todo">[Жыл, қала · спорт түрі]</span></p></div><span>🥇</span></div>
+          <div class="gold"><div class="gold__ico">🏆</div><div><h4><span class="todo">[Жарыс атауы]</span></h4><p><span class="todo">[Жыл, қала · спорт түрі]</span></p></div><span>🥈</span></div>
+          <div class="gold"><div class="gold__ico">🏆</div><div><h4><span class="todo">[Жарыс атауы]</span></h4><p><span class="todo">[Жыл, қала · спорт түрі]</span></p></div><span>🥉</span></div>
         </div>
       </div>
     </div>
