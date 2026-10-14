@@ -384,7 +384,7 @@
 
   // ===== Results dashboard =====
   var DATA = window.CG_RESULTS || { sports: {} };
-  var medalMode = "country";
+  var medalMode = "univ"; // awards by university only
   var MEDAL = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
   function sportResult(s) {
@@ -448,8 +448,7 @@
     label.hidden = !show;
     if (!show) return;
     box.innerHTML = rows.map(function (r) {
-      var c = COUNTRIES[r.country];
-      return "<li><em>" + (MEDAL[r.place] || "") + "<\/em><b>" + esc(r.label) + "<small>" + (c ? c.flag + " " + esc(c.name[lang]) : "") + "<\/small><\/b>" +
+      return "<li><em>" + (MEDAL[r.place] || "") + "<\/em><b>" + esc(r.label) + "<\/b>" +
         "<span>" + (ROMAN[r.place] || r.place) + " " + esc(t("place")) + "<\/span><\/li>";
     }).join("");
   }
@@ -461,11 +460,9 @@
     box.hidden = false;
     box.innerHTML = '<div class="overall__head"><h3 class="panel__title">' + esc(t("res.overall")) + '<\/h3><span class="overall__note">' + esc(t("res.overallNote")) + "<\/span><\/div>" +
       '<div class="overall__grid">' + overallRows().map(function (r) {
-        var c = COUNTRIES[r.country];
         return '<div class="overall__card overall__card--' + r.place + '"><span class="overall__medal">' + (MEDAL[r.place] || "") + "<\/span>" +
           '<span class="overall__place">' + (ROMAN[r.place] || r.place) + " " + esc(t("place")) + "<\/span>" +
-          '<b class="overall__name">' + esc(r.label) + "<\/b>" +
-          '<span class="overall__country">' + (c ? c.flag + " " + esc(c.name[lang]) : "") + "<\/span><\/div>";
+          '<b class="overall__name">' + esc(r.label) + "<\/b><\/div>";
       }).join("") + "<\/div>";
   }
 
@@ -481,9 +478,7 @@
     });
     var total = medals.g + medals.s + medals.b;
 
-    var saved = medalMode; medalMode = "country";
-    var top = medalRows()[0];
-    medalMode = saved;
+    var top = univRows()[0];
     var hasLeader = top ? (top.g + top.s + top.b) > 0 : false;
 
     var pct = Math.round(done / SPORTS.length * 100);
@@ -497,7 +492,7 @@
         ' · <span class="dot dot--3"><\/span> ' + medals.b + "<\/p><\/div>" +
       '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.leader")) + "<\/p>" +
         (hasLeader
-          ? '<p class="kpi__value">' + COUNTRIES[top.key].flag + '<\/p><p class="kpi__hint">' + esc(top.label) + " · " + top.g + " 🥇<\/p>"
+          ? '<p class="kpi__value kpi__value--text">' + esc(top.label) + '<\/p><p class="kpi__hint">' + top.g + " 🥇 · " + top.s + " 🥈 · " + top.b + " 🥉<\/p>"
           : '<p class="kpi__value">—<\/p><p class="kpi__hint">' + esc(t("kpi.noLeader")) + "<\/p>") + "<\/div>" +
       (today
         ? '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.today")) + '<\/p><p class="kpi__value">' + todayCount + '<\/p><p class="kpi__hint">' + esc(t("kpi.todayHint")) + "<\/p><\/div>"
@@ -532,14 +527,12 @@
       "<th>" + esc(t("col.t")) + "<\/th><\/tr><\/thead><tbody>";
     rows.forEach(function (r, i) {
       var tot = r.g + r.s + r.b;
-      var flag = COUNTRIES[r.country] ? COUNTRIES[r.country].flag : "🏳️";
-      var sub = (medalMode === "univ" ? COUNTRIES[r.country] : null) ? "<small>" + esc(COUNTRIES[r.country].name[lang]) + "<\/small>" : "";
       var bar = tot ? '<div class="medalbar">' +
         (r.g ? '<i class="g" style="width:' + (r.g / max * 100) + '%"><\/i>' : "") +
         (r.s ? '<i class="s" style="width:' + (r.s / max * 100) + '%"><\/i>' : "") +
         (r.b ? '<i class="b" style="width:' + (r.b / max * 100) + '%"><\/i>' : "") + "<\/div>" : "";
       html += '<tr><td class="rank">' + (tot ? i + 1 : "–") + "<\/td>" +
-        '<td class="team"><span>' + flag + "<\/span>" + esc(r.label) + sub + bar + "<\/td>" +
+        '<td class="team">' + esc(r.label) + bar + "<\/td>" +
         "<td>" + r.g + "<\/td><td>" + r.s + "<\/td><td>" + r.b + '<\/td><td class="total">' + tot + "<\/td><\/tr>";
     });
     html += "<\/tbody><\/table>";
@@ -562,11 +555,10 @@
         body = cats.map(function (cat) {
           var head = cat ? '<p class="podium__cat">' + esc(t("cat." + cat) || cat) + "<\/p>" : "";
           return head + '<ol class="podium">' + r.podium.filter(function (p) { return (p.cat || "") === cat; }).map(function (p) {
-            var c = COUNTRIES[p.country];
             var nm = loc(p.name), un = loc(p.univ);
             var two = nm ? (un ? nm !== un : false) : false;
             var who = two ? esc(nm) + " <small>· " + esc(un) + "<\/small>" : esc(nm || un);
-            return "<li><em>" + (MEDAL[p.place] || "") + "<\/em><b>" + who + "<\/b><span>" + (c ? c.flag : "") + "<\/span><\/li>";
+            return "<li><em>" + (MEDAL[p.place] || "") + "<\/em><b>" + who + "<\/b><span><\/span><\/li>";
           }).join("") + "<\/ol>";
         }).join("");
       } else if (r.status !== "soon") {
