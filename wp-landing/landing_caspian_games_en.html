@@ -72,6 +72,7 @@ html, body { overflow-x: clip; }
 #cg *,
 #cg *::before,
 #cg *::after { box-sizing: border-box; }
+#cg [hidden] { display: none !important; }
 
 html { scroll-behavior: smooth; }
 
@@ -365,6 +366,15 @@ html { scroll-behavior: smooth; }
   color: var(--muted-white);
 }
 
+#cg .hero__top { list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 8px; }
+#cg .hero__top li {
+  display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 12px; background: rgba(11, 42, 91, 0.55); border: 1px solid var(--border-dark);
+}
+#cg .hero__top em { font-style: normal; font-size: 22px; line-height: 1; }
+#cg .hero__top b { font-size: 14px; font-weight: 700; line-height: 1.35; color: var(--white); }
+#cg .hero__top small { display: block; font-size: 12px; font-weight: 500; color: var(--muted-white); }
+#cg .hero__top span { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--accent); white-space: nowrap; }
 #cg .stats {
   list-style: none;
   padding: 0;
@@ -552,6 +562,23 @@ html { scroll-behavior: smooth; }
 }
 #cg .updated i { color: var(--accent); margin-right: 6px; }
 
+#cg .overall { padding: 28px; margin-bottom: 24px; }
+#cg .overall__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; margin-bottom: 20px; }
+#cg .overall__note { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--muted); }
+#cg .overall__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+#cg .overall__card {
+  display: flex; flex-direction: column; gap: 6px; padding: 22px; border-radius: 16px;
+  background: var(--light); border: 1px solid var(--border);
+}
+#cg .overall__card--1 { background: linear-gradient(135deg, var(--navy), var(--blue)); border-color: transparent; color: var(--white); }
+#cg .overall__medal { font-size: 34px; line-height: 1; }
+#cg .overall__place { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--gold-ink); }
+#cg .overall__card--1 .overall__place { color: var(--gold); }
+#cg .overall__name { font-size: 17px; font-weight: 800; line-height: 1.3; color: var(--navy); }
+#cg .overall__card--1 .overall__name { color: var(--white); }
+#cg .overall__country { font-size: 13px; color: var(--muted); }
+#cg .overall__card--1 .overall__country { color: var(--muted-white); }
+@media (max-width: 768px) { #cg .overall__grid { grid-template-columns: 1fr; } #cg .overall { padding: 20px 16px; } }
 #cg .kpis {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1031,7 +1058,7 @@ html { scroll-behavior: smooth; }
   padding-left: 12px; margin-left: 2px; border-left: 1px solid var(--border);
 }
 #cg .hero__logo {
-  display: inline-flex; align-items: center; justify-content: center;
+  display: flex; width: fit-content; align-items: center; justify-content: center;
   background: var(--white); border-radius: 18px; padding: 10px 14px; margin-bottom: 22px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
 }
@@ -1246,8 +1273,8 @@ html { scroll-padding-top: 72px; }
         </p>
         <p class="hero__sub" data-i18n="hero.sub">Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері 10 спорт түрі бойынша бақ сынайды.</p>
         <div class="hero__cta">
-          <a href="#schedule" class="btn btn--accent" data-i18n="hero.cta">Кестені көру</a>
-          <a href="#results" class="btn btn--ghost" data-i18n="hero.cta2">Нәтижелер</a>
+          <a href="#results" class="btn btn--accent" data-i18n="hero.cta">Нәтижелерді көру</a>
+          <a href="#news" class="btn btn--ghost" data-i18n="hero.cta2">Жаңалықтар</a>
         </div>
       </div>
 
@@ -1259,6 +1286,8 @@ html { scroll-padding-top: 72px; }
           <div><b id="cd-m">00</b><span data-i18n="cd.m">минут</span></div>
           <div><b id="cd-s">00</b><span data-i18n="cd.s">секунд</span></div>
         </div>
+        <p class="hero__panel-label" id="hero-top-label" data-i18n="hero.top" hidden>Медаль кестесінің көшбасшылары</p>
+        <ol class="hero__top" id="hero-top" hidden></ol>
         <ul class="stats">
           <li><b>5</b><span data-i18n="stats.countries">ел</span></li>
           <li><b>10</b><span data-i18n="stats.sports">спорт түрі</span></li>
@@ -1281,9 +1310,9 @@ html { scroll-padding-top: 72px; }
         <img class="nav__cg" src="https://yu.edu.kz/wp-content/uploads/2026/10/whatsapp-image-2026-10-05-at-11.34.19.jpeg" alt="Caspian Games 2026">
       </a>
       <nav class="nav__links" aria-label="Menu">
-        <a href="#about" data-i18n="nav.about">Ойындар туралы</a>
         <a href="#results" data-i18n="nav.results">Нәтижелер</a>
         <a href="#news" data-i18n="nav.news">Жаңалықтар</a>
+        <a href="#about" data-i18n="nav.about">Ойындар туралы</a>
         <a href="#schedule" data-i18n="nav.schedule">Кесте</a>
         <a href="#sports" data-i18n="nav.sports">Спорт түрлері</a>
         <a href="#venues" data-i18n="nav.venues">Орындар</a>
@@ -1296,44 +1325,6 @@ html { scroll-padding-top: 72px; }
     </div>
   </header>
 
-  <!-- ===== About + ceremonies ===== -->
-  <section class="section" id="about">
-    <div class="wrap">
-      <div class="section__head">
-        <p class="eyebrow" data-i18n="about.eyebrow">Ойындар туралы</p>
-        <h2 class="section__title" data-i18n="about.title">Каспий маңы жастарының спорт мерекесі</h2>
-      </div>
-      <div class="about">
-        <div class="about__text">
-          <p class="about__lead" data-i18n="about.lead">5–9 қазан аралығында Ақтау қаласында Каспий маңы елдерінің жоғары оқу орындары студенттері арасында VIII халықаралық «Каспий ойындары – 2026» өтеді!</p>
-          <p data-i18n="about.p1">Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері спорттың 10 түрі бойынша бақ сынап, жеңіс пен командалық рухтың жарқын үлгісін көрсетеді.</p>
-          <p><strong data-i18n="about.sportsLabel">Спорт түрлері:</strong> <span data-i18n="about.sports">жеңіл атлетика, волейбол, футзал, баскетбол, жүзу, каратэ-до, бокс, шахмат, киберспорт және самбо.</span></p>
-          <p data-i18n="about.p2">Каспий маңы елдерінің жастарын біріктіретін үлкен спорт мерекесінің куәсі болыңыз!</p>
-        </div>
-        <div class="about__countries" id="countries"></div>
-      </div>
-
-      <div class="ceremonies">
-        <article class="ceremony">
-          <div class="ceremony__date"><b>5</b><span data-i18n="month">қазан</span></div>
-          <div>
-            <h3 data-i18n="cer.open">Ашылу салтанаты</h3>
-            <p class="ceremony__time"><i class="fa-regular fa-clock"></i> 14:00</p>
-            <p class="ceremony__place"><i class="fa-solid fa-location-dot"></i> <span data-i18n="venue.ysc">Yessenov Sports Complex, 32 ш/а</span></p>
-          </div>
-        </article>
-        <article class="ceremony">
-          <div class="ceremony__date"><b>9</b><span data-i18n="month">қазан</span></div>
-          <div>
-            <h3 data-i18n="cer.close">Жабылу салтанаты</h3>
-            <p class="ceremony__time"><i class="fa-regular fa-clock"></i> 17:00</p>
-            <p class="ceremony__place"><i class="fa-solid fa-location-dot"></i> <span data-i18n="venue.ys">Yessenov Stadium, 32 ш/а</span></p>
-          </div>
-        </article>
-      </div>
-    </div>
-  </section>
-
   <!-- ===== Results dashboard ===== -->
   <section class="section section--alt" id="results">
     <div class="wrap">
@@ -1344,6 +1335,8 @@ html { scroll-padding-top: 72px; }
         </div>
         <p class="updated" id="res-updated" hidden></p>
       </div>
+
+      <div class="panel overall" id="overall" hidden></div>
 
       <div class="kpis" id="kpis"></div>
 
@@ -1384,8 +1377,47 @@ html { scroll-padding-top: 72px; }
   </section>
 
 
+  <!-- ===== About + ceremonies ===== -->
+  <section class="section section--alt" id="about">
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow" data-i18n="about.eyebrow">Ойындар туралы</p>
+        <h2 class="section__title" data-i18n="about.title">Каспий маңы жастарының спорт мерекесі</h2>
+      </div>
+      <div class="about">
+        <div class="about__text">
+          <p class="about__lead" data-i18n="about.lead">5–9 қазан аралығында Ақтау қаласында Каспий маңы елдерінің жоғары оқу орындары студенттері арасында VIII халықаралық «Каспий ойындары – 2026» өтеді!</p>
+          <p data-i18n="about.p1">Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері спорттың 10 түрі бойынша бақ сынап, жеңіс пен командалық рухтың жарқын үлгісін көрсетеді.</p>
+          <p><strong data-i18n="about.sportsLabel">Спорт түрлері:</strong> <span data-i18n="about.sports">жеңіл атлетика, волейбол, футзал, баскетбол, жүзу, каратэ-до, бокс, шахмат, киберспорт және самбо.</span></p>
+          <p data-i18n="about.p2">Каспий маңы елдерінің жастарын біріктіретін үлкен спорт мерекесінің куәсі болыңыз!</p>
+        </div>
+        <div class="about__countries" id="countries"></div>
+      </div>
+
+      <div class="ceremonies">
+        <article class="ceremony">
+          <div class="ceremony__date"><b>5</b><span data-i18n="month">қазан</span></div>
+          <div>
+            <h3 data-i18n="cer.open">Ашылу салтанаты</h3>
+            <p class="ceremony__time"><i class="fa-regular fa-clock"></i> 14:00</p>
+            <p class="ceremony__place"><i class="fa-solid fa-location-dot"></i> <span data-i18n="venue.ysc">Yessenov Sports Complex, 32 ш/а</span></p>
+          </div>
+        </article>
+        <article class="ceremony">
+          <div class="ceremony__date"><b>9</b><span data-i18n="month">қазан</span></div>
+          <div>
+            <h3 data-i18n="cer.close">Жабылу салтанаты</h3>
+            <p class="ceremony__time"><i class="fa-regular fa-clock"></i> 17:00</p>
+            <p class="ceremony__place"><i class="fa-solid fa-location-dot"></i> <span data-i18n="venue.ys">Yessenov Stadium, 32 ш/а</span></p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+
   <!-- ===== Schedule ===== -->
-  <section class="section section--alt" id="schedule">
+  <section class="section" id="schedule">
     <div class="wrap">
       <div class="section__head">
         <p class="eyebrow" data-i18n="schedule.eyebrow">Бағдарлама</p>
@@ -1398,7 +1430,7 @@ html { scroll-padding-top: 72px; }
   </section>
 
   <!-- ===== Sports ===== -->
-  <section class="section" id="sports">
+  <section class="section section--alt" id="sports">
     <div class="wrap">
       <div class="section__head">
         <p class="eyebrow" data-i18n="sports.eyebrow">10 спорт түрі</p>
@@ -1409,7 +1441,7 @@ html { scroll-padding-top: 72px; }
   </section>
 
   <!-- ===== Venues ===== -->
-  <section class="section section--alt" id="venues">
+  <section class="section" id="venues">
     <div class="wrap">
       <div class="section__head">
         <p class="eyebrow" data-i18n="venues.eyebrow">Ақтау қаласы</p>
@@ -1431,6 +1463,7 @@ html { scroll-padding-top: 72px; }
      cat (необязательно): "w" — қыздар / девушки, "m" — ұлдар / юноши.
    status (необязательно): "soon" | "live" | "done" | "wait" (ожидаются итоги).
    note (необязательно): { kk: "...", ru: "...", en: "..." }
+   overall: официальный общекомандный зачёт — показывается на первом экране и над результатами.
    ===================================================================== */
 var U_ATYRAU = { kk: "Х. Досмұхамедов атындағы Атырау университеті", ru: "Атырауский университет имени Х. Досмухамедова", en: "Kh. Dosmukhamedov Atyrau University" };
 var U_YU = { kk: "Yessenov University", ru: "Yessenov University", en: "Yessenov University" };
@@ -1441,6 +1474,12 @@ var U_KINI = { kk: "Қазақ-Неміс тұрақты инженерия ин
 
 window.CG_RESULTS = {
   updated: "14.10.2026",
+  // Официальный общекомандный зачёт Игр (из итогового пресс-релиза)
+  overall: [
+    { place: 1, univ: U_ATYRAU,   country: "kz" },
+    { place: 2, univ: U_ASTU,     country: "ru" },
+    { place: 3, univ: U_DAGESTAN, country: "ru" }
+  ],
   sports: {
     swimming:   { podium: [
       { place: 1, univ: U_ASTU, country: "ru" },
@@ -1610,8 +1649,8 @@ window.CG_RESULTS = {
       "nav.schedule": "Кесте", "nav.sports": "Спорт түрлері", "nav.venues": "Орындар", "nav.gallery": "Афишалар",
       "hero.eyebrow": "VIII халықаралық студенттік ойындар",
       "hero.title": "Каспий ойындары – 2026", "hero.dates": "5–9 қазан, 2026", "hero.city": "Ақтау, Yessenov University",
-      "hero.sub": "Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері 10 спорт түрі бойынша бақ сынайды.",
-      "hero.cta": "Кестені көру", "hero.cta2": "Нәтижелер",
+      "hero.sub": "Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері 10 спорт түрі бойынша бақ сынады.",
+      "hero.cta": "Нәтижелерді көру", "hero.cta2": "Жаңалықтар", "hero.top": "Жалпыкомандалық есеп",
       "cd.d": "күн", "cd.h": "сағат", "cd.m": "минут", "cd.s": "секунд",
       "status.before": "Ашылу салтанатына дейін:",
       "status.live": "Ойындар жүріп жатыр!",
@@ -1619,18 +1658,18 @@ window.CG_RESULTS = {
       "stats.countries": "ел", "stats.sports": "спорт түрі", "stats.venues": "спорт нысаны", "stats.days": "күн",
       "month": "қазан",
       "about.eyebrow": "Ойындар туралы", "about.title": "Каспий маңы жастарының спорт мерекесі",
-      "about.lead": "5–9 қазан аралығында Ақтау қаласында Каспий маңы елдерінің жоғары оқу орындары студенттері арасында VIII халықаралық «Каспий ойындары – 2026» өтеді!",
-      "about.p1": "Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері спорттың 10 түрі бойынша бақ сынап, жеңіс пен командалық рухтың жарқын үлгісін көрсетеді.",
+      "about.lead": "5–9 қазан аралығында Ақтау қаласында Каспий маңы елдерінің жоғары оқу орындары студенттері арасында VIII халықаралық «Каспий ойындары – 2026» өтті.",
+      "about.p1": "Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері спорттың 10 түрі бойынша бақ сынап, жеңіс пен командалық рухтың жарқын үлгісін көрсетті.",
       "about.sportsLabel": "Спорт түрлері:",
       "about.sports": "жеңіл атлетика, волейбол, футзал, баскетбол, жүзу, каратэ-до, бокс, шахмат, киберспорт және самбо.",
-      "about.p2": "Каспий маңы елдерінің жастарын біріктіретін үлкен спорт мерекесінің куәсі болыңыз!",
+      "about.p2": "Ойындар Каспий маңы елдерінің жастарын біріктірген үлкен спорт мерекесіне айналды. Барлық қатысушылар мен жанкүйерлерге рахмет!",
       "cer.open": "Ашылу салтанаты", "cer.close": "Жабылу салтанаты",
       "venue.ysc": "Yessenov Sports Complex, 32 ш/а", "venue.ys": "Yessenov Stadium, 32 ш/а",
-      "res.eyebrow": "Тікелей нәтижелер", "res.title": "Нәтижелер мен медальдар",
-      "res.table": "Медаль кестесі", "res.byCountry": "Елдер", "res.byUniv": "Университеттер",
+      "res.eyebrow": "Қорытынды нәтижелер", "res.title": "Нәтижелер мен медальдар",
+      "res.table": "Түрлер бойынша медальдар", "res.overall": "Жалпыкомандалық есеп", "res.overallNote": "Ойындардың ресми қорытындысы", "place": "орын", "res.byCountry": "Елдер", "res.byUniv": "Университеттер",
       "res.bySport": "Спорт түрлері бойынша", "res.updated": "Жаңартылды:",
       "kpi.done": "Аяқталған жарыстар", "kpi.medals": "Берілген медальдар", "kpi.leader": "Көшбасшы", "kpi.today": "Бүгін",
-      "kpi.todayHint": "жарыс бүгін өтеді", "kpi.noLeader": "Әзірге жоқ", "kpi.notToday": "Бүгін жарыс жоқ",
+      "kpi.todayHint": "жарыс бүгін өтеді", "kpi.noLeader": "Әзірге жоқ", "kpi.notToday": "Бүгін жарыс жоқ", "kpi.univs": "Жүлдегер университеттер", "kpi.univsHint": "медаль алды",
       "col.team": "Команда", "col.g": "Алтын", "col.s": "Күміс", "col.b": "Қола", "col.t": "Барлығы",
       "st.done": "Аяқталды", "st.live": "Жүріп жатыр", "st.soon": "Алда", "st.wait": "Қорытынды күтілуде",
       "res.empty": "Медальдар жарыстар аяқталғаннан кейін пайда болады.",
@@ -1640,7 +1679,7 @@ window.CG_RESULTS = {
       "news.all": "Барлығы", "news.allNews": "Барлық жаңалықтар", "news.read": "Толығырақ →",
       "news.empty": "Бұл тақырып бойынша жаңалықтар әзірге жоқ.", "news.error": "Жаңалықтарды жүктеу мүмкін болмады.",
       "schedule.eyebrow": "Бағдарлама", "schedule.title": "Жарыстар кестесі",
-      "schedule.lead": "Күнді таңдаңыз — сол күні өтетін жарыстар көрсетіледі.",
+      "schedule.lead": "Күнді таңдаңыз — сол күні өткен жарыстар көрсетіледі.",
       "sports.eyebrow": "10 спорт түрі", "sports.title": "Спорт түрлері",
       "venues.eyebrow": "Ақтау қаласы", "venues.title": "Өтетін орындар",
       "venues.lead": "Картадан ашу үшін нысанды басыңыз.",
@@ -1656,8 +1695,8 @@ window.CG_RESULTS = {
       "nav.schedule": "Расписание", "nav.sports": "Виды спорта", "nav.venues": "Площадки", "nav.gallery": "Афиши",
       "hero.eyebrow": "VIII Международные студенческие игры",
       "hero.title": "Каспийские игры – 2026", "hero.dates": "5–9 октября 2026", "hero.city": "Актау, Yessenov University",
-      "hero.sub": "Студенты вузов Казахстана, Азербайджана, Ирана, России и Туркменистана поборются за победу в 10 видах спорта.",
-      "hero.cta": "Смотреть расписание", "hero.cta2": "Результаты",
+      "hero.sub": "Студенты вузов Казахстана, Азербайджана, Ирана, России и Туркменистана боролись за победу в 10 видах спорта.",
+      "hero.cta": "Смотреть результаты", "hero.cta2": "Новости", "hero.top": "Общекомандный зачёт",
       "cd.d": "дней", "cd.h": "часов", "cd.m": "минут", "cd.s": "секунд",
       "status.before": "До церемонии открытия:",
       "status.live": "Игры идут прямо сейчас!",
@@ -1665,18 +1704,18 @@ window.CG_RESULTS = {
       "stats.countries": "стран", "stats.sports": "видов спорта", "stats.venues": "площадок", "stats.days": "дней",
       "month": "октября",
       "about.eyebrow": "Об Играх", "about.title": "Спортивный праздник молодёжи Каспия",
-      "about.lead": "С 5 по 9 октября в Актау пройдут VIII Международные студенческие «Каспийские игры – 2026»!",
-      "about.p1": "Студенты вузов Казахстана, Азербайджана, Ирана, России и Туркменистана встретятся на одной спортивной площадке и поборются за победу в 10 видах спорта.",
+      "about.lead": "С 5 по 9 октября в Актау прошли VIII Международные студенческие «Каспийские игры – 2026».",
+      "about.p1": "Студенты вузов Казахстана, Азербайджана, Ирана, России и Туркменистана встретились на одной спортивной площадке и боролись за победу в 10 видах спорта.",
       "about.sportsLabel": "Виды спорта:",
       "about.sports": "лёгкая атлетика, волейбол, футзал, баскетбол, плавание, каратэ-до, бокс, шахматы, киберспорт и самбо.",
-      "about.p2": "Станьте частью большого спортивного события, объединяющего молодёжь стран Каспийского региона!",
+      "about.p2": "Игры стали большим спортивным праздником, объединившим молодёжь стран Каспийского региона. Спасибо всем участникам и болельщикам!",
       "cer.open": "Церемония открытия", "cer.close": "Церемония закрытия",
       "venue.ysc": "Yessenov Sports Complex, 32 мкр.", "venue.ys": "Yessenov Stadium, 32 мкр.",
-      "res.eyebrow": "Результаты онлайн", "res.title": "Результаты и медали",
-      "res.table": "Медальный зачёт", "res.byCountry": "Страны", "res.byUniv": "Университеты",
+      "res.eyebrow": "Итоговые результаты", "res.title": "Результаты и медали",
+      "res.table": "Медали по видам спорта", "res.overall": "Общекомандный зачёт", "res.overallNote": "Официальные итоги Игр", "place": "место", "res.byCountry": "Страны", "res.byUniv": "Университеты",
       "res.bySport": "По видам спорта", "res.updated": "Обновлено:",
       "kpi.done": "Завершено соревнований", "kpi.medals": "Вручено медалей", "kpi.leader": "Лидер", "kpi.today": "Сегодня",
-      "kpi.todayHint": "соревнований сегодня", "kpi.noLeader": "Пока нет", "kpi.notToday": "Сегодня соревнований нет",
+      "kpi.todayHint": "соревнований сегодня", "kpi.noLeader": "Пока нет", "kpi.notToday": "Сегодня соревнований нет", "kpi.univs": "Университетов-призёров", "kpi.univsHint": "получили медали",
       "col.team": "Команда", "col.g": "Золото", "col.s": "Серебро", "col.b": "Бронза", "col.t": "Всего",
       "st.done": "Завершено", "st.live": "Идёт", "st.soon": "Впереди", "st.wait": "Ожидаются итоги",
       "res.empty": "Медали появятся после завершения соревнований.",
@@ -1686,7 +1725,7 @@ window.CG_RESULTS = {
       "news.all": "Все", "news.allNews": "Все новости", "news.read": "Подробнее →",
       "news.empty": "Новостей по этой теме пока нет.", "news.error": "Не удалось загрузить новости.",
       "schedule.eyebrow": "Программа", "schedule.title": "Расписание соревнований",
-      "schedule.lead": "Выберите день — покажем соревнования, которые пройдут в этот день.",
+      "schedule.lead": "Выберите день — покажем соревнования, которые прошли в этот день.",
       "sports.eyebrow": "10 видов спорта", "sports.title": "Виды спорта",
       "venues.eyebrow": "Город Актау", "venues.title": "Площадки",
       "venues.lead": "Нажмите на площадку, чтобы открыть её на карте.",
@@ -1702,8 +1741,8 @@ window.CG_RESULTS = {
       "nav.schedule": "Schedule", "nav.sports": "Sports", "nav.venues": "Venues", "nav.gallery": "Posters",
       "hero.eyebrow": "VIII International Student Games",
       "hero.title": "Caspian Games 2026", "hero.dates": "October 5–9, 2026", "hero.city": "Aktau, Yessenov University",
-      "hero.sub": "University students from Kazakhstan, Azerbaijan, Iran, Russia and Turkmenistan compete for victory in 10 sports.",
-      "hero.cta": "View schedule", "hero.cta2": "Results",
+      "hero.sub": "University students from Kazakhstan, Azerbaijan, Iran, Russia and Turkmenistan competed for victory in 10 sports.",
+      "hero.cta": "View results", "hero.cta2": "News", "hero.top": "Overall team standings",
       "cd.d": "days", "cd.h": "hours", "cd.m": "min", "cd.s": "sec",
       "status.before": "Until the opening ceremony:",
       "status.live": "The Games are on now!",
@@ -1711,18 +1750,18 @@ window.CG_RESULTS = {
       "stats.countries": "countries", "stats.sports": "sports", "stats.venues": "venues", "stats.days": "days",
       "month": "October",
       "about.eyebrow": "About the Games", "about.title": "A sports festival of Caspian youth",
-      "about.lead": "From October 5 to 9, Aktau hosts the VIII International Student Caspian Games 2026!",
-      "about.p1": "University students from Kazakhstan, Azerbaijan, Iran, Russia and Turkmenistan meet on one sporting stage to compete for victory in 10 sports.",
+      "about.lead": "From October 5 to 9, Aktau hosted the VIII International Student Caspian Games 2026.",
+      "about.p1": "University students from Kazakhstan, Azerbaijan, Iran, Russia and Turkmenistan met on one sporting stage and competed for victory in 10 sports.",
       "about.sportsLabel": "Sports:",
       "about.sports": "athletics, volleyball, futsal, basketball, swimming, karate-do, boxing, chess, e-sports and sambo.",
-      "about.p2": "Be part of a major sporting event that brings together young people from across the Caspian region!",
+      "about.p2": "The Games became a major sporting celebration that brought together young people from across the Caspian region. Thank you to all participants and fans!",
       "cer.open": "Opening Ceremony", "cer.close": "Closing Ceremony",
       "venue.ysc": "Yessenov Sports Complex, 32nd Micr.", "venue.ys": "Yessenov Stadium, 32nd Micr.",
-      "res.eyebrow": "Live results", "res.title": "Results and medals",
-      "res.table": "Medal table", "res.byCountry": "Countries", "res.byUniv": "Universities",
+      "res.eyebrow": "Final results", "res.title": "Results and medals",
+      "res.table": "Medals by sport", "res.overall": "Overall team standings", "res.overallNote": "Official results of the Games", "place": "place", "res.byCountry": "Countries", "res.byUniv": "Universities",
       "res.bySport": "By sport", "res.updated": "Updated:",
       "kpi.done": "Events completed", "kpi.medals": "Medals awarded", "kpi.leader": "Leader", "kpi.today": "Today",
-      "kpi.todayHint": "events today", "kpi.noLeader": "None yet", "kpi.notToday": "No events today",
+      "kpi.todayHint": "events today", "kpi.noLeader": "None yet", "kpi.notToday": "No events today", "kpi.univs": "Medal-winning universities", "kpi.univsHint": "won medals",
       "col.team": "Team", "col.g": "Gold", "col.s": "Silver", "col.b": "Bronze", "col.t": "Total",
       "st.done": "Finished", "st.live": "In progress", "st.soon": "Upcoming", "st.wait": "Results pending",
       "res.empty": "Medals will appear once events are finished.",
@@ -1929,6 +1968,51 @@ window.CG_RESULTS = {
       .sort(function (a, b) { return (b.g - a.g) || (b.s - a.s) || (b.b - a.b) || a.label.localeCompare(b.label); });
   }
 
+  function univRows() {
+    var saved = medalMode; medalMode = "univ";
+    var rows = medalRows().filter(function (r) { return r.g + r.s + r.b > 0; });
+    medalMode = saved;
+    return rows;
+  }
+
+  // Official overall standings (CG_RESULTS.overall); fallback: medal table by university
+  function overallRows() {
+    var list = DATA.overall || [];
+    if (list.length) return list.map(function (o) { return { label: loc(o.univ), country: o.country, place: o.place }; });
+    return univRows().slice(0, 3).map(function (r, i) { return { label: r.label, country: r.country, place: i + 1 }; });
+  }
+  var ROMAN = { 1: "I", 2: "II", 3: "III" };
+
+  function renderHeroTop() {
+    var box = $("#hero-top");
+    var label = $("#hero-top-label");
+    var rows = overallRows();
+    var show = Date.now() >= CLOSE_END ? rows.length > 0 : false;
+    box.hidden = !show;
+    label.hidden = !show;
+    if (!show) return;
+    box.innerHTML = rows.map(function (r) {
+      var c = COUNTRIES[r.country];
+      return "<li><em>" + (MEDAL[r.place] || "") + "<\/em><b>" + esc(r.label) + "<small>" + (c ? c.flag + " " + esc(c.name[lang]) : "") + "<\/small><\/b>" +
+        "<span>" + (ROMAN[r.place] || r.place) + " " + esc(t("place")) + "<\/span><\/li>";
+    }).join("");
+  }
+
+  function renderOverall() {
+    var box = $("#overall");
+    var list = DATA.overall || [];
+    if (!list.length) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = '<div class="overall__head"><h3 class="panel__title">' + esc(t("res.overall")) + '<\/h3><span class="overall__note">' + esc(t("res.overallNote")) + "<\/span><\/div>" +
+      '<div class="overall__grid">' + overallRows().map(function (r) {
+        var c = COUNTRIES[r.country];
+        return '<div class="overall__card overall__card--' + r.place + '"><span class="overall__medal">' + (MEDAL[r.place] || "") + "<\/span>" +
+          '<span class="overall__place">' + (ROMAN[r.place] || r.place) + " " + esc(t("place")) + "<\/span>" +
+          '<b class="overall__name">' + esc(r.label) + "<\/b>" +
+          '<span class="overall__country">' + (c ? c.flag + " " + esc(c.name[lang]) : "") + "<\/span><\/div>";
+      }).join("") + "<\/div>";
+  }
+
   function renderKpis() {
     var done = 0, medals = { g: 0, s: 0, b: 0 }, today = aktauToday(), todayCount = 0;
     SPORTS.forEach(function (s) {
@@ -1959,10 +2043,9 @@ window.CG_RESULTS = {
         (hasLeader
           ? '<p class="kpi__value">' + COUNTRIES[top.key].flag + '<\/p><p class="kpi__hint">' + esc(top.label) + " · " + top.g + " 🥇<\/p>"
           : '<p class="kpi__value">—<\/p><p class="kpi__hint">' + esc(t("kpi.noLeader")) + "<\/p>") + "<\/div>" +
-      '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.today")) + "<\/p>" +
-        (today
-          ? '<p class="kpi__value">' + todayCount + '<\/p><p class="kpi__hint">' + esc(t("kpi.todayHint")) + "<\/p>"
-          : '<p class="kpi__value">—<\/p><p class="kpi__hint">' + esc(t("kpi.notToday")) + "<\/p>") + "<\/div>";
+      (today
+        ? '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.today")) + '<\/p><p class="kpi__value">' + todayCount + '<\/p><p class="kpi__hint">' + esc(t("kpi.todayHint")) + "<\/p><\/div>"
+        : '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.univs")) + '<\/p><p class="kpi__value">' + univRows().length + '<\/p><p class="kpi__hint">' + esc(t("kpi.univsHint")) + "<\/p><\/div>");
 
     var up = $("#res-updated");
     if (DATA.updated) {
@@ -2046,6 +2129,8 @@ window.CG_RESULTS = {
 
   function renderResults() {
     renderKpis();
+    renderOverall();
+    renderHeroTop();
     renderMedalTable();
     renderSportResults();
   }

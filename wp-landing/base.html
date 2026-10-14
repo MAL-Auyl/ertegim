@@ -72,6 +72,7 @@ html, body { overflow-x: clip; }
 #cg *,
 #cg *::before,
 #cg *::after { box-sizing: border-box; }
+#cg [hidden] { display: none !important; }
 
 html { scroll-behavior: smooth; }
 
@@ -365,6 +366,15 @@ html { scroll-behavior: smooth; }
   color: var(--muted-white);
 }
 
+#cg .hero__top { list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 8px; }
+#cg .hero__top li {
+  display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 12px; background: rgba(11, 42, 91, 0.55); border: 1px solid var(--border-dark);
+}
+#cg .hero__top em { font-style: normal; font-size: 22px; line-height: 1; }
+#cg .hero__top b { font-size: 14px; font-weight: 700; line-height: 1.35; color: var(--white); }
+#cg .hero__top small { display: block; font-size: 12px; font-weight: 500; color: var(--muted-white); }
+#cg .hero__top span { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--accent); white-space: nowrap; }
 #cg .stats {
   list-style: none;
   padding: 0;
@@ -552,6 +562,23 @@ html { scroll-behavior: smooth; }
 }
 #cg .updated i { color: var(--accent); margin-right: 6px; }
 
+#cg .overall { padding: 28px; margin-bottom: 24px; }
+#cg .overall__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; margin-bottom: 20px; }
+#cg .overall__note { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--muted); }
+#cg .overall__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+#cg .overall__card {
+  display: flex; flex-direction: column; gap: 6px; padding: 22px; border-radius: 16px;
+  background: var(--light); border: 1px solid var(--border);
+}
+#cg .overall__card--1 { background: linear-gradient(135deg, var(--navy), var(--blue)); border-color: transparent; color: var(--white); }
+#cg .overall__medal { font-size: 34px; line-height: 1; }
+#cg .overall__place { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--gold-ink); }
+#cg .overall__card--1 .overall__place { color: var(--gold); }
+#cg .overall__name { font-size: 17px; font-weight: 800; line-height: 1.3; color: var(--navy); }
+#cg .overall__card--1 .overall__name { color: var(--white); }
+#cg .overall__country { font-size: 13px; color: var(--muted); }
+#cg .overall__card--1 .overall__country { color: var(--muted-white); }
+@media (max-width: 768px) { #cg .overall__grid { grid-template-columns: 1fr; } #cg .overall { padding: 20px 16px; } }
 #cg .kpis {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1153,8 +1180,8 @@ html { scroll-padding-top: 72px; }
         </p>
         <p class="hero__sub" data-i18n="hero.sub">Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері 10 спорт түрі бойынша бақ сынайды.</p>
         <div class="hero__cta">
-          <a href="#schedule" class="btn btn--accent" data-i18n="hero.cta">Кестені көру</a>
-          <a href="#results" class="btn btn--ghost" data-i18n="hero.cta2">Нәтижелер</a>
+          <a href="#results" class="btn btn--accent" data-i18n="hero.cta">Нәтижелерді көру</a>
+          <a href="#news" class="btn btn--ghost" data-i18n="hero.cta2">Жаңалықтар</a>
         </div>
       </div>
 
@@ -1166,6 +1193,8 @@ html { scroll-padding-top: 72px; }
           <div><b id="cd-m">00</b><span data-i18n="cd.m">минут</span></div>
           <div><b id="cd-s">00</b><span data-i18n="cd.s">секунд</span></div>
         </div>
+        <p class="hero__panel-label" id="hero-top-label" data-i18n="hero.top" hidden>Медаль кестесінің көшбасшылары</p>
+        <ol class="hero__top" id="hero-top" hidden></ol>
         <ul class="stats">
           <li><b>5</b><span data-i18n="stats.countries">ел</span></li>
           <li><b>10</b><span data-i18n="stats.sports">спорт түрі</span></li>
@@ -1187,9 +1216,9 @@ html { scroll-padding-top: 72px; }
         <span>YESSENOV UNIVERSITY</span>
       </a>
       <nav class="nav__links" aria-label="Menu">
-        <a href="#about" data-i18n="nav.about">Ойындар туралы</a>
         <a href="#results" data-i18n="nav.results">Нәтижелер</a>
         <a href="#news" data-i18n="nav.news">Жаңалықтар</a>
+        <a href="#about" data-i18n="nav.about">Ойындар туралы</a>
         <a href="#schedule" data-i18n="nav.schedule">Кесте</a>
         <a href="#sports" data-i18n="nav.sports">Спорт түрлері</a>
         <a href="#venues" data-i18n="nav.venues">Орындар</a>
@@ -1202,8 +1231,46 @@ html { scroll-padding-top: 72px; }
     </div>
   </header>
 
+  <!-- ===== Results dashboard ===== -->
+  <section class="section section--alt" id="results">
+    <div class="wrap">
+      <div class="section__head section__head--row">
+        <div>
+          <p class="eyebrow" data-i18n="res.eyebrow">Тікелей нәтижелер</p>
+          <h2 class="section__title" data-i18n="res.title">Нәтижелер мен медальдар</h2>
+        </div>
+        <p class="updated" id="res-updated" hidden></p>
+      </div>
+
+      <div class="panel overall" id="overall" hidden></div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="dash">
+        <div class="panel">
+          <div class="panel__head">
+            <h3 class="panel__title" data-i18n="res.table">Медаль кестесі</h3>
+            <div class="seg" role="group" id="medal-mode">
+              <button type="button" data-mode="country" aria-pressed="true" data-i18n="res.byCountry">Елдер</button>
+              <button type="button" data-mode="univ" aria-pressed="false" data-i18n="res.byUniv">Университеттер</button>
+            </div>
+          </div>
+          <div id="medal-table"></div>
+        </div>
+        <div class="panel">
+          <div class="panel__head">
+            <h3 class="panel__title" data-i18n="res.bySport">Спорт түрлері бойынша</h3>
+          </div>
+          <div class="results" id="sport-results"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!--__NEWS_HTML__-->
+
   <!-- ===== About + ceremonies ===== -->
-  <section class="section" id="about">
+  <section class="section section--alt" id="about">
     <div class="wrap">
       <div class="section__head">
         <p class="eyebrow" data-i18n="about.eyebrow">Ойындар туралы</p>
@@ -1240,44 +1307,9 @@ html { scroll-padding-top: 72px; }
     </div>
   </section>
 
-  <!-- ===== Results dashboard ===== -->
-  <section class="section section--alt" id="results">
-    <div class="wrap">
-      <div class="section__head section__head--row">
-        <div>
-          <p class="eyebrow" data-i18n="res.eyebrow">Тікелей нәтижелер</p>
-          <h2 class="section__title" data-i18n="res.title">Нәтижелер мен медальдар</h2>
-        </div>
-        <p class="updated" id="res-updated" hidden></p>
-      </div>
-
-      <div class="kpis" id="kpis"></div>
-
-      <div class="dash">
-        <div class="panel">
-          <div class="panel__head">
-            <h3 class="panel__title" data-i18n="res.table">Медаль кестесі</h3>
-            <div class="seg" role="group" id="medal-mode">
-              <button type="button" data-mode="country" aria-pressed="true" data-i18n="res.byCountry">Елдер</button>
-              <button type="button" data-mode="univ" aria-pressed="false" data-i18n="res.byUniv">Университеттер</button>
-            </div>
-          </div>
-          <div id="medal-table"></div>
-        </div>
-        <div class="panel">
-          <div class="panel__head">
-            <h3 class="panel__title" data-i18n="res.bySport">Спорт түрлері бойынша</h3>
-          </div>
-          <div class="results" id="sport-results"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-<!--__NEWS_HTML__-->
 
   <!-- ===== Schedule ===== -->
-  <section class="section section--alt" id="schedule">
+  <section class="section" id="schedule">
     <div class="wrap">
       <div class="section__head">
         <p class="eyebrow" data-i18n="schedule.eyebrow">Бағдарлама</p>
@@ -1290,7 +1322,7 @@ html { scroll-padding-top: 72px; }
   </section>
 
   <!-- ===== Sports ===== -->
-  <section class="section" id="sports">
+  <section class="section section--alt" id="sports">
     <div class="wrap">
       <div class="section__head">
         <p class="eyebrow" data-i18n="sports.eyebrow">10 спорт түрі</p>
@@ -1301,7 +1333,7 @@ html { scroll-padding-top: 72px; }
   </section>
 
   <!-- ===== Venues ===== -->
-  <section class="section section--alt" id="venues">
+  <section class="section" id="venues">
     <div class="wrap">
       <div class="section__head">
         <p class="eyebrow" data-i18n="venues.eyebrow">Ақтау қаласы</p>

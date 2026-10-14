@@ -11,7 +11,7 @@ NEWS_CSS = r'''
   padding-left: 12px; margin-left: 2px; border-left: 1px solid var(--border);
 }
 #cg .hero__logo {
-  display: inline-flex; align-items: center; justify-content: center;
+  display: flex; width: fit-content; align-items: center; justify-content: center;
   background: var(--white); border-radius: 18px; padding: 10px 14px; margin-bottom: 22px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
 }
@@ -125,6 +125,7 @@ RESULTS_SCRIPT = '''<script>
      cat (необязательно): "w" — қыздар / девушки, "m" — ұлдар / юноши.
    status (необязательно): "soon" | "live" | "done" | "wait" (ожидаются итоги).
    note (необязательно): { kk: "...", ru: "...", en: "..." }
+   overall: официальный общекомандный зачёт — показывается на первом экране и над результатами.
    ===================================================================== */
 var U_ATYRAU = { kk: "Х. Досмұхамедов атындағы Атырау университеті", ru: "Атырауский университет имени Х. Досмухамедова", en: "Kh. Dosmukhamedov Atyrau University" };
 var U_YU = { kk: "Yessenov University", ru: "Yessenov University", en: "Yessenov University" };
@@ -135,6 +136,12 @@ var U_KINI = { kk: "Қазақ-Неміс тұрақты инженерия ин
 
 window.CG_RESULTS = {
   updated: "14.10.2026",
+  // Официальный общекомандный зачёт Игр (из итогового пресс-релиза)
+  overall: [
+    { place: 1, univ: U_ATYRAU,   country: "kz" },
+    { place: 2, univ: U_ASTU,     country: "ru" },
+    { place: 3, univ: U_DAGESTAN, country: "ru" }
+  ],
   sports: {
     swimming:   { podium: [
       { place: 1, univ: U_ASTU, country: "ru" },

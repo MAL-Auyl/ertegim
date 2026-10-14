@@ -105,8 +105,8 @@
       "nav.schedule": "Кесте", "nav.sports": "Спорт түрлері", "nav.venues": "Орындар", "nav.gallery": "Афишалар",
       "hero.eyebrow": "VIII халықаралық студенттік ойындар",
       "hero.title": "Каспий ойындары – 2026", "hero.dates": "5–9 қазан, 2026", "hero.city": "Ақтау, Yessenov University",
-      "hero.sub": "Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері 10 спорт түрі бойынша бақ сынайды.",
-      "hero.cta": "Кестені көру", "hero.cta2": "Нәтижелер",
+      "hero.sub": "Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері 10 спорт түрі бойынша бақ сынады.",
+      "hero.cta": "Нәтижелерді көру", "hero.cta2": "Жаңалықтар", "hero.top": "Жалпыкомандалық есеп",
       "cd.d": "күн", "cd.h": "сағат", "cd.m": "минут", "cd.s": "секунд",
       "status.before": "Ашылу салтанатына дейін:",
       "status.live": "Ойындар жүріп жатыр!",
@@ -114,18 +114,18 @@
       "stats.countries": "ел", "stats.sports": "спорт түрі", "stats.venues": "спорт нысаны", "stats.days": "күн",
       "month": "қазан",
       "about.eyebrow": "Ойындар туралы", "about.title": "Каспий маңы жастарының спорт мерекесі",
-      "about.lead": "5–9 қазан аралығында Ақтау қаласында Каспий маңы елдерінің жоғары оқу орындары студенттері арасында VIII халықаралық «Каспий ойындары – 2026» өтеді!",
-      "about.p1": "Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері спорттың 10 түрі бойынша бақ сынап, жеңіс пен командалық рухтың жарқын үлгісін көрсетеді.",
+      "about.lead": "5–9 қазан аралығында Ақтау қаласында Каспий маңы елдерінің жоғары оқу орындары студенттері арасында VIII халықаралық «Каспий ойындары – 2026» өтті.",
+      "about.p1": "Қазақстан, Әзербайжан, Иран, Ресей және Түрікменстан студенттері спорттың 10 түрі бойынша бақ сынап, жеңіс пен командалық рухтың жарқын үлгісін көрсетті.",
       "about.sportsLabel": "Спорт түрлері:",
       "about.sports": "жеңіл атлетика, волейбол, футзал, баскетбол, жүзу, каратэ-до, бокс, шахмат, киберспорт және самбо.",
-      "about.p2": "Каспий маңы елдерінің жастарын біріктіретін үлкен спорт мерекесінің куәсі болыңыз!",
+      "about.p2": "Ойындар Каспий маңы елдерінің жастарын біріктірген үлкен спорт мерекесіне айналды. Барлық қатысушылар мен жанкүйерлерге рахмет!",
       "cer.open": "Ашылу салтанаты", "cer.close": "Жабылу салтанаты",
       "venue.ysc": "Yessenov Sports Complex, 32 ш/а", "venue.ys": "Yessenov Stadium, 32 ш/а",
-      "res.eyebrow": "Тікелей нәтижелер", "res.title": "Нәтижелер мен медальдар",
-      "res.table": "Медаль кестесі", "res.byCountry": "Елдер", "res.byUniv": "Университеттер",
+      "res.eyebrow": "Қорытынды нәтижелер", "res.title": "Нәтижелер мен медальдар",
+      "res.table": "Түрлер бойынша медальдар", "res.overall": "Жалпыкомандалық есеп", "res.overallNote": "Ойындардың ресми қорытындысы", "place": "орын", "res.byCountry": "Елдер", "res.byUniv": "Университеттер",
       "res.bySport": "Спорт түрлері бойынша", "res.updated": "Жаңартылды:",
       "kpi.done": "Аяқталған жарыстар", "kpi.medals": "Берілген медальдар", "kpi.leader": "Көшбасшы", "kpi.today": "Бүгін",
-      "kpi.todayHint": "жарыс бүгін өтеді", "kpi.noLeader": "Әзірге жоқ", "kpi.notToday": "Бүгін жарыс жоқ",
+      "kpi.todayHint": "жарыс бүгін өтеді", "kpi.noLeader": "Әзірге жоқ", "kpi.notToday": "Бүгін жарыс жоқ", "kpi.univs": "Жүлдегер университеттер", "kpi.univsHint": "медаль алды",
       "col.team": "Команда", "col.g": "Алтын", "col.s": "Күміс", "col.b": "Қола", "col.t": "Барлығы",
       "st.done": "Аяқталды", "st.live": "Жүріп жатыр", "st.soon": "Алда", "st.wait": "Қорытынды күтілуде",
       "res.empty": "Медальдар жарыстар аяқталғаннан кейін пайда болады.",
@@ -135,7 +135,7 @@
       "news.all": "Барлығы", "news.allNews": "Барлық жаңалықтар", "news.read": "Толығырақ →",
       "news.empty": "Бұл тақырып бойынша жаңалықтар әзірге жоқ.", "news.error": "Жаңалықтарды жүктеу мүмкін болмады.",
       "schedule.eyebrow": "Бағдарлама", "schedule.title": "Жарыстар кестесі",
-      "schedule.lead": "Күнді таңдаңыз — сол күні өтетін жарыстар көрсетіледі.",
+      "schedule.lead": "Күнді таңдаңыз — сол күні өткен жарыстар көрсетіледі.",
       "sports.eyebrow": "10 спорт түрі", "sports.title": "Спорт түрлері",
       "venues.eyebrow": "Ақтау қаласы", "venues.title": "Өтетін орындар",
       "venues.lead": "Картадан ашу үшін нысанды басыңыз.",
@@ -151,8 +151,8 @@
       "nav.schedule": "Расписание", "nav.sports": "Виды спорта", "nav.venues": "Площадки", "nav.gallery": "Афиши",
       "hero.eyebrow": "VIII Международные студенческие игры",
       "hero.title": "Каспийские игры – 2026", "hero.dates": "5–9 октября 2026", "hero.city": "Актау, Yessenov University",
-      "hero.sub": "Студенты вузов Казахстана, Азербайджана, Ирана, России и Туркменистана поборются за победу в 10 видах спорта.",
-      "hero.cta": "Смотреть расписание", "hero.cta2": "Результаты",
+      "hero.sub": "Студенты вузов Казахстана, Азербайджана, Ирана, России и Туркменистана боролись за победу в 10 видах спорта.",
+      "hero.cta": "Смотреть результаты", "hero.cta2": "Новости", "hero.top": "Общекомандный зачёт",
       "cd.d": "дней", "cd.h": "часов", "cd.m": "минут", "cd.s": "секунд",
       "status.before": "До церемонии открытия:",
       "status.live": "Игры идут прямо сейчас!",
@@ -160,18 +160,18 @@
       "stats.countries": "стран", "stats.sports": "видов спорта", "stats.venues": "площадок", "stats.days": "дней",
       "month": "октября",
       "about.eyebrow": "Об Играх", "about.title": "Спортивный праздник молодёжи Каспия",
-      "about.lead": "С 5 по 9 октября в Актау пройдут VIII Международные студенческие «Каспийские игры – 2026»!",
-      "about.p1": "Студенты вузов Казахстана, Азербайджана, Ирана, России и Туркменистана встретятся на одной спортивной площадке и поборются за победу в 10 видах спорта.",
+      "about.lead": "С 5 по 9 октября в Актау прошли VIII Международные студенческие «Каспийские игры – 2026».",
+      "about.p1": "Студенты вузов Казахстана, Азербайджана, Ирана, России и Туркменистана встретились на одной спортивной площадке и боролись за победу в 10 видах спорта.",
       "about.sportsLabel": "Виды спорта:",
       "about.sports": "лёгкая атлетика, волейбол, футзал, баскетбол, плавание, каратэ-до, бокс, шахматы, киберспорт и самбо.",
-      "about.p2": "Станьте частью большого спортивного события, объединяющего молодёжь стран Каспийского региона!",
+      "about.p2": "Игры стали большим спортивным праздником, объединившим молодёжь стран Каспийского региона. Спасибо всем участникам и болельщикам!",
       "cer.open": "Церемония открытия", "cer.close": "Церемония закрытия",
       "venue.ysc": "Yessenov Sports Complex, 32 мкр.", "venue.ys": "Yessenov Stadium, 32 мкр.",
-      "res.eyebrow": "Результаты онлайн", "res.title": "Результаты и медали",
-      "res.table": "Медальный зачёт", "res.byCountry": "Страны", "res.byUniv": "Университеты",
+      "res.eyebrow": "Итоговые результаты", "res.title": "Результаты и медали",
+      "res.table": "Медали по видам спорта", "res.overall": "Общекомандный зачёт", "res.overallNote": "Официальные итоги Игр", "place": "место", "res.byCountry": "Страны", "res.byUniv": "Университеты",
       "res.bySport": "По видам спорта", "res.updated": "Обновлено:",
       "kpi.done": "Завершено соревнований", "kpi.medals": "Вручено медалей", "kpi.leader": "Лидер", "kpi.today": "Сегодня",
-      "kpi.todayHint": "соревнований сегодня", "kpi.noLeader": "Пока нет", "kpi.notToday": "Сегодня соревнований нет",
+      "kpi.todayHint": "соревнований сегодня", "kpi.noLeader": "Пока нет", "kpi.notToday": "Сегодня соревнований нет", "kpi.univs": "Университетов-призёров", "kpi.univsHint": "получили медали",
       "col.team": "Команда", "col.g": "Золото", "col.s": "Серебро", "col.b": "Бронза", "col.t": "Всего",
       "st.done": "Завершено", "st.live": "Идёт", "st.soon": "Впереди", "st.wait": "Ожидаются итоги",
       "res.empty": "Медали появятся после завершения соревнований.",
@@ -181,7 +181,7 @@
       "news.all": "Все", "news.allNews": "Все новости", "news.read": "Подробнее →",
       "news.empty": "Новостей по этой теме пока нет.", "news.error": "Не удалось загрузить новости.",
       "schedule.eyebrow": "Программа", "schedule.title": "Расписание соревнований",
-      "schedule.lead": "Выберите день — покажем соревнования, которые пройдут в этот день.",
+      "schedule.lead": "Выберите день — покажем соревнования, которые прошли в этот день.",
       "sports.eyebrow": "10 видов спорта", "sports.title": "Виды спорта",
       "venues.eyebrow": "Город Актау", "venues.title": "Площадки",
       "venues.lead": "Нажмите на площадку, чтобы открыть её на карте.",
@@ -197,8 +197,8 @@
       "nav.schedule": "Schedule", "nav.sports": "Sports", "nav.venues": "Venues", "nav.gallery": "Posters",
       "hero.eyebrow": "VIII International Student Games",
       "hero.title": "Caspian Games 2026", "hero.dates": "October 5–9, 2026", "hero.city": "Aktau, Yessenov University",
-      "hero.sub": "University students from Kazakhstan, Azerbaijan, Iran, Russia and Turkmenistan compete for victory in 10 sports.",
-      "hero.cta": "View schedule", "hero.cta2": "Results",
+      "hero.sub": "University students from Kazakhstan, Azerbaijan, Iran, Russia and Turkmenistan competed for victory in 10 sports.",
+      "hero.cta": "View results", "hero.cta2": "News", "hero.top": "Overall team standings",
       "cd.d": "days", "cd.h": "hours", "cd.m": "min", "cd.s": "sec",
       "status.before": "Until the opening ceremony:",
       "status.live": "The Games are on now!",
@@ -206,18 +206,18 @@
       "stats.countries": "countries", "stats.sports": "sports", "stats.venues": "venues", "stats.days": "days",
       "month": "October",
       "about.eyebrow": "About the Games", "about.title": "A sports festival of Caspian youth",
-      "about.lead": "From October 5 to 9, Aktau hosts the VIII International Student Caspian Games 2026!",
-      "about.p1": "University students from Kazakhstan, Azerbaijan, Iran, Russia and Turkmenistan meet on one sporting stage to compete for victory in 10 sports.",
+      "about.lead": "From October 5 to 9, Aktau hosted the VIII International Student Caspian Games 2026.",
+      "about.p1": "University students from Kazakhstan, Azerbaijan, Iran, Russia and Turkmenistan met on one sporting stage and competed for victory in 10 sports.",
       "about.sportsLabel": "Sports:",
       "about.sports": "athletics, volleyball, futsal, basketball, swimming, karate-do, boxing, chess, e-sports and sambo.",
-      "about.p2": "Be part of a major sporting event that brings together young people from across the Caspian region!",
+      "about.p2": "The Games became a major sporting celebration that brought together young people from across the Caspian region. Thank you to all participants and fans!",
       "cer.open": "Opening Ceremony", "cer.close": "Closing Ceremony",
       "venue.ysc": "Yessenov Sports Complex, 32nd Micr.", "venue.ys": "Yessenov Stadium, 32nd Micr.",
-      "res.eyebrow": "Live results", "res.title": "Results and medals",
-      "res.table": "Medal table", "res.byCountry": "Countries", "res.byUniv": "Universities",
+      "res.eyebrow": "Final results", "res.title": "Results and medals",
+      "res.table": "Medals by sport", "res.overall": "Overall team standings", "res.overallNote": "Official results of the Games", "place": "place", "res.byCountry": "Countries", "res.byUniv": "Universities",
       "res.bySport": "By sport", "res.updated": "Updated:",
       "kpi.done": "Events completed", "kpi.medals": "Medals awarded", "kpi.leader": "Leader", "kpi.today": "Today",
-      "kpi.todayHint": "events today", "kpi.noLeader": "None yet", "kpi.notToday": "No events today",
+      "kpi.todayHint": "events today", "kpi.noLeader": "None yet", "kpi.notToday": "No events today", "kpi.univs": "Medal-winning universities", "kpi.univsHint": "won medals",
       "col.team": "Team", "col.g": "Gold", "col.s": "Silver", "col.b": "Bronze", "col.t": "Total",
       "st.done": "Finished", "st.live": "In progress", "st.soon": "Upcoming", "st.wait": "Results pending",
       "res.empty": "Medals will appear once events are finished.",
@@ -424,6 +424,51 @@
       .sort(function (a, b) { return (b.g - a.g) || (b.s - a.s) || (b.b - a.b) || a.label.localeCompare(b.label); });
   }
 
+  function univRows() {
+    var saved = medalMode; medalMode = "univ";
+    var rows = medalRows().filter(function (r) { return r.g + r.s + r.b > 0; });
+    medalMode = saved;
+    return rows;
+  }
+
+  // Official overall standings (CG_RESULTS.overall); fallback: medal table by university
+  function overallRows() {
+    var list = DATA.overall || [];
+    if (list.length) return list.map(function (o) { return { label: loc(o.univ), country: o.country, place: o.place }; });
+    return univRows().slice(0, 3).map(function (r, i) { return { label: r.label, country: r.country, place: i + 1 }; });
+  }
+  var ROMAN = { 1: "I", 2: "II", 3: "III" };
+
+  function renderHeroTop() {
+    var box = $("#hero-top");
+    var label = $("#hero-top-label");
+    var rows = overallRows();
+    var show = Date.now() >= CLOSE_END ? rows.length > 0 : false;
+    box.hidden = !show;
+    label.hidden = !show;
+    if (!show) return;
+    box.innerHTML = rows.map(function (r) {
+      var c = COUNTRIES[r.country];
+      return "<li><em>" + (MEDAL[r.place] || "") + "<\/em><b>" + esc(r.label) + "<small>" + (c ? c.flag + " " + esc(c.name[lang]) : "") + "<\/small><\/b>" +
+        "<span>" + (ROMAN[r.place] || r.place) + " " + esc(t("place")) + "<\/span><\/li>";
+    }).join("");
+  }
+
+  function renderOverall() {
+    var box = $("#overall");
+    var list = DATA.overall || [];
+    if (!list.length) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = '<div class="overall__head"><h3 class="panel__title">' + esc(t("res.overall")) + '<\/h3><span class="overall__note">' + esc(t("res.overallNote")) + "<\/span><\/div>" +
+      '<div class="overall__grid">' + overallRows().map(function (r) {
+        var c = COUNTRIES[r.country];
+        return '<div class="overall__card overall__card--' + r.place + '"><span class="overall__medal">' + (MEDAL[r.place] || "") + "<\/span>" +
+          '<span class="overall__place">' + (ROMAN[r.place] || r.place) + " " + esc(t("place")) + "<\/span>" +
+          '<b class="overall__name">' + esc(r.label) + "<\/b>" +
+          '<span class="overall__country">' + (c ? c.flag + " " + esc(c.name[lang]) : "") + "<\/span><\/div>";
+      }).join("") + "<\/div>";
+  }
+
   function renderKpis() {
     var done = 0, medals = { g: 0, s: 0, b: 0 }, today = aktauToday(), todayCount = 0;
     SPORTS.forEach(function (s) {
@@ -454,10 +499,9 @@
         (hasLeader
           ? '<p class="kpi__value">' + COUNTRIES[top.key].flag + '<\/p><p class="kpi__hint">' + esc(top.label) + " · " + top.g + " 🥇<\/p>"
           : '<p class="kpi__value">—<\/p><p class="kpi__hint">' + esc(t("kpi.noLeader")) + "<\/p>") + "<\/div>" +
-      '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.today")) + "<\/p>" +
-        (today
-          ? '<p class="kpi__value">' + todayCount + '<\/p><p class="kpi__hint">' + esc(t("kpi.todayHint")) + "<\/p>"
-          : '<p class="kpi__value">—<\/p><p class="kpi__hint">' + esc(t("kpi.notToday")) + "<\/p>") + "<\/div>";
+      (today
+        ? '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.today")) + '<\/p><p class="kpi__value">' + todayCount + '<\/p><p class="kpi__hint">' + esc(t("kpi.todayHint")) + "<\/p><\/div>"
+        : '<div class="kpi"><p class="kpi__label">' + esc(t("kpi.univs")) + '<\/p><p class="kpi__value">' + univRows().length + '<\/p><p class="kpi__hint">' + esc(t("kpi.univsHint")) + "<\/p><\/div>");
 
     var up = $("#res-updated");
     if (DATA.updated) {
@@ -541,6 +585,8 @@
 
   function renderResults() {
     renderKpis();
+    renderOverall();
+    renderHeroTop();
     renderMedalTable();
     renderSportResults();
   }
