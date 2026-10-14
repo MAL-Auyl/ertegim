@@ -127,9 +127,10 @@
       "kpi.done": "Аяқталған жарыстар", "kpi.medals": "Берілген медальдар", "kpi.leader": "Көшбасшы", "kpi.today": "Бүгін",
       "kpi.todayHint": "жарыс бүгін өтеді", "kpi.noLeader": "Әзірге жоқ", "kpi.notToday": "Бүгін жарыс жоқ",
       "col.team": "Команда", "col.g": "Алтын", "col.s": "Күміс", "col.b": "Қола", "col.t": "Барлығы",
-      "st.done": "Аяқталды", "st.live": "Жүріп жатыр", "st.soon": "Алда",
+      "st.done": "Аяқталды", "st.live": "Жүріп жатыр", "st.soon": "Алда", "st.wait": "Қорытынды күтілуде",
       "res.empty": "Медальдар жарыстар аяқталғаннан кейін пайда болады.",
       "res.wait": "Нәтижелер жарыс аяқталғаннан кейін жарияланады.",
+      "cat.w": "Қыздар арасында", "cat.m": "Ұлдар арасында",
       "news.eyebrow": "Жаңалықтар", "news.title": "Ойындардың соңғы жаңалықтары",
       "news.all": "Барлығы", "news.allNews": "Барлық жаңалықтар", "news.read": "Толығырақ →",
       "news.empty": "Бұл тақырып бойынша жаңалықтар әзірге жоқ.", "news.error": "Жаңалықтарды жүктеу мүмкін болмады.",
@@ -172,9 +173,10 @@
       "kpi.done": "Завершено соревнований", "kpi.medals": "Вручено медалей", "kpi.leader": "Лидер", "kpi.today": "Сегодня",
       "kpi.todayHint": "соревнований сегодня", "kpi.noLeader": "Пока нет", "kpi.notToday": "Сегодня соревнований нет",
       "col.team": "Команда", "col.g": "Золото", "col.s": "Серебро", "col.b": "Бронза", "col.t": "Всего",
-      "st.done": "Завершено", "st.live": "Идёт", "st.soon": "Впереди",
+      "st.done": "Завершено", "st.live": "Идёт", "st.soon": "Впереди", "st.wait": "Ожидаются итоги",
       "res.empty": "Медали появятся после завершения соревнований.",
       "res.wait": "Результаты будут опубликованы после завершения соревнований.",
+      "cat.w": "Среди девушек", "cat.m": "Среди юношей",
       "news.eyebrow": "Новости", "news.title": "Последние новости Игр",
       "news.all": "Все", "news.allNews": "Все новости", "news.read": "Подробнее →",
       "news.empty": "Новостей по этой теме пока нет.", "news.error": "Не удалось загрузить новости.",
@@ -217,9 +219,10 @@
       "kpi.done": "Events completed", "kpi.medals": "Medals awarded", "kpi.leader": "Leader", "kpi.today": "Today",
       "kpi.todayHint": "events today", "kpi.noLeader": "None yet", "kpi.notToday": "No events today",
       "col.team": "Team", "col.g": "Gold", "col.s": "Silver", "col.b": "Bronze", "col.t": "Total",
-      "st.done": "Finished", "st.live": "In progress", "st.soon": "Upcoming",
+      "st.done": "Finished", "st.live": "In progress", "st.soon": "Upcoming", "st.wait": "Results pending",
       "res.empty": "Medals will appear once events are finished.",
       "res.wait": "Results will be published after the event.",
+      "cat.w": "Women", "cat.m": "Men",
       "news.eyebrow": "News", "news.title": "Latest from the Games",
       "news.all": "All", "news.allNews": "All news", "news.read": "Read more →",
       "news.empty": "No news on this topic yet.", "news.error": "Could not load news.",
@@ -245,6 +248,18 @@
   function $(sel) { return root.querySelector(sel); }
   function $$(sel) { return Array.prototype.slice.call(root.querySelectorAll(sel)); }
   function t(key) { return I18N[lang][key]; }
+
+  // A value may be a plain string or { kk: "...", ru: "...", en: "..." }.
+  function loc(v) {
+    if (!v) return "";
+    if (typeof v === "string") return v;
+    return v[lang] || v.kk || v.ru || v.en || "";
+  }
+  function key(v) {
+    if (!v) return "";
+    if (typeof v === "string") return v;
+    return v.kk || v.ru || v.en || "";
+  }
 
   function esc(s) {
     return String(s)
@@ -381,7 +396,7 @@
       var today = aktauToday();
       if (podium.length) status = "done";
       else if (today ? today >= s.from ? today <= s.to : false : false) status = "live";
-      else if (Date.now() > aktauTime(s.to, "23:59")) status = "done";
+      else if (Date.now() > aktauTime(s.to, "23:59")) status = "wait";
       else status = "soon";
     }
     return { status: status, podium: podium, note: r.note };
@@ -400,7 +415,7 @@
       sportResult(s).podium.forEach(function (p) {
         var r = medalMode === "country"
           ? (COUNTRIES[p.country] ? row(p.country, COUNTRIES[p.country].name[lang], p.country) : null)
-          : row(p.univ || p.name, p.univ || p.name, p.country);
+          : row(key(p.univ || p.name), loc(p.univ || p.name), p.country);
         if (!r) return;
         if (p.place === 1) r.g++; else if (p.place === 2) r.s++; else if (p.place === 3) r.b++;
       });
@@ -489,21 +504,27 @@
   }
 
   function renderSportResults() {
-    var order = { live: 0, done: 1, soon: 2 };
+    var order = { live: 0, done: 1, wait: 2, soon: 3 };
     var list = SPORTS.map(function (s) { return { s: s, r: sportResult(s) }; })
       .sort(function (a, b) { return (order[a.r.status] - order[b.r.status]) || (a.s.from - b.s.from); });
 
     $("#sport-results").innerHTML = list.map(function (x) {
       var s = x.s, r = x.r;
-      var icon = { done: "fa-circle-check", live: "fa-circle-dot", soon: "fa-clock" }[r.status];
+      var icon = { done: "fa-circle-check", live: "fa-circle-dot", soon: "fa-clock", wait: "fa-hourglass-half" }[r.status];
       var body;
       if (r.podium.length) {
-        body = '<ol class="podium">' + r.podium.map(function (p) {
-          var c = COUNTRIES[p.country];
-          var two = p.name ? (p.univ ? p.name !== p.univ : false) : false;
-          var who = two ? esc(p.name) + " <small>· " + esc(p.univ) + "<\/small>" : esc(p.name || p.univ || "");
-          return "<li><em>" + (MEDAL[p.place] || "") + "<\/em><b>" + who + "<\/b><span>" + (c ? c.flag : "") + "<\/span><\/li>";
-        }).join("") + "<\/ol>";
+        var cats = [];
+        r.podium.forEach(function (p) { var c = p.cat || ""; if (cats.indexOf(c) === -1) cats.push(c); });
+        body = cats.map(function (cat) {
+          var head = cat ? '<p class="podium__cat">' + esc(t("cat." + cat) || cat) + "<\/p>" : "";
+          return head + '<ol class="podium">' + r.podium.filter(function (p) { return (p.cat || "") === cat; }).map(function (p) {
+            var c = COUNTRIES[p.country];
+            var nm = loc(p.name), un = loc(p.univ);
+            var two = nm ? (un ? nm !== un : false) : false;
+            var who = two ? esc(nm) + " <small>· " + esc(un) + "<\/small>" : esc(nm || un);
+            return "<li><em>" + (MEDAL[p.place] || "") + "<\/em><b>" + who + "<\/b><span>" + (c ? c.flag : "") + "<\/span><\/li>";
+          }).join("") + "<\/ol>";
+        }).join("");
       } else if (r.status !== "soon") {
         body = '<p class="result__note">' + esc(t("res.wait")) + "<\/p>";
       } else {

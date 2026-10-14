@@ -81,6 +81,8 @@ NEWS_CSS = r'''
   background-size: 200% 100%; animation: cg-shimmer 1.2s infinite;
 }
 #cg .nskel--big { grid-column: span 2; grid-row: span 2; }
+#cg .status--wait { background: rgba(245, 158, 11, 0.12); color: var(--gold-ink); border: 1px solid rgba(245, 158, 11, 0.35); }
+#cg .podium__cat { margin-top: 14px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-ink); }
 @keyframes cg-shimmer { to { background-position: -200% 0; } }
 
 @media (max-width: 900px) {
@@ -117,18 +119,31 @@ NEWS_HTML = '''  <!-- ===== News (рубрика/тег) ===== -->
 RESULTS_SCRIPT = '''<script>
 /* =====================================================================
    НӘТИЖЕЛЕР / РЕЗУЛЬТАТЫ — меняйте только этот блок.
-   updated: когда обновили, например "5.10.2026, 18:30".
-   podium: { place: 1|2|3, name: "Команда или спортсмен", univ: "Университет", country: "kz|az|ir|ru|tm" }
-   status (необязательно): "soon" | "live" | "done".
+   updated: когда обновили, например "14.10.2026".
+   podium: { place: 1|2|3, name: "...", univ: "...", country: "kz|az|ir|ru|tm", cat: "w"|"m" }
+     name / univ — строка или { kk: "...", ru: "...", en: "..." } (название на трёх языках).
+     cat (необязательно): "w" — қыздар / девушки, "m" — ұлдар / юноши.
+   status (необязательно): "soon" | "live" | "done" | "wait" (ожидаются итоги).
    note (необязательно): { kk: "...", ru: "...", en: "..." }
    ===================================================================== */
+var U_ATYRAU = { kk: "Х. Досмұхамедов атындағы Атырау университеті", ru: "Атырауский университет имени Х. Досмухамедова", en: "Kh. Dosmukhamedov Atyrau University" };
+var U_YU = { kk: "Yessenov University", ru: "Yessenov University", en: "Yessenov University" };
+var U_DAGESTAN = { kk: "Дағыстан мемлекеттік университеті", ru: "Дагестанский государственный университет", en: "Dagestan State University" };
+
 window.CG_RESULTS = {
-  updated: "",
+  updated: "14.10.2026",
   sports: {
     swimming:   { podium: [] },
     boxing:     { podium: [] },
     basketball: { podium: [] },
-    volleyball: { podium: [] },
+    volleyball: { podium: [
+      { place: 1, univ: U_ATYRAU,   country: "kz", cat: "w" },
+      { place: 2, univ: U_YU,       country: "kz", cat: "w" },
+      { place: 3, univ: U_DAGESTAN, country: "ru", cat: "w" },
+      { place: 1, univ: U_DAGESTAN, country: "ru", cat: "m" },
+      { place: 2, univ: U_ATYRAU,   country: "kz", cat: "m" },
+      { place: 3, univ: U_YU,       country: "kz", cat: "m" }
+    ]},
     athletics:  { podium: [] },
     futsal:     { podium: [] },
     chess:      { podium: [] },
