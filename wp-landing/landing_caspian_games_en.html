@@ -1435,12 +1435,19 @@ html { scroll-padding-top: 72px; }
 var U_ATYRAU = { kk: "Х. Досмұхамедов атындағы Атырау университеті", ru: "Атырауский университет имени Х. Досмухамедова", en: "Kh. Dosmukhamedov Atyrau University" };
 var U_YU = { kk: "Yessenov University", ru: "Yessenov University", en: "Yessenov University" };
 var U_DAGESTAN = { kk: "Дағыстан мемлекеттік университеті", ru: "Дагестанский государственный университет", en: "Dagestan State University" };
+var U_ASTU = { kk: "Астрахань мемлекеттік техникалық университеті", ru: "Астраханский государственный технический университет", en: "Astrakhan State Technical University" };
+var U_KALMYK = { kk: "Б.Б. Городовиков атындағы Қалмақ мемлекеттік университеті", ru: "Калмыцкий государственный университет имени Б.Б. Городовикова", en: "Kalmyk State University named after B.B. Gorodovikov" };
+var U_KINI = { kk: "Қазақ-Неміс тұрақты инженерия институты (KINI)", ru: "Казахско-Немецкий институт устойчивой инженерии (KINI)", en: "Kazakh-German Institute of Sustainable Engineering (KINI)" };
 
 window.CG_RESULTS = {
   updated: "14.10.2026",
   sports: {
     swimming:   { podium: [] },
-    boxing:     { podium: [] },
+    boxing:     { podium: [
+      { place: 1, univ: U_YU, country: "kz" },
+      { place: 2, univ: U_DAGESTAN, country: "ru" },
+      { place: 3, univ: U_ATYRAU, country: "kz" }
+    ]},
     basketball: { podium: [] },
     volleyball: { podium: [
       { place: 1, univ: U_ATYRAU,   country: "kz", cat: "w" },
@@ -1450,12 +1457,32 @@ window.CG_RESULTS = {
       { place: 2, univ: U_ATYRAU,   country: "kz", cat: "m" },
       { place: 3, univ: U_YU,       country: "kz", cat: "m" }
     ]},
-    athletics:  { podium: [] },
-    futsal:     { podium: [] },
+    athletics:  { podium: [
+      { place: 1, univ: U_ASTU, country: "ru" },
+      { place: 2, univ: U_YU, country: "kz" },
+      { place: 3, univ: U_DAGESTAN, country: "ru" }
+    ]},
+    futsal:     { podium: [
+      { place: 1, univ: U_ATYRAU, country: "kz" },
+      { place: 2, univ: U_YU, country: "kz" },
+      { place: 3, univ: U_KINI, country: "kz" }
+    ]},
     chess:      { podium: [] },
-    esports:    { podium: [] },
-    karate:     { podium: [] },
-    sambo:      { podium: [] }
+    esports:    { podium: [
+      { place: 1, univ: U_ATYRAU, country: "kz" },
+      { place: 2, univ: U_YU, country: "kz" },
+      { place: 3, univ: U_KALMYK, country: "ru" }
+    ]},
+    karate:     { podium: [
+      { place: 1, univ: U_YU, country: "kz" },
+      { place: 2, univ: U_ATYRAU, country: "kz" },
+      { place: 3, univ: U_DAGESTAN, country: "ru" }
+    ]},
+    sambo:      { podium: [
+      { place: 1, univ: U_YU, country: "kz" },
+      { place: 2, univ: U_ATYRAU, country: "kz" },
+      { place: 3, univ: U_DAGESTAN, country: "ru" }
+    ]}
   }
 };
 </script>
