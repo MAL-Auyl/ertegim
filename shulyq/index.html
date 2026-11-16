@@ -176,7 +176,7 @@ footer{background:var(--ink);color:var(--paper);padding:28px 5vw}.footerin{max-w
 .lettersec{background:var(--cream)}
 .lettergrid{display:grid;grid-template-columns:.85fr 1.15fr;gap:60px;align-items:center}
 .lettercopy h2{font-size:clamp(34px,4.1vw,58px)}.lettercopy p{font-size:15px;line-height:1.7;max-width:420px;color:rgba(19,24,63,.75);margin:22px 0 28px}
-.mail{position:relative;width:100%;max-width:580px;margin:auto;rotate:-2deg;clip-path:inset(-60px -60px 0 -60px)}
+.mail{position:relative;width:100%;max-width:580px;margin:auto;rotate:-2deg;clip-path:inset(-200px -200px 0 -200px)}
 .letter{position:relative;z-index:1;margin:0 28px;background:#fffaf0;padding:40px 38px 200px;font-family:var(--serif);font-size:17px;line-height:1.7;box-shadow:0 8px 28px rgba(19,24,63,.16)}
 .letter p{margin:0 0 14px}.letter .hi{font-size:30px;font-style:italic;color:var(--red);margin-bottom:10px}.letter .from{font-style:italic;margin:0}
 .letter:after{content:"✳";position:absolute;right:30px;top:26px;color:var(--yellow);font-size:34px;font-family:var(--sans)}
@@ -227,6 +227,10 @@ h2{letter-spacing:-.05em;line-height:.95;font-size:clamp(34px,4.6vw,64px)}
 .backmsg{font-family:var(--sans);font-style:normal;font-weight:500;font-size:18px;line-height:1.5}
 .button,.bag,.langs,.topline,.packlist li{font-weight:800}
 @media(max-width:520px){.hero h1{font-size:54px}html[lang=ru] .hero h1{font-size:min(54px,11.6vw)}.letter{font-size:15px}.letter .hi{font-size:28px}.productbottom h3{font-size:20px}}
+
+/* ---------- draggable letter ---------- */
+.letter{cursor:grab;touch-action:pan-y;-webkit-user-select:none;user-select:none;will-change:transform}.letter.drag{cursor:grabbing}
+.pullhint{margin:18px 0 0;text-align:center;font-family:var(--mono);font-weight:700;font-size:10px;letter-spacing:.14em;color:rgba(19,24,63,.55)}
 </style>
 <script>document.documentElement.classList.add('js')</script>
 </head>
@@ -257,7 +261,7 @@ h2{letter-spacing:-.05em;line-height:.95;font-size:clamp(34px,4.6vw,64px)}
 </div></section>
 <div class="airmail" aria-hidden="true"></div><section class="story" id="story"><div class="storyin"><div class="storycopy"><div data-rv="" class="kicker">БІЗ КІМБІЗ</div><h2 data-rv="lines"><span class="ln"><span>КІШКЕНТАЙ ҚАЛАДАН.</span></span><span class="ln"><span>ҮЛКЕН МІНЕЗБЕН.</span></span></h2><p data-rv="">Сәлем! Біз — Ақтаудан шыққан шағын команда. Бізге теңіздің түсі, ақ жартастар, ұзақ жолдар мен өзімізге ғана таныс әзілдер жақын. Соның бәрін шұлыққа салып, Маңғыстауды алысқа жібереміз.</p><p data-rv="" class="sign">— SHULYQ командасы, Ақтау</p><ul class="packlist"><li data-rv="">АҚТАУДА ОЙЛАП ТАБЫЛҒАН</li><li data-rv="">ӘР ДИЗАЙН — НАҚТЫ БІР ЖЕР</li><li data-rv="">ПОШТА ГРАФИКАСЫНЫҢ СТИЛІ</li></ul><a data-rv="" class="button" href="https://www.instagram.com/shulyq.kz/" target="_blank" rel="noreferrer">INSTAGRAM-ДА ТАНЫСАЙЫҚ ↗</a></div><div data-rv="lines" class="storyvisual"><div class="storybadge">Каспийден<br>сәлем!</div><img src="./images/shulyq-inside.png" alt="Каспий жағалауы мен НЛО бейнеленген қорап қақпағы"></div></div></section>
 <section class="section" id="box"><div class="pack"><div data-rv="" class="packvisual"><img src="./images/shulyq-box.png" alt="Іші шұлықтарға толы SHULYQ сыйлық қорабы"></div><div class="packcopy"><div data-rv="" class="kicker">СЫЙҒА ДА, ӨЗІҢЕ ДЕ</div><h2 data-rv="lines"><span class="ln"><span>ҚОРАПТЫ АШУ —</span></span><span class="ln"><span>ЖОЛҒА ШЫҒУ.</span></span></h2><p data-rv="">Кішкентай пошта сәлемдемесі сияқты: сыртында Ақтаудың ашықхаттары, ішінде үш жұп шұлық пен Маңғыстауға апаратын өз маршрутың.</p><ul class="packlist"><li data-rv="">ҮШ ЖҰП ШҰЛЫҚ</li><li data-rv="">АҚТАУДАН ШАБЫТ АЛҒАН ДИЗАЙН</li><li data-rv="">ҚҰРАМЫ: 80% МАҚТА · 18% ПОЛИАМИД · 2% ЭЛАСТАН</li><li data-rv="">ӨЛШЕМІ: EU 40–42</li><li data-rv="">ҚАЙТА СЫЙЛАУҒА БОЛАТЫН ҚОРАП</li></ul><a data-rv="" class="button" href="https://www.instagram.com/shulyq.kz/" target="_blank" rel="noreferrer">СҰРАҚ ҚОЮ ↗</a></div></div></section>
-<div class="lettersec"><section class="section" id="letter"><div class="lettergrid"><div class="lettercopy"><div data-rv="" class="kicker">ҚОРАПТЫҢ ІШІНДЕ</div><h2 data-rv="lines"><span class="ln"><span>ӘР СӘЛЕМДЕМЕДЕ</span></span><span class="ln"><span>ХАТ БАР.</span></span></h2><p data-rv="">Ақтаудан сәлемдеме келгенде, шұлықпен бірге ішінде бізден жазылған шағын хат болады. Сайттағы конверт — сол хаттың бастауы.</p><a data-rv="" class="button" href="#collection">ТОПТАМАНЫ КӨРУ ↓</a></div><div class="mail" data-rv="lines"><div class="letter"><p class="hi">Сәлем!</p><p>Бұл SHULYQ жұбы саған Ақтаудан келді. Біз оны Маңғыстаудан шабыт алып жасадық — оның Каспийінен, Бозжырасынан және өзіңмен бірге алып кеткің келетін жерлерінен.</p><p>Алғашқы топтамамызды қолдағаныңа рақмет. Бұл шұлықтар сені күн сайын қуантады деп сенеміз.</p><p>Қадам сайын — Ақтаудан жылы лебізбен.</p><p class="from">Берекет және SHULYQ командасы</p></div><div class="envfront" aria-hidden="true"><span class="rubber">FROM AKTAU · TO ANYWHERE</span></div></div></div></section></div>
+<div class="lettersec"><section class="section" id="letter"><div class="lettergrid"><div class="lettercopy"><div data-rv="" class="kicker">ҚОРАПТЫҢ ІШІНДЕ</div><h2 data-rv="lines"><span class="ln"><span>ӘР СӘЛЕМДЕМЕДЕ</span></span><span class="ln"><span>ХАТ БАР.</span></span></h2><p data-rv="">Ақтаудан сәлемдеме келгенде, шұлықпен бірге ішінде бізден жазылған шағын хат болады. Сайттағы конверт — сол хаттың бастауы.</p><a data-rv="" class="button" href="#collection">ТОПТАМАНЫ КӨРУ ↓</a></div><div class="mailwrap"><div class="mail" data-rv="lines"><div class="letter"><p class="hi">Сәлем!</p><p>Бұл SHULYQ жұбы саған Ақтаудан келді. Біз оны Маңғыстаудан шабыт алып жасадық — оның Каспийінен, Бозжырасынан және өзіңмен бірге алып кеткің келетін жерлерінен.</p><p>Алғашқы топтамамызды қолдағаныңа рақмет. Бұл шұлықтар сені күн сайын қуантады деп сенеміз.</p><p>Қадам сайын — Ақтаудан жылы лебізбен.</p><p class="from">Берекет және SHULYQ командасы</p></div><div class="envfront" aria-hidden="true"><span class="rubber">FROM AKTAU · TO ANYWHERE</span></div></div><p class="pullhint" aria-hidden="true">↔ ХАТТЫ ТАРТЫП КӨР</p></div></div></section></div>
 <section class="social"><span class="socialstar">✳</span><span class="socialstar right">✳</span><div data-rv="" class="kicker">ЖАҚЫНДА</div><h2 data-rv="lines"><span class="ln"><span>АЛҒАШҚЫ ТОПТАМА</span></span><span class="ln"><span>ЖОЛДА.</span></span></h2><p data-rv="">Сатылым басталғанын бірінші болып білу үшін Instagram-ға жазыл. Ақтаудан сәлем жақында жолға шығады.</p><a data-rv="" class="button" href="https://www.instagram.com/shulyq.kz/" target="_blank" rel="noreferrer">@SHULYQ.KZ ↗</a></section>
 </main><footer><div class="footerin"><span class="footerlogo">SHULYQ</span><span>ҚАДАМ САЙЫН · АҚТАУ, ҚАЗАҚСТАН</span><a href="https://www.instagram.com/shulyq.kz/" target="_blank" rel="noreferrer">@SHULYQ.KZ ↗</a><span>© SHULYQ 2026</span></div></footer>
 <script>
@@ -279,6 +283,28 @@ document.querySelectorAll('.product').forEach(card=>{
     if(e.detail===0)(on?back:front).querySelector('.flipbtn').focus({preventScroll:true}); // keyboard: keep focus on the visible side
   });
 });
+
+// the letter can be pulled out of the envelope and springs back when released
+{
+  const letter=document.querySelector('.letter'),calm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  let x=0,y=0,vx=0,vy=0,sx=0,sy=0,ox=0,oy=0,held=false,raf=0,last=0;
+  const band=(v,max)=>max*Math.tanh(v/max);                       // rubber-band: resists more the further it goes
+  const draw=()=>{letter.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) rotate(${(x*.05).toFixed(2)}deg)`};
+  const spring=t=>{
+    const dt=Math.min((t-last)/1000,.032);last=t;
+    vx+=(-170*x-16*vx)*dt;vy+=(-170*y-16*vy)*dt;x+=vx*dt;y+=vy*dt;
+    if(Math.abs(x)+Math.abs(y)<.3&&Math.abs(vx)+Math.abs(vy)<4){x=y=0;letter.style.transform='';raf=0;return;}
+    draw();raf=requestAnimationFrame(spring);
+  };
+  const release=()=>{if(!held)return;held=false;letter.classList.remove('drag');
+    if(calm){x=y=0;letter.style.transform='';return;}
+    last=performance.now();raf=requestAnimationFrame(spring);};
+  letter.addEventListener('pointerdown',e=>{if(e.button)return;cancelAnimationFrame(raf);held=true;sx=e.clientX;sy=e.clientY;ox=x;oy=y;vx=vy=0;last=e.timeStamp;letter.setPointerCapture(e.pointerId);letter.classList.add('drag');});
+  letter.addEventListener('pointermove',e=>{if(!held)return;
+    const nx=band(ox+e.clientX-sx,150),ny=Math.min(band(oy+e.clientY-sy,170),24),dt=Math.max(e.timeStamp-last,1)/1000;
+    vx=(nx-x)/dt;vy=(ny-y)/dt;last=e.timeStamp;x=nx;y=ny;draw();});
+  letter.addEventListener('pointerup',release);letter.addEventListener('pointercancel',release);
+}
 
 // hero art follows the pointer (fine pointers only)
 const hero=document.querySelector('.hero'),tilt=document.querySelector('.tilt');
