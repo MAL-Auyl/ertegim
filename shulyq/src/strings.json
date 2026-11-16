@@ -1,0 +1,407 @@
+{
+ "t01": {
+  "kk": "АЛҒАШҚЫ ТОПТАМА ДАЙЫНДАЛЫП ЖАТЫР · АҚТАУДАН СҮЙІСПЕНШІЛІКПЕН",
+  "ru": "ПЕРВАЯ КОЛЛЕКЦИЯ ГОТОВИТСЯ · С ЛЮБОВЬЮ ИЗ АКТАУ",
+  "en": "FIRST COLLECTION COMING SOON · WITH LOVE FROM AKTAU"
+ },
+ "t02": {
+  "kk": "БҰЛ НЕ?",
+  "ru": "ЧТО ЭТО?",
+  "en": "WHAT IS IT?"
+ },
+ "t03": {
+  "kk": "КАТАЛОГ",
+  "ru": "КАТАЛОГ",
+  "en": "CATALOGUE"
+ },
+ "t04": {
+  "kk": "БІЗ КІМБІЗ",
+  "ru": "КТО МЫ",
+  "en": "WHO WE ARE"
+ },
+ "t05": {
+  "kk": "ҚОРАП",
+  "ru": "КОРОБКА",
+  "en": "THE BOX"
+ },
+ "t06": {
+  "kk": "БІЗГЕ ЖАЗ ↗",
+  "ru": "НАПИСАТЬ ↗",
+  "en": "MESSAGE US ↗"
+ },
+ "t07": {
+  "kk": "АҚТАУДАН ШЫҚҚАН ДИЗАЙНЕРЛІК ШҰЛЫҚ",
+  "ru": "ДИЗАЙНЕРСКИЕ НОСКИ ИЗ АКТАУ",
+  "en": "DESIGNER SOCKS FROM AKTAU"
+ },
+ "t08": {
+  "kk": "<span class=\"ln\"><span>ШҰЛЫҚ.</span></span><span class=\"ln\"><em>БІРАҚ</em></span><span class=\"ln\"><span>ОҚИҒА.</span></span>",
+  "ru": "<span class=\"ln\"><span>НОСКИ.</span></span><span class=\"ln\"><em>НО</em></span><span class=\"ln\"><span>С ИСТОРИЕЙ.</span></span>",
+  "en": "<span class=\"ln\"><span>SOCKS.</span></span><span class=\"ln\"><em>WITH A</em></span><span class=\"ln\"><span>STORY.</span></span>"
+ },
+ "t09": {
+  "kk": "Ақтау мен Маңғыстаудың мінезін күнделікті киетін кішкентай оқиғаларға айналдырамыз.",
+  "ru": "Превращаем характер Актау и Мангистау в маленькие истории, которые можно носить каждый день.",
+  "en": "We turn the character of Aktau and Mangystau into small stories you can wear every day."
+ },
+ "t10": {
+  "kk": "ІСКЕ ҚОСЫЛУЫН БІЛУ ↗",
+  "ru": "УЗНАТЬ О ЗАПУСКЕ ↗",
+  "en": "GET LAUNCH NEWS ↗"
+ },
+ "t11": {
+  "kk": "БІЗ ТУРАЛЫ",
+  "ru": "О НАС",
+  "en": "ABOUT US"
+ },
+ "t12": {
+  "kk": "ӘР ҚАДАМДА — БІР ОҚИҒА",
+  "ru": "КАЖДЫЙ ШАГ — НОВАЯ ИСТОРИЯ",
+  "en": "EVERY STEP IS A STORY"
+ },
+ "t13": {
+  "kk": "БҰЛ НЕ?",
+  "ru": "ЧТО ЭТО?",
+  "en": "WHAT IS IT?"
+ },
+ "t14": {
+  "kk": "<span class=\"ln\"><span>АЯҚҚА КИЕТІН</span></span><span class=\"ln\"><span>АШЫҚХАТ.</span></span>",
+  "ru": "<span class=\"ln\"><span>ОТКРЫТКА,</span></span><span class=\"ln\"><span>КОТОРУЮ НОСЯТ.</span></span>",
+  "en": "<span class=\"ln\"><span>A POSTCARD</span></span><span class=\"ln\"><span>YOU CAN WEAR.</span></span>"
+ },
+ "t15": {
+  "kk": "SHULYQ — Ақтауда ойлап табылған дизайнерлік шұлықтар. Әр жұп — Маңғыстаудың бір жерінен келген ашықхат сияқты: маяк, ақ жартастар, көзілдірік таққан түйе. Оны жәшікке салмайсың — аяғыңа киесің.",
+  "ru": "SHULYQ — дизайнерские носки, придуманные в Актау. Каждая пара — как открытка из одного места Мангистау: маяк, белые обрывы, верблюд в очках. Только её не бросают в ящик, а носят на ногах.",
+  "en": "SHULYQ is a designer sock brand created in Aktau, Kazakhstan. Each pair is like a postcard from one place in Mangystau: a lighthouse, white cliffs, a camel in sunglasses. Except you don’t drop it in a mailbox — you wear it."
+ },
+ "t16": {
+  "kk": "КІМГЕ",
+  "ru": "КОМУ",
+  "en": "TO"
+ },
+ "t17": {
+  "kk": "аяғыңа, қайда жүрсең де",
+  "ru": "твоим ногам, где угодно",
+  "en": "your feet, anywhere"
+ },
+ "t18": {
+  "kk": "ҚАЙДАН",
+  "ru": "ОТКУДА",
+  "en": "FROM"
+ },
+ "t19": {
+  "kk": "Ақтау, Маңғыстау",
+  "ru": "Актау, Мангистау",
+  "en": "Aktau, Mangystau"
+ },
+ "t20": {
+  "kk": "ІШІНДЕ",
+  "ru": "ВНУТРИ",
+  "en": "INSIDE"
+ },
+ "t21": {
+  "kk": "оқиғасы бар шұлық",
+  "ru": "носки с историей",
+  "en": "socks with a story"
+ },
+ "t22": {
+  "kk": "Жерді таңдаймыз",
+  "ru": "Выбираем место",
+  "en": "We pick a place"
+ },
+ "t23": {
+  "kk": "Өзіміз жақсы көретін жерлер: Ақтау жағалауы, ақ жартастар, кең дала.",
+  "ru": "Места, которые мы любим: берег Актау, белые обрывы, степь.",
+  "en": "Places we love: the Aktau shore, the white cliffs, the steppe."
+ },
+ "t24": {
+  "kk": "Өрнекке айналдырамыз",
+  "ru": "Превращаем в узор",
+  "en": "We turn it into a pattern"
+ },
+ "t25": {
+  "kk": "Пейзажды пошта маркасындай қарапайым әрі батыл графикаға түсіреміз.",
+  "ru": "Упрощаем пейзаж до смелой графики — как на почтовой марке.",
+  "en": "We simplify the landscape into bold graphics — like a postage stamp."
+ },
+ "t26": {
+  "kk": "Сәлемдеме етіп жібереміз",
+  "ru": "Отправляем как посылку",
+  "en": "We send it as a parcel"
+ },
+ "t27": {
+  "kk": "Үш жұп бір қорапқа салынады — сыртында ашықхат, ішінде маршрут.",
+  "ru": "Три пары в одной коробке: снаружи открытки, внутри маршрут.",
+  "en": "Three pairs in one box: postcards on the outside, a route on the inside."
+ },
+ "t28": {
+  "kk": "КАТАЛОГ · ҮШ МІНЕЗ",
+  "ru": "КАТАЛОГ · ТРИ ХАРАКТЕРА",
+  "en": "CATALOGUE · THREE CHARACTERS"
+ },
+ "t29": {
+  "kk": "<span class=\"ln\"><span>ЖЕРДІҢ</span></span><span class=\"ln\"><span>ІЗІМЕН.</span></span>",
+  "ru": "<span class=\"ln\"><span>ПО СЛЕДАМ</span></span><span class=\"ln\"><span>МЕСТА.</span></span>",
+  "en": "<span class=\"ln\"><span>FOLLOWING</span></span><span class=\"ln\"><span>THE PLACE.</span></span>"
+ },
+ "t30": {
+  "kk": "Әр жұп — таныс жерге жаңа көзқарас: маяк, көзілдірік таққан түйе, ақ жартастар.",
+  "ru": "Каждая пара — новый взгляд на знакомые места: маяк, верблюд в очках и белые обрывы.",
+  "en": "Each pair is a fresh look at familiar places: a lighthouse, a camel in sunglasses and white cliffs."
+ },
+ "t31": {
+  "kk": "Тұрғын үйдің төбесінде тұрған маяк — Ақтаудың ең танымал белгісі.",
+  "ru": "Маяк на крыше жилого дома — главный символ Актау.",
+  "en": "A lighthouse on the roof of an apartment block — the best-known symbol of Aktau."
+ },
+ "t32": {
+  "kk": "МАЯҚ · КАСПИЙ ЖАҒАЛАУЫ",
+  "ru": "МАЯК · ПОБЕРЕЖЬЕ КАСПИЯ",
+  "en": "LIGHTHOUSE · CASPIAN SHORE"
+ },
+ "t33": {
+  "kk": "ЖАҚЫНДА",
+  "ru": "СКОРО",
+  "en": "SOON"
+ },
+ "t34": {
+  "kk": "Көзілдірік таққан түйе — Маңғыстаудың ең сабырлы тұрғыны.",
+  "ru": "Верблюд в очках — самый невозмутимый житель Мангистау.",
+  "en": "A camel in sunglasses — the most unbothered resident of Mangystau."
+ },
+ "t35": {
+  "kk": "ТҮЙЕ · ДАЛА",
+  "ru": "ВЕРБЛЮД · СТЕПЬ",
+  "en": "CAMEL · STEPPE"
+ },
+ "t36": {
+  "kk": "ЖАҚЫНДА",
+  "ru": "СКОРО",
+  "en": "SOON"
+ },
+ "t37": {
+  "kk": "Теңізге төнген ақ жартастар мен жиегіндегі шағын аудандар — Ақтаудың жағасы.",
+  "ru": "Белые обрывы над морем и микрорайоны на самом краю — берег Актау.",
+  "en": "White cliffs above the sea and apartment blocks right on the edge — the Aktau shore."
+ },
+ "t38": {
+  "kk": "ЖАРТАС · ТЕҢІЗ",
+  "ru": "ОБРЫВЫ · МОРЕ",
+  "en": "CLIFFS · SEA"
+ },
+ "t39": {
+  "kk": "ЖАҚЫНДА",
+  "ru": "СКОРО",
+  "en": "SOON"
+ },
+ "t40": {
+  "kk": "БІЗ КІМБІЗ",
+  "ru": "КТО МЫ",
+  "en": "WHO WE ARE"
+ },
+ "t41": {
+  "kk": "<span class=\"ln\"><span>КІШКЕНТАЙ ҚАЛАДАН.</span></span><span class=\"ln\"><span>ҮЛКЕН МІНЕЗБЕН.</span></span>",
+  "ru": "<span class=\"ln\"><span>ИЗ МАЛЕНЬКОГО ГОРОДА.</span></span><span class=\"ln\"><span>С БОЛЬШИМ ХАРАКТЕРОМ.</span></span>",
+  "en": "<span class=\"ln\"><span>FROM A SMALL CITY.</span></span><span class=\"ln\"><span>WITH A BIG CHARACTER.</span></span>"
+ },
+ "t42": {
+  "kk": "Сәлем! Біз — Ақтаудан шыққан шағын команда. Бізге теңіздің түсі, ақ жартастар, ұзақ жолдар мен өзімізге ғана таныс әзілдер жақын. Соның бәрін шұлыққа салып, Маңғыстауды алысқа жібереміз.",
+  "ru": "Привет! Мы — небольшая команда из Актау. Нам близки цвет моря, белые обрывы, длинные дороги и шутки, понятные своим. Всё это мы переносим на носки и отправляем Мангистау далеко за его пределы.",
+  "en": "Hi! We are a small team from Aktau. We love the colour of the sea, the white cliffs, the long roads and the jokes only locals get. We put all of that on socks and send Mangystau far beyond its borders."
+ },
+ "t43": {
+  "kk": "— SHULYQ командасы, Ақтау",
+  "ru": "— команда SHULYQ, Актау",
+  "en": "— the SHULYQ team, Aktau"
+ },
+ "t44": {
+  "kk": "АҚТАУДА ОЙЛАП ТАБЫЛҒАН",
+  "ru": "ПРИДУМАНО В АКТАУ",
+  "en": "CREATED IN AKTAU"
+ },
+ "t45": {
+  "kk": "ӘР ДИЗАЙН — НАҚТЫ БІР ЖЕР",
+  "ru": "КАЖДЫЙ ДИЗАЙН — РЕАЛЬНОЕ МЕСТО",
+  "en": "EVERY DESIGN IS A REAL PLACE"
+ },
+ "t46": {
+  "kk": "ПОШТА ГРАФИКАСЫНЫҢ СТИЛІ",
+  "ru": "СТИЛЬ ПОЧТОВОЙ ГРАФИКИ",
+  "en": "POSTAL GRAPHICS STYLE"
+ },
+ "t47": {
+  "kk": "INSTAGRAM-ДА ТАНЫСАЙЫҚ ↗",
+  "ru": "ЗНАКОМИМСЯ В INSTAGRAM ↗",
+  "en": "MEET US ON INSTAGRAM ↗"
+ },
+ "t48": {
+  "kk": "Каспийден<br>сәлем!",
+  "ru": "Привет<br>с Каспия!",
+  "en": "Hello from<br>the Caspian!"
+ },
+ "t49": {
+  "kk": "СЫЙҒА ДА, ӨЗІҢЕ ДЕ",
+  "ru": "В ПОДАРОК И СЕБЕ",
+  "en": "A GIFT FOR THEM OR FOR YOU"
+ },
+ "t50": {
+  "kk": "<span class=\"ln\"><span>ҚОРАПТЫ АШУ —</span></span><span class=\"ln\"><span>ЖОЛҒА ШЫҒУ.</span></span>",
+  "ru": "<span class=\"ln\"><span>ОТКРЫТЬ КОРОБКУ —</span></span><span class=\"ln\"><span>ОТПРАВИТЬСЯ В ПУТЬ.</span></span>",
+  "en": "<span class=\"ln\"><span>OPEN THE BOX —</span></span><span class=\"ln\"><span>HIT THE ROAD.</span></span>"
+ },
+ "t51": {
+  "kk": "Кішкентай пошта сәлемдемесі сияқты: сыртында Ақтаудың ашықхаттары, ішінде үш жұп шұлық пен Маңғыстауға апаратын өз маршрутың.",
+  "ru": "Как маленькая почтовая посылка: снаружи открытки из Актау, внутри три пары носков и свой маршрут по Мангистау.",
+  "en": "Like a small postal parcel: postcards from Aktau on the outside, three pairs of socks and your own route across Mangystau on the inside."
+ },
+ "t52": {
+  "kk": "ҮШ ЖҰП ШҰЛЫҚ",
+  "ru": "ТРИ ПАРЫ НОСКОВ",
+  "en": "THREE PAIRS OF SOCKS"
+ },
+ "t53": {
+  "kk": "АҚТАУДАН ШАБЫТ АЛҒАН ДИЗАЙН",
+  "ru": "ДИЗАЙН С ВДОХНОВЕНИЕМ АКТАУ",
+  "en": "DESIGNS INSPIRED BY AKTAU"
+ },
+ "t54": {
+  "kk": "ҚҰРАМЫ: 80% МАҚТА · 18% ПОЛИАМИД · 2% ЭЛАСТАН",
+  "ru": "СОСТАВ: 80% ХЛОПОК · 18% ПОЛИАМИД · 2% ЭЛАСТАН",
+  "en": "MATERIAL: 80% COTTON · 18% POLYAMIDE · 2% ELASTANE"
+ },
+ "t55": {
+  "kk": "ӨЛШЕМІ: EU 40–42",
+  "ru": "РАЗМЕР: EU 40–42",
+  "en": "SIZE: EU 40–42"
+ },
+ "t56": {
+  "kk": "ҚАЙТА СЫЙЛАУҒА БОЛАТЫН ҚОРАП",
+  "ru": "КОРОБКА, КОТОРУЮ ХОЧЕТСЯ СОХРАНИТЬ",
+  "en": "A BOX WORTH KEEPING"
+ },
+ "t57": {
+  "kk": "СҰРАҚ ҚОЮ ↗",
+  "ru": "ЗАДАТЬ ВОПРОС ↗",
+  "en": "ASK A QUESTION ↗"
+ },
+ "t58": {
+  "kk": "ҚОРАПТЫҢ ІШІНДЕ",
+  "ru": "ВНУТРИ КОРОБКИ",
+  "en": "INSIDE THE BOX"
+ },
+ "t59": {
+  "kk": "<span class=\"ln\"><span>ӘР СӘЛЕМДЕМЕДЕ</span></span><span class=\"ln\"><span>ХАТ БАР.</span></span>",
+  "ru": "<span class=\"ln\"><span>В КАЖДОЙ ПОСЫЛКЕ</span></span><span class=\"ln\"><span>ПИСЬМО.</span></span>",
+  "en": "<span class=\"ln\"><span>A LETTER</span></span><span class=\"ln\"><span>IN EVERY PARCEL.</span></span>"
+ },
+ "t60": {
+  "kk": "Ақтаудан сәлемдеме келгенде, шұлықпен бірге ішінде бізден жазылған шағын хат болады. Сайттағы конверт — сол хаттың бастауы.",
+  "ru": "Когда посылка из Актау приедет к тебе, вместе с носками в ней будет короткое письмо от нас. Конверт на сайте — его начало.",
+  "en": "When your parcel from Aktau arrives, there will be a short letter from us inside, next to the socks. The envelope on this site is where that letter begins."
+ },
+ "t61": {
+  "kk": "ТОПТАМАНЫ КӨРУ ↓",
+  "ru": "СМОТРЕТЬ КОЛЛЕКЦИЮ ↓",
+  "en": "SEE THE COLLECTION ↓"
+ },
+ "t62": {
+  "kk": "Сәлем!",
+  "ru": "Сәлем!",
+  "en": "Sälem!"
+ },
+ "t63": {
+  "kk": "Бұл SHULYQ жұбы саған Ақтаудан келді. Біз оны Маңғыстаудан шабыт алып жасадық — оның Каспийінен, Бозжырасынан және өзіңмен бірге алып кеткің келетін жерлерінен.",
+  "ru": "Эта пара SHULYQ приехала к тебе из Актау. Мы создали её, вдохновляясь Мангистау — его Каспием, Бозжырой и местами, которые хочется взять с собой.",
+  "en": "This pair of SHULYQ socks came to you from Aktau. We made it inspired by Mangystau — its Caspian Sea, Bozjyra and the places you want to take with you."
+ },
+ "t64": {
+  "kk": "Алғашқы топтамамызды қолдағаныңа рақмет. Бұл шұлықтар сені күн сайын қуантады деп сенеміз.",
+  "ru": "Спасибо, что поддержал нашу первую коллекцию. Надеемся, эти носки будут радовать тебя каждый день.",
+  "en": "Thank you for supporting our first collection. We hope these socks make you happy every day."
+ },
+ "t65": {
+  "kk": "Қадам сайын — Ақтаудан жылы лебізбен.",
+  "ru": "Қадам сайын — с теплом из Актау.",
+  "en": "Qadam saiyn — with warmth from Aktau."
+ },
+ "t66": {
+  "kk": "Берекет және SHULYQ командасы",
+  "ru": "Берекет и команда SHULYQ",
+  "en": "Bereket and the SHULYQ team"
+ },
+ "t67": {
+  "kk": "ЖАҚЫНДА",
+  "ru": "СКОРО",
+  "en": "COMING SOON"
+ },
+ "t68": {
+  "kk": "<span class=\"ln\"><span>АЛҒАШҚЫ ТОПТАМА</span></span><span class=\"ln\"><span>ЖОЛДА.</span></span>",
+  "ru": "<span class=\"ln\"><span>ПЕРВАЯ КОЛЛЕКЦИЯ</span></span><span class=\"ln\"><span>УЖЕ В ПУТИ.</span></span>",
+  "en": "<span class=\"ln\"><span>FIRST COLLECTION</span></span><span class=\"ln\"><span>ON ITS WAY.</span></span>"
+ },
+ "t69": {
+  "kk": "Сатылым басталғанын бірінші болып білу үшін Instagram-ға жазыл. Ақтаудан сәлем жақында жолға шығады.",
+  "ru": "Подпишись на Instagram, чтобы первым узнать о старте продаж. Привет из Актау скоро отправится в путь.",
+  "en": "Follow us on Instagram to be the first to know when sales open. A hello from Aktau is about to hit the road."
+ },
+ "t70": {
+  "kk": "ҚАДАМ САЙЫН · АҚТАУ, ҚАЗАҚСТАН",
+  "ru": "КАЖДЫЙ ШАГ · АКТАУ, КАЗАХСТАН",
+  "en": "QADAM SAIYN · AKTAU, KAZAKHSTAN"
+ },
+ "title": {
+  "kk": "SHULYQ — Ақтаудан шыққан дизайнерлік шұлықтар",
+  "ru": "SHULYQ — дизайнерские носки из Актау, вдохновлённые Мангистау",
+  "en": "SHULYQ — Designer socks from Aktau inspired by Mangystau"
+ },
+ "desc": {
+  "kk": "SHULYQ — Ақтаудан шыққан дизайнерлік шұлық бренді. Дизайндарымыз Маңғыстаудың табиғатынан, мәдениетінен және оқиғаларынан шабыт алған. Алғашқы топтама дайындалып жатыр.",
+  "ru": "SHULYQ — бренд дизайнерских носков из Актау. Наши дизайны вдохновлены природой, культурой и историями Мангистау. Первая коллекция готовится к запуску.",
+  "en": "SHULYQ is a designer sock brand from Aktau, Kazakhstan. Our designs are inspired by the nature, culture and stories of Mangystau. The first collection is coming soon."
+ },
+ "nav": {
+  "kk": "Негізгі мәзір",
+  "ru": "Основное меню",
+  "en": "Main menu"
+ },
+ "langs": {
+  "kk": "Тіл",
+  "ru": "Язык",
+  "en": "Language"
+ },
+ "alt_outside": {
+  "kk": "SHULYQ қорабының сыртқы иллюстрациясы",
+  "ru": "Иллюстрация на крышке коробки SHULYQ",
+  "en": "Illustration on the lid of the SHULYQ box"
+ },
+ "alt_inside": {
+  "kk": "Каспий жағалауы мен НЛО бейнеленген қорап қақпағы",
+  "ru": "Внутренняя сторона крышки: берег Каспия и НЛО",
+  "en": "Inside of the lid: the Caspian shore and a UFO"
+ },
+ "alt_box": {
+  "kk": "Іші шұлықтарға толы SHULYQ сыйлық қорабы",
+  "ru": "Подарочная коробка SHULYQ с тремя парами носков",
+  "en": "SHULYQ gift box with three pairs of socks"
+ },
+ "aria_light": {
+  "kk": "Ақтау маяғы",
+  "ru": "Маяк Актау",
+  "en": "Aktau lighthouse"
+ },
+ "aria_camel": {
+  "kk": "Көзілдірік таққан түйе",
+  "ru": "Верблюд в очках",
+  "en": "Camel in sunglasses"
+ },
+ "aria_cliffs": {
+  "kk": "Каспий жағасындағы ақ жартастар",
+  "ru": "Белые обрывы на берегу Каспия",
+  "en": "White cliffs on the Caspian shore"
+ },
+ "marquee": {
+  "kk": "SHULYQ ✳ ҚАДАМ САЙЫН ✳ AKTAU TO ANYWHERE ✳ МАҢҒЫСТАУДАН КЕЛГЕН ОҚИҒАЛАР ✳ АБАЙЛАҢЫЗ: МІНЕЗІ БАР ШҰЛЫҚТАР! ✳",
+  "ru": "SHULYQ ✳ ҚАДАМ САЙЫН ✳ AKTAU TO ANYWHERE ✳ ИСТОРИИ ИЗ МАНГИСТАУ ✳ ОСТОРОЖНО: НОСКИ С ХАРАКТЕРОМ! ✳",
+  "en": "SHULYQ ✳ ҚАДАМ САЙЫН ✳ AKTAU TO ANYWHERE ✳ STORIES FROM MANGYSTAU ✳ CAUTION: SOCKS WITH CHARACTER! ✳"
+ }
+}
