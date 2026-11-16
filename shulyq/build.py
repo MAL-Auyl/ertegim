@@ -29,7 +29,11 @@ def head(lang):
         {"@type": "WebSite", "@id": f"{DOMAIN}/#website", "url": f"{DOMAIN}/", "name": "SHULYQ",
          "inLanguage": list(LANGS), "publisher": {"@id": f"{DOMAIN}/#organization"}},
     ]}
-    return (f'<meta name="description" content="{attr(desc)}">\n<title>{title}</title>\n'
+    subsets = ["latin"] if lang == "en" else ["cyrillic", "cyrillic-ext"] if lang == "kk" else ["cyrillic"]
+    root = "../" if LANGS[lang] else "./"
+    preload = "".join(f'<link rel="preload" as="font" type="font/woff2" crossorigin href="{root}fonts/geologica-{s}-800-normal.woff2">\n'
+                      for s in subsets)
+    return (preload + f'<meta name="description" content="{attr(desc)}">\n<title>{title}</title>\n'
             f'<link rel="canonical" href="{url}">\n{alternates}'
             f'<link rel="alternate" hreflang="x-default" href="{DOMAIN}/">\n'
             f'<meta property="og:type" content="website">\n<meta property="og:site_name" content="SHULYQ">\n'
