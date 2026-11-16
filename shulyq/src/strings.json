@@ -403,5 +403,45 @@
   "kk": "SHULYQ ✳ ҚАДАМ САЙЫН ✳ AKTAU TO ANYWHERE ✳ МАҢҒЫСТАУДАН КЕЛГЕН ОҚИҒАЛАР ✳ АБАЙЛАҢЫЗ: МІНЕЗІ БАР ШҰЛЫҚТАР! ✳",
   "ru": "SHULYQ ✳ ҚАДАМ САЙЫН ✳ AKTAU TO ANYWHERE ✳ ИСТОРИИ ИЗ МАНГИСТАУ ✳ ОСТОРОЖНО: НОСКИ С ХАРАКТЕРОМ! ✳",
   "en": "SHULYQ ✳ ҚАДАМ САЙЫН ✳ AKTAU TO ANYWHERE ✳ STORIES FROM MANGYSTAU ✳ CAUTION: SOCKS WITH CHARACTER! ✳"
+ },
+ "flip": {
+  "kk": "АУДАРУ ↻",
+  "ru": "ПЕРЕВЕРНУТЬ ↻",
+  "en": "FLIP ↻"
+ },
+ "flipback": {
+  "kk": "↺ АРТҚА",
+  "ru": "↺ ОБРАТНО",
+  "en": "↺ BACK"
+ },
+ "b1": {
+  "kk": "Төбеден сәлем! Ақтауда маяк тұрғын үйдің дәл үстінде тұр — Каспийге талай жылдан бері жарық түсіріп келеді.",
+  "ru": "Сәлем с крыши! В Актау маяк стоит прямо на жилом доме — и светит Каспию уже много лет.",
+  "en": "Hello from the roof! In Aktau the lighthouse stands right on top of an apartment block — and has been lighting the Caspian for years."
+ },
+ "b2": {
+  "kk": "Даладан сәлем! Мұнда ешкім ешқайда асықпайды. Түйе — тіпті де.",
+  "ru": "Сәлем из степи! Здесь никто никуда не спешит. Верблюд — тем более.",
+  "en": "Hello from the steppe! Nobody is in a hurry here. Least of all the camel."
+ },
+ "b3": {
+  "kk": "Жар басынан сәлем! Төменде — Каспий, арт жақта — шағын аудандар. Қаладағы ең әдемі көрініс — дәл жиекте.",
+  "ru": "Сәлем с обрыва! Внизу Каспий, за спиной — микрорайоны. Лучший вид в городе — на самом краю.",
+  "en": "Hello from the cliff! The Caspian below, apartment blocks behind. The best view in town is right on the edge."
+ },
+ "from1": {
+  "kk": "Ақтау, Каспий жағасы",
+  "ru": "Актау, берег Каспия",
+  "en": "Aktau, Caspian shore"
+ },
+ "from2": {
+  "kk": "Маңғыстау даласы",
+  "ru": "степь Мангистау",
+  "en": "the Mangystau steppe"
+ },
+ "from3": {
+  "kk": "Ақтау, теңіз үстіндегі жартас",
+  "ru": "Актау, обрыв над морем",
+  "en": "Aktau, the cliff above the sea"
  }
 }
