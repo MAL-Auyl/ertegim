@@ -19,3 +19,4 @@ tools/stt/models/
 tools/stt/results/
 tools/stt/*.log
 tools/stt/__pycache__/
+shulyq-site.zip
